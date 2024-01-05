@@ -203,7 +203,7 @@ data <- data %>%
 # print(missing_percentage_per_column)
 
 #### save csv ####
-write_sav(data, "./data/cleaned_full_data.sav")
+write_sav(data, "./data/uncleaned_full_data.sav")
 # write_sav(data_subset, "./data/cleaned_complete_case_data.sav")
 
 # Remove everything apart from data_subset (ready for next)
