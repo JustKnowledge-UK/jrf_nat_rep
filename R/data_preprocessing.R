@@ -5,10 +5,8 @@ library(tidyverse)
 library(skimr)
 
 # Read data
-# omnibus data
-library(haven)
 data <- read_sav("Data/UK23626 Workers sample data with nat rep and graduates weight.sav")
-View(data)
+#View(data)
 
 # Apply labels to variables
 data <- data %>%
@@ -17,8 +15,9 @@ data <- data %>%
 # Drop unnecessary vars
 # 14:26 = quals below degree, if we think this would add value we should include them
 # 28:36 = age of children, doesnt seem necessary
+#78-86 are all empty rows
 
-data <- data[, -c(2,14:26,28,36)]
+data <- data[, -c(2,14:26,28,36,78:86)]
 
 #change column names
 data <- data %>%
@@ -26,7 +25,7 @@ data <- data %>%
     ID = MIProRspId,
     Sex = D1_Gender_C,
     Age = D2_Age,
-    Region = D4_Region,
+    Region = D4_Region_C,
     Employment_Status = D3_employment,
     Is_an_employee = E2,
     Consent_1_Ethnicity = SCD_Opt_In_1, 
@@ -51,11 +50,27 @@ data <- data %>%
     Biz_Type = E10A,
     Non_Private_Biz_Type = E10B,
     Non_Private_Biz_Type_TEXT = E10B_9_other,
-    
-    
-  ) #TO DO
+    Paid_One_Work_Other = Q1_1,
+    Third_Party = Q1_2,
+    Employer_Is_Agency = Q1_3,
+    Instructed_By_Other = Q1_4,
+    Work_In_Other = Q1_5,
+    Diff_Uniform = Q1_6,
+    Short_Long_Employ = Q2,
+    Short_Long_Employ_TEXT = Q2_3_other,
+    I_Am_Outsourced = Q3v3a,
+    Outsourced_And_Agency = Q3v3b,
+    Might_Be_Outsourced_And_Agency = Q3v3c,
+    Not_Outsourced_And_Agency = Q3v3b,
+    Disability = D7_Disability1,
+    Disability_Impact = D8_Disability2,
+    #some form of multiplication between INCOME_FREQ and INCOME_OPEN_1 is necessary to create equivalence to an annual salary
+  )
 
-#####################HERE###############################
+#check data
+skim(data)
+
+#####################ANALYSIS###############################
 
 
 
