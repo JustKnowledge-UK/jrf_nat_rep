@@ -15,68 +15,68 @@ library(ggplot2)
 library(tidyr)
 
 # data
-data <- read_sav("Data/UK23626 Workers sample data with nat rep and graduates weight.sav")
-# View(data)
-
-# Apply labels to variables
-data <- data %>%
-  as_factor()
-
-# Drop unnecessary vars
-# 14:26 = quals below degree, if we think this would add value we should include them
-# 28:36 = age of children, doesnt seem necessary
-
-data <- data[, -c(2,14:26,28,36)]
-
-#################################
-##### Identifying variables #####
-#################################
-# Q3 is the straight up self report outsourced/agency questions
-# There are multiple versions. The following code shows that all versions apart
-# from the 'Q3v3' ones are empty, so these are the ones to use.
-# Q3 <- data %>%
-#   select(starts_with("Q3")) %>%
-#   map(., ~sum(!is.na(.)))
-
-data <- data %>%
-  select(-c(starts_with("Q3v1"), starts_with("Q3v2"), starts_with("Q3v4")))
-
-#change column names
-data <- data %>%
-  rename(
-    ID = MIProRspId,
-    Sex = D1_Gender_C,
-    Age = D2_Age,
-    Region = D4_Region_C,
-    Employment_Status = D3_employment,
-    Is_an_employee = E2,
-    Consent_1_Ethnicity = SCD_Opt_In_1, 
-    Consent_2_TU = SCD_Opt_In_2,                
-    Consent_3_Health = SCD_Opt_In_3,
-    Has_Degree = D6_educ1,
-    Has_Second_Job = E1,
-    Who_Pays_You = E3,
-    Job_Security = E5,
-    Work_Circumstance_Agency = E6_1,
-    Work_Circumstance_Contract = E6_2,
-    Work_Circumstance_Seasonal = E6_3,                       
-    Work_Circumstance_Trainee = E6_4,
-    Work_Circumstance_Other = E6_5,                       
-    Work_Circumstance_Other_TEXT = E6_5_other,
-    Org_Size = E7A,
-    Is_Supervisor = E7B,
-    Job_Title_TEXT = E8A,
-    Main_Activity_TEXT = E8B,
-    Employer_Activity_TEXT = E9A,
-    Employer_Activity_SIC = E9B, #need to check that these were SIC and translate to digits if so
-    Biz_Type = E10A,
-    Non_Private_Biz_Type = E10B,
-    Non_Private_Biz_Type_TEXT = E10B_9_other
-  )
-
-#### save csv ####
-write_sav(data, "./Data/uncleaned_full_data.sav")
-
+# data <- read_sav("Data/UK23626 Workers sample data with nat rep and graduates weight.sav")
+# # View(data)
+# 
+# # Apply labels to variables
+# data <- data %>%
+#   as_factor()
+# 
+# # Drop unnecessary vars
+# # 14:26 = quals below degree, if we think this would add value we should include them
+# # 28:36 = age of children, doesnt seem necessary
+# 
+# data <- data[, -c(2,14:26,28,36)]
+# 
+# #################################
+# ##### Identifying variables #####
+# #################################
+# # Q3 is the straight up self report outsourced/agency questions
+# # There are multiple versions. The following code shows that all versions apart
+# # from the 'Q3v3' ones are empty, so these are the ones to use.
+# # Q3 <- data %>%
+# #   select(starts_with("Q3")) %>%
+# #   map(., ~sum(!is.na(.)))
+# 
+# data <- data %>%
+#   select(-c(starts_with("Q3v1"), starts_with("Q3v2"), starts_with("Q3v4")))
+# 
+# #change column names
+# data <- data %>%
+#   rename(
+#     ID = MIProRspId,
+#     Sex = D1_Gender_C,
+#     Age = D2_Age,
+#     Region = D4_Region_C,
+#     Employment_Status = D3_employment,
+#     Is_an_employee = E2,
+#     Consent_1_Ethnicity = SCD_Opt_In_1, 
+#     Consent_2_TU = SCD_Opt_In_2,                
+#     Consent_3_Health = SCD_Opt_In_3,
+#     Has_Degree = D6_educ1,
+#     Has_Second_Job = E1,
+#     Who_Pays_You = E3,
+#     Job_Security = E5,
+#     Work_Circumstance_Agency = E6_1,
+#     Work_Circumstance_Contract = E6_2,
+#     Work_Circumstance_Seasonal = E6_3,                       
+#     Work_Circumstance_Trainee = E6_4,
+#     Work_Circumstance_Other = E6_5,                       
+#     Work_Circumstance_Other_TEXT = E6_5_other,
+#     Org_Size = E7A,
+#     Is_Supervisor = E7B,
+#     Job_Title_TEXT = E8A,
+#     Main_Activity_TEXT = E8B,
+#     Employer_Activity_TEXT = E9A,
+#     Employer_Activity_SIC = E9B, #need to check that these were SIC and translate to digits if so
+#     Biz_Type = E10A,
+#     Non_Private_Biz_Type = E10B,
+#     Non_Private_Biz_Type_TEXT = E10B_9_other
+#   )
+# 
+# #### save csv ####
+# write_sav(data, "./Data/uncleaned_full_data.sav")
+rm(list = ls())
 data <- read_sav("./Data/uncleaned_full_data.sav")
 
 #########################################
@@ -85,7 +85,7 @@ data <- read_sav("./Data/uncleaned_full_data.sav")
 
 # 7.6% are sure they're outsourced, 7.1% think they might be outsourced
 data %>%
-  haven::as_factor(.) %>%
+  haven::as_factor() %>%
   group_by(Q3v3a) %>%
   summarise(
     n = n()
@@ -158,6 +158,8 @@ Q1_labels <- c("I am paid by one organisation but I do work for a different orga
                "I wear a uniform which has the logo or branding of my employer / agency, and which marks me out as being paid by a different organisation to some of the other people that I work with"
 )
 
+### Total MIGHT BE outsourced ###
+
 data %>% 
   filter(Q3v3a == 2) %>%
   filter(Q1_1 == 1 | Q1_2 == 1 | Q1_3 == 1) %>%
@@ -213,13 +215,86 @@ data %>%
   geom_col() +
   geom_label(aes(label = paste0(round(perc,2),"%")))
 
+### SURE outsourced ###
+
+data %>% 
+  filter(Q3v3a == 1) %>%
+  filter(Q1_1 == 1 | Q1_2 == 1 | Q1_3 == 1) %>%
+  select(starts_with("Q1")) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  )
+
+# Calculate the number of people who said TRUE to each indicator item as a proportion
+# of all people who said they are sure they are outsourced
+data %>%
+  select(c(ID, Q3v3a, starts_with("Q1"))) %>%
+  pivot_longer(starts_with("Q1"), names_to = "Q1", values_to = "Q1_True_False") %>%
+  filter(Q3v3a == 1) %>%
+  group_by(Q1, Q1_True_False) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  # group_by(Q1) %>%
+  # mutate(
+  #   check = sum(n)
+  # ) %>%
+  filter(Q1_True_False == 1) %>%
+  ggplot(., aes(Q1, perc)) +
+  geom_col() +
+  geom_label(aes(label = paste0(round(perc,2),"%")))
+
+### Both SURE and MIGHT BE outsourced ###
+data %>% 
+  filter(Q3v3a == 1 | Q3v3a == 2) %>%
+  filter(Q1_1 == 1 | Q1_2 == 1 | Q1_3 == 1) %>%
+  select(starts_with("Q1")) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  )
 
 #####################
 ### Likely agency ###
 #####################
-
 # Defined as 'Anyone who says they are sure they are agency, combined with 
 # long-term work'
+
+### Overall sure agency ####
+data %>% 
+  filter(Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1 ) %>%
+  # filter(Q2 == 1) %>%
+  #group_by(Q2) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  )
+
+### Overall MIGHT BE agency ####
+data %>% 
+  filter(Q3v3b == 2 | Q3v3c == 2 | Q3v3d == 2 ) %>%
+  # filter(Q2 == 1) %>%
+  #group_by(Q2) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  )
+
+
+
+### SURE agency ###
 data %>% 
   filter(Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1 ) %>%
   # filter(Q2 == 1) %>%
@@ -234,6 +309,82 @@ data %>%
   geom_col() +
   geom_label(aes(label = paste0(round(perc,2),"%")))
 
+
+### MIGHT BE agency ###
+data %>% 
+  filter(Q3v3b == 2 | Q3v3c == 2 | Q3v3d == 2 ) %>%
+  # filter(Q2 == 1) %>%
+  group_by(Q2) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  ) %>%
+  ggplot(., aes(Q2, perc)) +
+  geom_col() +
+  geom_label(aes(label = paste0(round(perc,2),"%")))
+
+
+
+
+
+##################################
+### Assigning people to groups ###
+##################################
+
+# invert response function for summing
+invert_response <- function(x){
+  x <- 2 + (-1*x)
+}
+
+## NOTE: Need to check that these groupings are mutually exclusive
+data <- data %>%
+  mutate(
+    outsourced = ifelse(Q3v3a == 1, 1, 0),
+    bolstered_outsourced = ifelse(Q3v3a == 2 & (Q1_1 == 1 | Q1_2 == 1 | Q1_3 == 1), 1, 0),
+    likely_agency = ifelse(Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0)
+    ) %>%
+  mutate(
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency)
+  )
+
+# checks
+vars <- data.frame(data$outsourced, 
+                   data$bolstered_outsourced, 
+                   data$likely_agency)
+
+# Count to see if same as previously calculated
+sapply(vars, function(x) sum(x, na.rm = T))
+
+# check that they're mutually exclusive
+sum(data$outsourced + data$bolstered_outsourced + data$likely_agency == ncol(vars), na.rm = T)
+
+# Now for just indicators
+indicator_data <- data %>% 
+  select(ID, starts_with("Q1")) %>%
+  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
+  rowwise() %>%
+  mutate(
+    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  ) %>% 
+  select(-starts_with("Q1"))
+
+temp <- data %>%
+  select(ID, starts_with("Q1")) %>%
+  reframe(across(starts_with("Q1"), ~invert_response(.x))) %>%
+  rowwise() %>%
+  mutate(
+    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  )
+
+# check sum true the same across dfs
+sum(temp$sum_true == indicator_data$sum_true) == nrow(data)
+# Check ID the same
+sum(data$ID == indicator_data$ID) == nrow(data)
+
+data <- left_join(data, indicator_data, by = "ID")
+
 #########################
 ### High # indicators ###
 #########################
@@ -241,20 +392,23 @@ data %>%
 # Defined as 'People who tick any 5 or 6 of the 6 key indicators (even if they 
 # don’t say they’re outsourced or agency?)'
 
-# invert response function for summing
-invert_response <- function(x){
-  x <- 2 + (-1*x)
-}
-
 # data %>%
 #   select(starts_with("Q1"))
 
+# Total n and %
 data %>% 
-  mutate(across(starts_with("Q1"), ~invert_response(.x))) %>%
-  rowwise() %>%
-  mutate(
-    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
+  filter(sum_true >= 5) %>%
+  summarise(
+    n  = n()
   ) %>%
+  mutate(
+    perc = 100 * (n / nrow(data))
+  )
+
+# By # indicators agreed
+data %>% 
+  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
   group_by(sum_true) %>%
   summarise(
     n  = n()
@@ -267,6 +421,8 @@ data %>%
   geom_label(aes(label = paste0(round(perc,2),"%"))) +
   scale_x_continuous(breaks = seq(0,6,1))
 
+
+
 ###############################
 ### Reasonable # indicators ###
 ###############################
@@ -275,10 +431,11 @@ data %>%
 # b) at least one of the others, in combination with ‘long term work’.
 
 data %>% 
+  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
   filter(Q2 == 1) %>%
   filter(Q1_1 == 1 | Q1_2 == 1 | Q1_3 == 1) %>%
   filter(Q1_4 == 1| Q1_5 == 1 | Q1_6 == 1) %>%
-  select(Q2, starts_with("Q1")) %>%
+  # select(Q2, starts_with("Q1")) %>%
   summarise(
     n = n()
   ) %>%
