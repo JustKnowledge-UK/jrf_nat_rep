@@ -74,9 +74,9 @@ data <- data %>%
     #some form of multiplication between INCOME_FREQ and INCOME_OPEN_1 is necessary to create equivalence to an annual salary
   )
 
-#fix column types
+#fix column types TBC
 str(data)
-#age to numeric
+
 
 #check data
 skim(data)
@@ -484,6 +484,56 @@ data %>%
 # Could also develop this to give percentage breakdown of each indicator as 
 # proportion of all long-term workers
 
+######Morgans Qs from 16/01######
+
+#What % of people who say they’re sure they’re outsourced 
+#also say they do long term work? 
+#(Want to check the overlap of sure outsourced and long-term)
+
+outsourced_data <- data %>%
+  filter(I_Am_Outsourced == "I am sure I’m an outsourced worker")
+
+count_outsourced <- nrow(outsourced_data)
+
+outsourced_data %>% 
+  filter(Short_Long_Employ == "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.") %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / count_outsourced)) #79.7%
+
+#What % of people who say they’re sure they’re outsourced say yes to 
+#any of the six indicators, or any of indicators 1 / 2 / 3 
+#or any of indicators 1 / 2? (Want to check how far the different indicators overlap with being sure you’re outsourced)
+
+#Any of the 6 (83.3)
+outsourced_data %>% 
+  filter(Paid_One_Work_Other == "True" | Third_Party == "True" | Employer_Is_Agency == "True"| 
+         Instructed_By_Other == "True" | Work_In_Other == "True" | Diff_Uniform == "True") %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / count_outsourced))
+
+#Any of 1/2/3 (75.8)
+outsourced_data %>% 
+  filter(Paid_One_Work_Other == "True" | Third_Party == "True" | Employer_Is_Agency == "True") %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / count_outsourced))
+
+#Any of 1/2 (60.5)
+outsourced_data %>% 
+  filter(Paid_One_Work_Other == "True" | Third_Party == "True") %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / count_outsourced))
 
 #### save csv ####
 write_sav(data, "./data/uncleaned_full_data.sav")
