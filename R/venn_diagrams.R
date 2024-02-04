@@ -55,7 +55,7 @@ data <- left_join(data, indicator_data, by = "ID")
 ###########################
 
 # This deliberately non-exclusive to check overlap 
-data <- data %>%
+v1_2_data <- data %>%
   mutate(
     # SURE outsourced or MIGHT BE outsourced + LONGTERM
     outsourced = ifelse(Q3v3a == 1 | (Q3v3a == 2 & Q2 == 1), 1, 0),
@@ -68,11 +68,11 @@ data <- data %>%
     high_indicators_LT = ifelse(Q2 == 1 & sum_true >= 5, 1, 0)
   )
 
-dev.off(dev.list()["RStudioGD"])
+#dev.off(dev.list()["RStudioGD"])
 venn.plot <- venn.diagram(x = list(
-  which(data$outsourced == 1),
-  which(data$likely_agency == 1),
-  which(data$high_indicators == 1)),
+  which(v1_2_data$outsourced == 1),
+  which(v1_2_data$likely_agency == 1),
+  which(v1_2_data$high_indicators == 1)),
   category.names = c("Outsourced","Likely agency","High indicators"),
   filename = NULL,
   output = TRUE
@@ -84,9 +84,9 @@ grid.draw(venn.plot)
 colors <- c("dodgerblue", "darkorange", "forestgreen")
 
 venn.diagram(x = list(
-  which(data$outsourced == 1),
-  which(data$likely_agency == 1),
-  which(data$high_indicators == 1)),
+  which(v1_2_data$outsourced == 1),
+  which(v1_2_data$likely_agency == 1),
+  which(v1_2_data$high_indicators == 1)),
   category.names = c("Outsourced","Likely agency","High indicators"),
   filename = "./outputs/venn.png",
   fill = colors,
@@ -94,16 +94,103 @@ venn.diagram(x = list(
   )
 
 
-lapply(groups, sum)
+#lapply(groups, sum)
 
 venn.diagram(x = list(
-  which(data$outsourced == 1),
-  which(data$likely_agency == 1),
-  which(data$high_indicators_LT == 1)),
+  which(v1_2_data$outsourced == 1),
+  which(v1_2_data$likely_agency == 1),
+  which(v1_2_data$high_indicators_LT == 1)),
   category.names = c("Outsourced","Likely agency", "High indicators LT"),
   filename = "./outputs/venn_2.png",
   fill = colors,
   print.mode = c("raw","percent")
 )
 
+
+################################################################
+### Feb 2 - Changing groupings to explore different overlaps ###
+################################################################
+
+# 1. 
+# group 1: SURE outsourced + LONG TERM or MIGHT BE OUTSROUCED + LONGTERM
+# group 2: ANGECY + LONG TERM
+# group 3: 5 indicators + LOGN TERM
+
+# This deliberately non-exclusive to check overlap 
+v3_data <- data %>%
+  mutate(
+    # SURE outsourced _+ LONG TERM or MIGHT BE outsourced + LONGTERM
+    outsourced_LT = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # MIGHT BE agency + LONG TERM
+    likely_agency = ifelse(Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # 5 or more indicators
+    high_indicators = ifelse(sum_true >= 5, 1, 0),
+    # 5 or more indicators + LONG TERM
+    high_indicators_LT = ifelse(Q2 == 1 & sum_true >= 5, 1, 0)
+  )
+
+venn.diagram(x = list(
+  which(v3_data$outsourced_LT == 1),
+  which(v3_data$likely_agency == 1),
+  which(v3_data$high_indicators_LT == 1)),
+  category.names = c("Outsourced LT","Likely agency","High indicators LT"),
+  filename = "./outputs/venn_3.png",
+  fill = colors,
+  print.mode = c("raw","percent"),
+)
+
+# 2. 
+# group 1: SURE outsourced or MIGHT BE OUTSROUCED + LONGTERM
+# group 2: ANGECY + LONG TERM
+# group 3: 6 indicators + LOGN TERM
+
+# This deliberately non-exclusive to check overlap 
+v4_data <- data %>%
+  mutate(
+    # SURE outsourced _+ LONG TERM or MIGHT BE outsourced + LONGTERM
+    outsourced = ifelse(Q3v3a == 1 | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # MIGHT BE agency + LONG TERM
+    likely_agency = ifelse(Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # 5 or more indicators
+    high_indicators = ifelse(sum_true >= 5, 1, 0),
+    # 5 or more indicators + LONG TERM
+    high_indicators_LT = ifelse(Q2 == 1 & sum_true == 6, 1, 0)
+  )
+
+venn.diagram(x = list(
+  which(v4_data$outsourced == 1),
+  which(v4_data$likely_agency == 1),
+  which(v4_data$high_indicators_LT == 1)),
+  category.names = c("Outsourced","Likely agency","High indicators LT"),
+  filename = "./outputs/venn_4.png",
+  fill = colors,
+  print.mode = c("raw","percent"),
+)
+
+
+# This deliberately non-exclusive to check overlap 
+v5_data <- data %>%
+  mutate(
+    # SURE outsourced _+ LONG TERM or MIGHT BE outsourced + LONGTERM
+    outsourced_LT = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # MIGHT BE agency + LONG TERM
+    likely_agency = ifelse(Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # 5 or more indicators
+    high_indicators = ifelse(sum_true >= 5, 1, 0),
+    # 5 or more indicators + LONG TERM
+    high_indicators_LT = ifelse(Q2 == 1 & sum_true == 6, 1, 0)
+  )
+
+venn.diagram(x = list(
+  which(v5_data$outsourced_LT == 1),
+  which(v5_data$likely_agency == 1),
+  which(v5_data$high_indicators_LT == 1)),
+  category.names = c("Outsourced LT","Likely agency","High indicators LT"),
+  filename = "./outputs/venn_5.png",
+  fill = colors,
+  print.mode = c("raw","percent"),
+)
 
