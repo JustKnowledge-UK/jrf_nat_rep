@@ -1,0 +1,290 @@
+---
+title: "JRF nat rep demographics"
+date: 17/02/2024
+format: html
+editor: visual
+execute: 
+  warning: false
+  echo: false
+---
+
+# Packages
+
+```{r packages}
+library(haven)
+library(poLCA)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(kableExtra)
+```
+
+# Data
+
+```{r data}
+rm(list = ls())
+# data <- read_sav("./Data/uncleaned_full_data.sav")
+
+data <- read_sav("../Data/uncleaned_full_data.sav")
+
+# calculate indicator data
+# invert response function for summing
+invert_response <- function(x){
+  x <- 2 + (-1*x)
+}
+
+# Now for just indicators
+indicator_data <- data %>% 
+  select(ID, starts_with("Q1")) %>%
+  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
+  rowwise() %>%
+  mutate(
+    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  ) %>% 
+  select(-starts_with("Q1"))
+
+# Check ID the same
+sum(data$ID == indicator_data$ID) == nrow(data)
+
+# Merge into main data set
+data <- left_join(data, indicator_data, by = "ID")
+```
+
+## Assign people to groups
+
+As of 17 February, the definitions are:
+
+-   Outsourced; Sure outsourced LT plus might be outsourced LT
+-   Likely agency: Sure agency LT
+-   High indicators: 5/6 indicators LT
+
+```{r group-assigment}
+
+## These groups are mutually exclusive
+data <- data %>%
+  mutate(
+    # SURE outsourced or MIGHT BE outsourced + LONGTERM
+    outsourced = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # NOT outsourced, SURE agency, and LONG-TERM
+    likely_agency = ifelse(outsourced == 0 & Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # NOT outsourced, NOT likely agency, 5 or more indicators, & LONGTERM
+    high_indicators = ifelse(outsourced == 0 & likely_agency == 0 & (Q2 == 1 & sum_true >= 5), 1, 0)
+  )
+
+# count the groupings
+lapply(list(data$outsourced,
+            data$likely_agency,
+            data$high_indicators), sum)
+
+# Flatten these groupings into a single variable
+
+data <- data %>%
+  mutate(
+    outsourcing_group = factor(case_when(outsourced == 1 ~ 'outsourced',
+                                         likely_agency == 1 ~ 'likely_agency',
+                                         high_indicators == 1 ~ 'high_indicators',
+                                         TRUE ~ 'not_outsourced'), 
+                               levels = c("not_outsourced",
+                                          "outsourced",
+                                          "likely_agency",
+                                          "high_indicators")
+    )
+  )
+
+```
+
+# Demographics
+
+The demographic variables of interest are:
+
+## Personal characteristics
+
+-   Age
+
+-   Sex
+
+-   Ethnicity
+
+-   Degree
+
+-   Number of children
+
+-   Region
+
+-   Income
+
+## Broader characteristics
+
+-   Has second job
+
+-   Organisation size
+
+-   Is a supervisor
+
+-   Industry
+
+-   Trade union membership
+
+```{r}
+test <- subset(data, Age == 2) %>%
+  mutate_all(as_factor) %>%
+  mutate(
+    Age = as.numeric(as.character(Age))
+  )
+```
+
+## Age
+
+```{r demographics, output:true}
+
+age_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group) %>%
+  mutate(
+    # make age numeric, not a labelled factor
+    Age = as.numeric(as.character(Age))
+  ) %>%
+  summarise(
+    mean = mean(Age, na.rm = T),
+    median = median(Age,na.rm = T),
+    min = min(Age,na.rm = T),
+    max = max(Age,na.rm = T),
+    stdev = sd(Age,na.rm = T)
+  )
+
+knitr::kable(age_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+```
+
+## Sex
+
+```{r}
+
+sex_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Sex) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_group
+  )
+
+knitr::kable(sex_statistics, 
+             digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+## Ethnicity
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Ethnicity) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_group
+  )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+ethnicity_statistics %>%
+  ggplot(., aes(`Outsourcing group`, Percentage, fill = as.factor(Ethnicity))) +
+  geom_col(colour="black") +
+  coord_flip()
+```
+
+Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Ethnicity,outsourcing_group) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_group
+  )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
+  geom_col(colour="black") +
+  coord_flip()
+```
+
+## Degree
+
+```{r}
+degree_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Has_Degree) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_group
+  )
+
+degree_statistics %>%
+  mutate(
+    `Has degree` = haven::as_factor(Has_Degree)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+degree_statistics %>%
+  mutate(
+    `Has degree` = haven::as_factor(Has_Degree)
+    ) %>%
+  ggplot(., aes(`Outsourcing group`, Percentage, fill = `Has degree`)) +
+  geom_col(colour="black") +
+  coord_flip()
+```
+
+## Region
+
+## Income
