@@ -49,6 +49,8 @@ sum(data$ID == indicator_data$ID) == nrow(data)
 
 # Merge into main data set
 data <- left_join(data, indicator_data, by = "ID")
+
+data_labelled <- haven::as_factor(data)
 ```
 
 ## Assign people to groups
@@ -109,11 +111,13 @@ The demographic variables of interest are:
 
 -   Degree
 
--   Number of children
+-   Number of children?
 
 -   Region
 
 -   Income
+
+-   Born UK?
 
 ## Broader characteristics
 
@@ -126,6 +130,8 @@ The demographic variables of interest are:
 -   Industry
 
 -   Trade union membership
+
+-   Hours?
 
 ```{r}
 test <- subset(data, Age == 2) %>%
@@ -287,4 +293,78 @@ degree_statistics %>%
 
 ## Region
 
+```{r}
+region_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Region) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_group
+  )
+
+region_statistics %>%
+  mutate(
+    Region = haven::as_factor(Region)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+region_statistics %>%
+  mutate(
+    Region = haven::as_factor(Region)
+    ) %>%
+  ggplot(., aes(`Outsourcing group`, Percentage, fill = Region)) +
+  geom_col(colour="black") +
+  coord_flip()
+```
+
 ## Income
+
+```{r}
+data <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  mutate(
+    # make all annual incomes. Note this assumes 52 working weeks!
+    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1,
+                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12,
+                              INCOME_FREQ == 3 ~ INCOME_OPEN_1*52,
+                              INCOME_FREQ == 4 ~ INCOME_OPEN_1*HOURS*52,
+                              TRUE ~ NA)
+  ) 
+
+income_statistics <- data %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    mean = mean(income_annual, na.rm = T),
+    median = median(income_annual,na.rm = T),
+    min = min(income_annual,na.rm = T),
+    max = max(income_annual,na.rm = T),
+    stdev = sd(income_annual,na.rm = T)
+  )
+
+knitr::kable(income_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+options(scipen = 999)
+data %>%
+  ggplot(., aes(outsourcing_group, income_annual)) + 
+  geom_violin() +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 5e+05), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,4.5))
+```
+
+Clearly there is some big skew here. The case close to 3million is someone who said they were paid 55000 a week. They are a director of a company, but say they are sure they're outsourced and sure they're an agency worker. This looks to be a poor case and should probably be removed.
