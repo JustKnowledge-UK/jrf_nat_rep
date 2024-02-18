@@ -74,9 +74,21 @@ data <- data %>%
     #some form of multiplication between INCOME_FREQ and INCOME_OPEN_1 is necessary to create equivalence to an annual salary
   )
 
-#fix column types
+####fix column types
 str(data)
 #age to numeric
+# Remove 'under 16' level
+data$Age <- droplevels(data$Age, exclude = "Under 16")
+
+# Merge 'over 80' with '80' 2 responses
+levels(data$Age)[levels(data$Age) == "Over 80"] <- "80"
+
+# Convert 'Age' to numeric
+data$Age <- as.numeric(as.character(data$Age))
+
+#gsub on agency var to remove full stop
+data$Short_Long_Employ <- gsub("\\.", "", data$Short_Long_Employ)
+
 
 #check data
 skim(data)
@@ -167,7 +179,7 @@ Q1_labels <- c("I am paid by one organisation but I do work for a different orga
 data %>% 
   filter(I_Am_Outsourced == "I think I might be an outsourced worker") %>%
   filter(Paid_One_Work_Other == "True" | Third_Party == "True" | Employer_Is_Agency == "True") %>%
-  select(Paid_One_Work_Other,
+  dplyr::select(Paid_One_Work_Other,
          Third_Party,
          Employer_Is_Agency,
          Instructed_By_Other,
@@ -183,7 +195,7 @@ data %>%
 # Calculate the number of people who said TRUE to each indicator item as a proportion
 # of all people in the sample
 data %>%
-  select(c(ID, 
+  dplyr::select(c(ID, 
            I_Am_Outsourced, 
            Paid_One_Work_Other,
            Third_Party,
@@ -213,7 +225,7 @@ data %>%
 # Calculate the number of people who said TRUE to each indicator item as a proportion
 # of all people who said they 'might be' outsourced
 data %>%
-  select(c(ID, 
+  dplyr::select(c(ID, 
            I_Am_Outsourced, 
            Paid_One_Work_Other,
            Third_Party,
@@ -245,7 +257,7 @@ data %>%
 data %>% 
   filter(I_Am_Outsourced == "I am sure I’m an outsourced worker") %>%
   filter(Paid_One_Work_Other == "True" | Third_Party == "True" | Employer_Is_Agency == "True") %>%
-  select(Paid_One_Work_Other,
+  dplyr::select(Paid_One_Work_Other,
          Third_Party,
          Employer_Is_Agency,
          Instructed_By_Other,
@@ -261,7 +273,7 @@ data %>%
 # Calculate the number of people who said TRUE to each indicator item as a proportion
 # of all people who said they are sure they are outsourced
 data %>%
-  select(c(ID, 
+  dplyr::select(c(ID, 
            I_Am_Outsourced, 
            Paid_One_Work_Other,
            Third_Party,
@@ -292,7 +304,7 @@ data %>%
 data %>% 
   filter(I_Am_Outsourced == "I am sure I’m an outsourced worker" | I_Am_Outsourced == "I think I might be an outsourced worker") %>%
   filter(Paid_One_Work_Other == "True" | Third_Party == "True" | Employer_Is_Agency == "True") %>%
-  select(Paid_One_Work_Other,
+  dplyr::select(Paid_One_Work_Other,
          Third_Party,
          Employer_Is_Agency,
          Instructed_By_Other,
@@ -363,126 +375,209 @@ data %>%
 ##################################
 ### Assigning people to groups ###
 ##################################
-### in the previous code factors were assigned on the labels
-# invert response function for summing
-invert_response <- function(x){
-  x <- 2 + (-1*x)
-}
-
-## NOTE: Need to check that these groupings are mutually exclusive
 data <- data %>%
   mutate(
-    outsourced = ifelse(I_Am_Outsourced == 1, 1, 0),
-    bolstered_outsourced = ifelse(I_Am_Outsourced == 2 & (Paid_One_Work_Other == 1 | Third_Party == 1 | Employer_Is_Agency == 1), 1, 0),
-    likely_agency = ifelse(Short_Long_Employ == 1 & (Outsourced_And_Agency == 1 | Might_Be_Outsourced_And_Agency == 1 | Not_Outsourced_And_Agency == 1), 1, 0)
-  ) %>%
-  mutate(
-    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency)
+    # SURE outsourced + LONGTERM or MIGHT BE outsourced + LONGTERM
+    outsourced_LT = ifelse((I_Am_Outsourced == "I am sure I’m an outsourced worker" & 
+                            Short_Long_Employ == "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.") | 
+                           (I_Am_Outsourced == "I think I might be an outsourced worker" & 
+                            Short_Long_Employ == "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis"), 1, 0),
+    # NOT outsourced, SURE agency, and LONG-TERM
+    likely_agency = ifelse(outsourced_LT == 0 & 
+                           Short_Long_Employ == "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis" &
+                          (Outsourced_And_Agency == "I am sure that I’m also an agency worker"|
+                           Might_Be_Outsourced_And_Agency == "I am sure that I’m also an agency worker" |
+                           Not_Outsourced_And_Agency == "I am sure that I’m an agency worker"), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # Compute sum_true
+    sum_true = rowSums(data[, c("Paid_One_Work_Other", "Third_Party", "Employer_Is_Agency", "Instructed_By_Other", "Work_In_Other", "Diff_Uniform")] == "True", na.rm = TRUE),
+    # NOT outsourced, NOT likely agency, & 5 or more indicators
+    high_indicators = ifelse(outsourced_LT == 0 & 
+                             likely_agency == 0 & 
+                             sum_true == 6, 1, 0),
+    # NOT outsourced, NOT likely agency, 6 or more indicators, & LONGTERM
+    high_indicators_LT = ifelse(outsourced_LT == 0 & 
+                                likely_agency == 0 & 
+                                (Short_Long_Employ ==  "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis" & 
+                                sum_true == 6), 1, 0)
   )
 
-# checks
-vars <- data.frame(data$outsourced, 
-                   data$bolstered_outsourced, 
-                   data$likely_agency)
+# count the groupings
+lapply(list(data$outsourced_LT,
+            data$likely_agency,
+            data$high_indicators,
+            data$high_indicators_LT), sum)
 
-# Count to see if same as previously calculated
-sapply(vars, function(x) sum(x, na.rm = T))
+# Flatten these groupings into a single variable
 
-# check that they're mutually exclusive
-sum(data$outsourced + data$bolstered_outsourced + data$likely_agency == ncol(vars), na.rm = T)
+data <- data %>%
+  mutate(
+    outsourcing_group = factor(case_when(outsourced_LT == 1 ~ 'outsourced',
+                                         likely_agency == 1 ~ 'likely_agency',
+                                         high_indicators_LT == 1 ~ 'high_indicators',
+                                         TRUE ~ 'not_outsourced'), 
+                               levels = c("not_outsourced",
+                                          "outsourced",
+                                          "likely_agency",
+                                          "high_indicators")
+    )
+  )
 
-#HERE####
-# Now for just indicators
-indicator_data <- data %>% 
-  select(ID, 
+########LCA######
+
+#create functional income var
+#data quality here is very poor clearly lots of either junk answers or miselection of frequency
+# Assuming 'data' is your dataset
+data$Income <- ifelse(data$INCOME_FREQ == "Annually / per year",
+                      data$INCOME_OPEN_1,
+                      ifelse(data$INCOME_FREQ == "Monthly",
+                             data$INCOME_OPEN_1 * 12,
+                             ifelse(data$INCOME_FREQ == "Weekly",
+                                    data$INCOME_OPEN_1 * 52,
+                                    ifelse(data$INCOME_FREQ == "Hourly",
+                                           data$INCOME_OPEN_1 * data$HOURS * 52,  
+                                           NA  # Handle cases where INCOME_FREQ doesn't match any condition
+                                    )
+                             )
+                      )
+)
+
+# Print out the result to verify
+print(data$Income)
+##LCA DATA SET
+LCA_data<- data %>% 
+  dplyr::select(Sex, 
+         Age, 
+         Region,
+         Employment_Status,
+         Is_an_employee,
+         Ethnicity,
+         Has_Degree,
+         Has_Second_Job,
+         Who_Pays_You,
+         Job_Security,
+         Org_Size,
+         Is_Supervisor,
          Paid_One_Work_Other,
          Third_Party,
          Employer_Is_Agency,
          Instructed_By_Other,
          Work_In_Other,
-         Diff_Uniform) %>%
-  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
-  rowwise() %>%
-  mutate(
-    sum_true = sum(Paid_One_Work_Other, Third_Party, Employer_Is_Agency, Instructed_By_Other, Work_In_Other, Diff_Uniform)
-  ) %>% 
-  select(-starts_with("Q1"))
+         Diff_Uniform,
+         Short_Long_Employ,
+         I_Am_Outsourced,
+         Disability,
+         HOURS,
+         Income,
+         BORNUK)
 
-temp <- data %>%
-  select(ID, starts_with("Q1")) %>%
-  reframe(across(starts_with("Q1"), ~invert_response(.x))) %>%
-  rowwise() %>%
-  mutate(
-    sum_true = sum(Paid_One_Work_Other, Third_Party, Employer_Is_Agency, Instructed_By_Other, Work_In_Other, Diff_Uniform)
-  )
+# make Age catergorical
+mean_age <- mean(LCA_data$Age)
 
-# check sum true the same across dfs
-sum(temp$sum_true == indicator_data$sum_true) == nrow(data)
-# Check ID the same
-sum(data$ID == indicator_data$ID) == nrow(data)
+# Create a new categorical variable based on the mean age
+LCA_data <- LCA_data %>%
+  mutate(Age_Category = ifelse(Age < mean_age, "Younger", "Older")) %>%
+  mutate(Age_Category = factor(Age_Category, levels = c("Younger", "Older")))
 
-data <- left_join(data, indicator_data, by = "ID")
+#change short/long term employement status to catergorical
+LCA_data <- LCA_data %>%
+  mutate(Short_Long_Employ = factor(Short_Long_Employ, 
+                                    levels = c("I’m hired to do work which an organisation needs doing on a long-term or ongoing basis", 
+                                               "I’m hired to do work which an organisation needs doing on a short-term or temporary basis",
+                                               "Other ")))
 
-#########################
-### High # indicators ###
-#########################
+#reduce ethnicity to race
+LCA_data <- LCA_data %>%
+  mutate(Ethnicity_Reduced = case_when(
+    # Combine similar White backgrounds
+    Ethnicity %in% c("English / Welsh / Scottish / Northern Irish / British", "Irish", "Any other White background") ~ "White",
+    # Combine similar Asian backgrounds
+    Ethnicity %in% c("White and Asian", "Indian", "Pakistani", "Bangladeshi", "Chinese", "Any other Asian background") ~ "Asian",
+    # Combine similar Black backgrounds
+    Ethnicity %in% c("African", "Caribbean", "Any other Black, Black British, or Caribbean background", "White and Black Caribbean", "White and Black African") ~ "Black",
+    # Group other ethnicities
+    Ethnicity %in% c("Roma", "Gypsy or Irish Traveller", "Any other ethnic group", "Any other Mixed / Multiple ethnic background", "Don’t think of myself as any of these", "Prefer not to say","Arab") ~ "Other/Prefer not to say",
+    # Keep the original Ethnicity for any remaining categories
+    TRUE ~ Ethnicity
+  ))
 
-# Defined as 'People who tick any 5 or 6 of the 6 key indicators (even if they 
-# don’t say they’re outsourced or agency?)'
+LCA_data <- LCA_data %>%
+  mutate(Ethnicity_Reduced = factor(Ethnicity_Reduced, 
+                                    levels = c("Asian", 
+                                               "Black",
+                                               "Other/Prefer not to say",
+                                               "White")))
 
-# data %>%
-#   select(starts_with("Q1"))
+#reduce bornuk
+LCA_data <- LCA_data %>%
+  mutate(BORNUK_Reduced = case_when(
+    # Combine under 10 year time frame
+    BORNUK %in% c("Within the last year", "Within the last 3 years", "Within the last 5 years", "Within the last 10 years") ~ "Recent Arrival",
+    # Combine over 10 year time frame
+    BORNUK %in% c("Within the last 15 years", "Within the last 20 years", "Within the last 30 years", "More than 30 years ago") ~ "Not Recent Arrival",
+    # Keep the original remaining categories
+    TRUE ~ BORNUK
+  ))
 
-# Total n and %
-data %>% 
-  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
-  filter(sum_true >= 5) %>%
-  summarise(
-    n  = n()
-  ) %>%
-  mutate(
-    perc = 100 * (n / nrow(data))
-  )
+LCA_data <- LCA_data %>%
+  mutate(BORNUK_Reduced = factor(BORNUK_Reduced, 
+                                    levels = c("I was born in the UK",
+                                               "Recent Arrival", 
+                                               "Not Recent Arrival",
+                                               "Prefer not to say")))
+#reduce org size
+LCA_data <- LCA_data %>%
+  mutate(Org_Size_Reduced = case_when(
+    # Combine under 10 year time frame
+    Org_Size %in% c( "1-10", "11-19", "20-24", "Don't know but under 25", "25-49", "50-249", "250-499", "Don't know but between 25 and 499") ~ "Small",
+    # Combine over 10 year time frame
+    Org_Size %in% c("500 or more") ~ "Big",
+    # Keep the original remaining categories
+    TRUE ~ Org_Size
+  ))
 
-# By # indicators agreed
-data %>% 
-  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
-  group_by(sum_true) %>%
-  summarise(
-    n  = n()
-  ) %>%
-  mutate(
-    perc = 100 * (n / sum(n))
-  ) %>%
-  ggplot(., aes(sum_true, perc)) +
-  geom_col() +
-  geom_label(aes(label = paste0(round(perc,2),"%"))) +
-  scale_x_continuous(breaks = seq(0,6,1))
+LCA_data <- LCA_data %>%
+  mutate(Org_Size_Reduced = factor(Org_Size_Reduced, 
+                                 levels = c("Small",
+                                            "Big")))
+#LCA
+library(poLCA)
+
+f = cbind(Sex, Employment_Status, Ethnicity_Reduced,
+          Has_Degree, Has_Second_Job, Who_Pays_You, Job_Security,
+          Org_Size_Reduced, Is_Supervisor, Paid_One_Work_Other, Third_Party,
+          Employer_Is_Agency, Instructed_By_Other, Work_In_Other,
+          Diff_Uniform, Short_Long_Employ, I_Am_Outsourced, Disability,
+          BORNUK_Reduced) ~1
+LCA1<-poLCA(f, LCA_data, nclass = 2, maxiter = 1000, nrep = 10)
+LCA2<-poLCA(f, LCA_data, nclass = 3, maxiter = 1000, nrep = 10)
+LCA3<-poLCA(f, LCA_data, nclass = 4, maxiter = 1000, nrep = 10)
+LCA4<-poLCA(f, LCA_data, nclass = 5, maxiter = 1000, nrep = 10)
+LCA5<-poLCA(f, LCA_data, nclass = 6, maxiter = 1000, nrep = 10)
+
+LCA1
+
+anova(LCA1,LCA2,LCA3,LCA4,LCA5)
+plot(LCA4)
+
+AIC(2): 20929.75
+AIC(3): 20704.29
+AIC(4): 20512.32
+AIC(5): 20425.05
+AIC(6): 20359.45
+#####HERE####
+f2 = cbind(Sex, Ethnicity_Reduced, Paid_One_Work_Other, Third_Party,
+            Employer_Is_Agency, Instructed_By_Other, Work_In_Other,
+            Diff_Uniform, Short_Long_Employ, I_Am_Outsourced,BORNUK_Reduced)~1
 
 
+LCA1<-poLCA(f2, LCA_data, nclass = 2, maxiter = 1000, nrep = 10)
+LCA2<-poLCA(f2, LCA_data, nclass = 3, maxiter = 1000, nrep = 10)
+LCA3<-poLCA(f2, LCA_data, nclass = 4, maxiter = 1000, nrep = 10)
+LCA4<-poLCA(f2, LCA_data, nclass = 5, maxiter = 1000, nrep = 10)
+LCA5<-poLCA(f2, LCA_data, nclass = 6, maxiter = 1000, nrep = 10)
 
-###############################
-### Reasonable # indicators ###
-###############################
 
-# Defined as people who tick a) at least one of the first three and 
-# b) at least one of the others, in combination with ‘long term work’.
-
-data %>% 
-  filter(outsourced == 0 & bolstered_outsourced == 0 & likely_agency == 0) %>%
-  filter(Short_Long_Employ == 1) %>%
-  filter(Paid_One_Work_Other == 1 | Third_Party == 1 | Employer_Is_Agency == 1) %>%
-  filter(Instructed_By_Other == 1| Work_In_Other == 1 | Diff_Uniform == 1) %>%
-  # select(Q2, starts_with("Q1")) %>%
-  summarise(
-    n = n()
-  ) %>%
-  mutate(
-    perc = 100 * (n / nrow(data))
-  )
-
-# Could also develop this to give percentage breakdown of each indicator as 
-# proportion of all long-term workers
 
 
 #### save csv ####
