@@ -26,7 +26,10 @@ library(kableExtra)
 rm(list = ls())
 # data <- read_sav("./Data/uncleaned_full_data.sav")
 
-data <- read_sav("../Data/uncleaned_full_data.sav")
+data <- read_sav("../Data/UK23626 Workers sample data with nat rep and graduates weight.sav") %>%
+    rename(
+    ID = MIProRspId
+  ) 
 
 # calculate indicator data
 # invert response function for summing
@@ -57,9 +60,9 @@ data_labelled <- haven::as_factor(data)
 
 As of 17 February, the definitions are:
 
--   Outsourced; Sure outsourced LT plus might be outsourced LT
--   Likely agency: Sure agency LT
--   High indicators: 5/6 indicators LT
+-   **Outsourced**, defined as responding 'I am sure I am outsourced ' or 'I might be outsourced', and responding 'I do work on a long-term basis'.
+-   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
+-   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
 
 ```{r group-assigment}
 
@@ -99,9 +102,7 @@ data <- data %>%
 
 # Demographics
 
-The demographic variables of interest are:
-
-## Personal characteristics
+The demographic variables explored here are:
 
 -   Age
 
@@ -109,37 +110,11 @@ The demographic variables of interest are:
 
 -   Ethnicity
 
--   Degree
-
--   Number of children?
-
 -   Region
 
 -   Income
 
--   Born UK?
-
-## Broader characteristics
-
--   Has second job
-
--   Organisation size
-
--   Is a supervisor
-
--   Industry
-
--   Trade union membership
-
--   Hours?
-
-```{r}
-test <- subset(data, Age == 2) %>%
-  mutate_all(as_factor) %>%
-  mutate(
-    Age = as.numeric(as.character(Age))
-  )
-```
+-   Born UK
 
 ## Age
 
@@ -222,7 +197,9 @@ ethnicity_statistics %>%
 ethnicity_statistics %>%
   ggplot(., aes(`Outsourcing group`, Percentage, fill = as.factor(Ethnicity))) +
   geom_col(colour="black") +
+  annotate("text",inherit.aes=F, data=ethnicity_statistics, aes(`Outsourcing group`, y = 50, label = sum(ethnicity_statistics$Frequency))) +
   coord_flip()
+
 ```
 
 Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below
@@ -254,39 +231,6 @@ ethnicity_statistics %>%
     Ethnicity = haven::as_factor(Ethnicity)
     ) %>%
   ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
-  geom_col(colour="black") +
-  coord_flip()
-```
-
-## Degree
-
-```{r}
-degree_statistics <- data %>%
-  # get values of labels
-  # mutate_all(haven::as_factor) %>%
-  group_by(outsourcing_group, Has_Degree) %>%
-  summarise(
-    Frequency = n()
-  ) %>%
-  mutate(
-    Percentage = 100 * (Frequency / sum(Frequency))
-  ) %>%
-  rename(
-    `Outsourcing group` = outsourcing_group
-  )
-
-degree_statistics %>%
-  mutate(
-    `Has degree` = haven::as_factor(Has_Degree)
-    ) %>%
-  knitr::kable(.,digits = 2) %>%
-  kable_styling(full_width = F)
-
-degree_statistics %>%
-  mutate(
-    `Has degree` = haven::as_factor(Has_Degree)
-    ) %>%
-  ggplot(., aes(`Outsourcing group`, Percentage, fill = `Has degree`)) +
   geom_col(colour="black") +
   coord_flip()
 ```
