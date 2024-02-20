@@ -1,11 +1,16 @@
 ---
 title: "JRF nat rep demographics"
-date: 17/02/2024
-format: html
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    code-fold: true
 editor: visual
 execute: 
   warning: false
-  echo: false
+  
 ---
 
 # Packages
@@ -22,7 +27,7 @@ library(kableExtra)
 
 # Data
 
-```{r data}
+```{r data, output=FALSE}
 rm(list = ls())
 data <- read_sav("../Data/uncleaned_full_data.sav")
 
@@ -64,7 +69,7 @@ As of 17 February, the definitions are:
 -   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
 -   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
 
-```{r group-assigment}
+```{r group-assigment, output=FALSE}
 
 ## These groups are mutually exclusive
 data <- data %>%
@@ -228,6 +233,9 @@ data %>%
   annotate("text", x = ethnicity_statistics$outsourcing_group, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
   coord_flip()
 
+ethnicity_key <- data.frame("number" = seq(1,22,1),
+                            "ethnicity" = c(levels(ethnicity_statistics$Ethnicity), NA))
+
 ```
 
 Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.
@@ -263,6 +271,43 @@ ethnicity_statistics %>%
   geom_col(colour="black") +
   annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
   coord_flip()
+
+ethnicity_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+## Born in the UK
+
+```{r}
+bornuk_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, BORNUK) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+```
+
+A greater proportion of outsourced workers were not born in the UK (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_group == "outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%) compared to non-outsourced workers (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_group == "not_outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%). Looking at the figure below, it appears that no particular arrival time is especially common amongst the outsourced group, with a relatively equal distribution across arrival times (though potentially a slightly larger proportion fall into the 'Within the last 10 years category'). The is broadly the case for the likely agency and high indicators groups too, though note that amongst likely agency there is a slightly larger proportion of workers who have arrived within the last year.
+
+```{r}
+
+bornuk_statistics %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+bornuk_statistics %>%
+  ggplot(., aes(outsourcing_group, Percentage, fill = BORNUK)) +
+  geom_col(colour="black") +
+  annotate("text", x = bornuk_statistics$outsourcing_group, y = 75, label = paste0("n=",bornuk_statistics$Sum)) +
+  coord_flip()
+
 ```
 
 ## Region
@@ -353,10 +398,4 @@ data %>%
   coord_cartesian(xlim=c(1,4.5))
 ```
 
-## Summarising the groups
-
-Taking the above exploration together, we can describe a profile for each group.
-
-#### Outsourced
-
--   Mean age: 35, ranging
+Still to do: - a key for the ethnicity plot  - add LCA part
