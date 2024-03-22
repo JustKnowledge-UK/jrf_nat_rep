@@ -396,6 +396,7 @@ data <- data %>%
                              likely_agency == 0 & 
                              sum_true == 6, 1, 0),
     # NOT outsourced, NOT likely agency, 6 or more indicators, & LONGTERM
+    # note we might want this to be 5 or more indicators (6 is max)
     high_indicators_LT = ifelse(outsourced_LT == 0 & 
                                 likely_agency == 0 & 
                                 (Short_Long_Employ ==  "I’m hired to do work which an organisation needs doing on a long-term or ongoing basis" & 
@@ -549,26 +550,57 @@ f = cbind(Sex, Employment_Status, Ethnicity_Reduced,
           Employer_Is_Agency, Instructed_By_Other, Work_In_Other,
           Diff_Uniform, Short_Long_Employ, I_Am_Outsourced, Disability,
           BORNUK_Reduced) ~1
+
 LCA1<-poLCA(f, LCA_data, nclass = 2, maxiter = 1000, nrep = 10)
 LCA2<-poLCA(f, LCA_data, nclass = 3, maxiter = 1000, nrep = 10)
 LCA3<-poLCA(f, LCA_data, nclass = 4, maxiter = 1000, nrep = 10)
 LCA4<-poLCA(f, LCA_data, nclass = 5, maxiter = 1000, nrep = 10)
 LCA5<-poLCA(f, LCA_data, nclass = 6, maxiter = 1000, nrep = 10)
 
+
 LCA1
 
-anova(LCA1,LCA2,LCA3,LCA4,LCA5)
-plot(LCA4)
+ics <- data.frame("classes" = seq(1,5,1),
+                  "ic" = c(rep("aic", 5),
+                           rep("bic", 5)),
+                  "value" = c(LCA1[["aic"]],
+                              LCA2[["aic"]],
+                              LCA3[["aic"]],
+                              LCA4[["aic"]],
+                              LCA5[["aic"]],
+                              LCA1[["bic"]],
+                              LCA2[["bic"]],
+                              LCA3[["bic"]],
+                              LCA4[["bic"]],
+                              LCA5[["bic"]])
+)
 
-AIC(2): 20929.75
-AIC(3): 20704.29
-AIC(4): 20512.32
-AIC(5): 20425.05
-AIC(6): 20359.45
+
+# check for 'elbow'
+ggplot(ics, aes(classes, value, colour = ic, group = ic)) +
+  geom_point() +
+  geom_line()
+
+# plot(LCA5)
+
+# change from scientific notation
+options(scipen = 999)
+
+# get the class probabilities
+lca5_class_probs <- as.data.frame(t(as.data.frame(LCA5[["probs"]])[,c(TRUE, FALSE)])) %>%
+  mutate_all(~round(., 4))
+
+# AIC(2): 20929.75
+# AIC(3): 20704.29
+# AIC(4): 20512.32
+# AIC(5): 20425.05
+# AIC(6): 20359.45
 #####HERE####
 f2 = cbind(Sex, Ethnicity_Reduced, Paid_One_Work_Other, Third_Party,
             Employer_Is_Agency, Instructed_By_Other, Work_In_Other,
             Diff_Uniform, Short_Long_Employ, I_Am_Outsourced,BORNUK_Reduced)~1
+
+# include Sector in that 
 
 
 LCA1<-poLCA(f2, LCA_data, nclass = 2, maxiter = 1000, nrep = 10)
@@ -579,10 +611,58 @@ LCA5<-poLCA(f2, LCA_data, nclass = 6, maxiter = 1000, nrep = 10)
 
 
 
+ics <- data.frame("classes" = seq(1,5,1),
+                  "ic" = c(rep("aic", 5),
+                           rep("bic", 5)),
+                  "value" = c(LCA1[["aic"]],
+                              LCA2[["aic"]],
+                              LCA3[["aic"]],
+                              LCA4[["aic"]],
+                              LCA5[["aic"]],
+                              LCA1[["bic"]],
+                              LCA2[["bic"]],
+                              LCA3[["bic"]],
+                              LCA4[["bic"]],
+                              LCA5[["bic"]])
+)
 
-#### save csv ####
-write_sav(data, "./data/uncleaned_full_data.sav")
-# write_sav(data_subset, "./data/cleaned_complete_case_data.sav")
 
-# Remove everything apart from data_subset (ready for next)
-rm(list = setdiff(ls(), "data_subset"))
+# check for 'elbow'
+ggplot(ics, aes(classes, value, colour = ic, group = ic)) +
+  geom_point() +
+  geom_line()
+
+# get the class probabilities
+lca3_class_probs <- as.data.frame(t(as.data.frame(LCA3[["probs"]])[,c(TRUE, FALSE)])) %>%
+  mutate_all(~round(., 4))
+
+ggplot(lca3_class_probs, aes(, value, colour = ic, group = ic)) +
+  geom_point() +
+  geom_line()
+
+# add predicted class variable from LCA
+LCA3_data <- LCA3[["y"]] %>%
+  mutate(
+    predicted_class_3 = LCA3[["predclass"]]
+  )
+
+# quick summary of predicted memberships
+LCA3_data %>%
+  group_by(predicted_class_3) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n)),
+  )  %>%
+  ggplot(., aes(predicted_class_3, perc)) +
+  geom_col(position = "dodge", colour = "black") +
+  scale_y_continuous(breaks = seq(0,60,10)) +
+  geom_label(aes(label = round(perc,2)))
+
+# #### save csv ####
+# write_sav(data, "./data/uncleaned_full_data.sav")
+# # write_sav(data_subset, "./data/cleaned_complete_case_data.sav")
+# 
+# # Remove everything apart from data_subset (ready for next)
+# rm(list = setdiff(ls(), "data_subset"))
