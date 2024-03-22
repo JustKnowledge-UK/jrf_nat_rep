@@ -1,0 +1,572 @@
+---
+title: "Outsourcing Report template"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    code-fold: true
+    embed-resources: true
+editor: visual
+execute: 
+  warning: false
+---
+
+NOTE: In plots, where there is "n=", this figure refers to the total number of respondents in the row/column. This presentation is somewhat misleading and will be changed in future iterations.
+
+# Chapter 1
+
+```{r packages}
+library(haven)
+library(poLCA)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(kableExtra)
+library(MASS)
+library(wesanderson)
+
+```
+
+```{r palette}
+rm(list = ls())
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f')
+```
+
+```{r data, output=FALSE}
+
+data <- read_sav("../Data/uncleaned_full_data.sav")
+
+# add new industry data
+# for now just combine the relevant variables
+data_2 <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
+# skim(data_2)
+
+
+data_occupations <- data_2[,c("MIProRspId","unit_code","UnitOccupation","smg_code","MajorsubgroupOccupation",
+                        "major_code","Majorgroupcode","SectorCode","SectorName")]
+
+data <- left_join(data, data_occupations, by = c("ID" = "MIProRspId"))
+
+# calculate indicator data
+# invert response function for summing
+invert_response <- function(x){
+  x <- 2 + (-1*x)
+}
+
+# Now for just indicators
+indicator_data <- data %>% 
+  select(ID, starts_with("Q1")) %>%
+  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
+  rowwise() %>%
+  mutate(
+    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  ) %>% 
+  select(-starts_with("Q1"))
+
+# Check ID the same
+paste("IDs match: ", sum(data$ID == indicator_data$ID) == nrow(data))
+
+# Merge into main data set
+data <- left_join(data, indicator_data, by = "ID")
+
+data_labelled <- haven::as_factor(data)
+
+#------------------------#
+#### Assign to groups ####
+#------------------------#
+# As of 17 February, the definitions are:
+# 
+# -   **Outsourced**, defined as responding 'I am sure I am outsourced' or 'I might be outsourced', and responding 'I do work on a long-term basis'.
+# -   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
+# -   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
+
+data <- data %>%
+  mutate(
+    # SURE outsourced or MIGHT BE outsourced + LONGTERM
+    outsourced = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # NOT outsourced, SURE agency, and LONG-TERM
+    likely_agency = ifelse(outsourced == 0 & Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # NOT outsourced, NOT likely agency, 5 or more indicators, & LONGTERM
+    high_indicators = ifelse(outsourced == 0 & likely_agency == 0 & (Q2 == 1 & sum_true >= 5), 1, 0)
+  )
+
+# count the groupings
+print("Totals: 1=Outsourced, 2=Likely agency, 3=High indicators")
+lapply(list(data$outsourced,
+            data$likely_agency,
+            data$high_indicators), sum)
+
+# Flatten these groupings into a single variable
+
+data <- data %>%
+  mutate(
+    outsourcing_group = factor(case_when(outsourced == 1 ~ 'outsourced',
+                                         likely_agency == 1 ~ 'likely_agency',
+                                         high_indicators == 1 ~ 'high_indicators',
+                                         TRUE ~ 'not_outsourced'), 
+                               levels = c("not_outsourced",
+                                          "outsourced",
+                                          "likely_agency",
+                                          "high_indicators")
+    ),
+    outsourcing_status = factor(case_when(outsourced == 1 | likely_agency == 1 | high_indicators == 1 ~ 'Outsourced',
+                                         TRUE ~ 'Not outsourced'),
+                                levels = c('Not outsourced',
+                                           'Outsourced')
+    )
+  )
+
+readr::write_csv(data, file = "../outputs/data/whole_dataset.csv")
+```
+
+## Using our working definition, how many of us could be described as outsourced?
+
+```{r sum-outsourced}
+total_outsourced <- data %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Proportion = n / sum(n),
+    Percentage = 100 * Proportion
+  )
+
+readr::write_csv(total_outsourced, file="../outputs/data/total_outsourced.csv")
+
+# Create function to find nearest denominator to express as a fraction.
+f <- function(x) ifelse(abs(1/floor(1/x) - x) < abs(1/ceiling(1/x) - x),floor(1/x),ceiling(1/x))
+```
+
+### According to our definition, 1 in `r f(total_outsourced$Proportion[which(total_outsourced$outsourcing_status=="Outsourced")])` UK workers are outsourced.
+
+Based on this definition, we've found that just under `r round(total_outsourced$Percentage[which(total_outsourced$outsourcing_status=="Outsourced")], 0)`% of UK workers are 'outsourced'[^1]. Who makes up this group of 17% of UK workers?
+
+[^1]: Data file: "outputs/data/total_outsourced.csv"
+
+\![Placeholder for Venn diagram](picture.png)
+
+# Chapter 2: Who are the UK's outsourced workers?
+
+## Top-line findings
+
+## Who are the UK's outsourced workers?
+
+### Pay^[Data file: outputs/data/income_stats.csv]
+
+```{r income}
+data <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  mutate(
+    # make all annual incomes. Note this assumes 52 working weeks!
+    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1,
+                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12,
+                              INCOME_FREQ == 3 ~ INCOME_OPEN_1*52,
+                              INCOME_FREQ == 4 ~ INCOME_OPEN_1*HOURS*52,
+                              TRUE ~ NA),
+    income_percentile = ntile(income_annual, 100)
+  )
+options(scipen = 999)
+
+num_dropped <- sum(data$income_percentile > 95 & data$income_percentile > 5, na.rm=T)
+
+# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+income_statistics <- data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    mean = mean(income_annual, na.rm = T),
+    median = median(income_annual,na.rm = T),
+    min = min(income_annual,na.rm = T),
+    max = max(income_annual,na.rm = T),
+    stdev = sd(income_annual,na.rm = T)
+  )
+
+knitr::kable(income_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+readr::write_csv(income_statistics, file="../outputs/data/income_stats.csv")
+```
+
+```{r income-plot}
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  ggplot(., aes(outsourcing_status, income_annual)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+```
+
+```{r bubble-chart, include=FALSE}
+test <- data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(income_bracket,SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  group_by(income_bracket) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  )
+
+test_2 <- data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  ) %>%
+  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
+  filter(outsourcing_status == "Outsourced") %>%
+  rename(
+    `Outsourced workforce` = Percentage
+  ) %>%
+  select(c(SectorName, `Outsourced workforce`))
+
+combined <- merge(test, test_2, by="SectorName")
+
+ggplot(combined, aes(income_bracket, as.factor(SectorName), size=Percentage, colour = outsourcing_status)) +
+  #facet_wrap(~outsourcing_status) +
+  geom_point()
+```
+
+```{r bubble-2, include=FALSE}
+test <- data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  ) %>%
+  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
+  filter(outsourcing_status == "Outsourced")
+```
+
+
+### Sector/occupation
+
+### Ethnicity
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status, Ethnicity) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_1.csv")
+```
+
+Breaking down by ethnicity shows that the outsourced group has a lower proportion of White workers compared to the non-outsourced group. For example, in the outsourced group, the proportion of British ('White') workers is `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` %, compared to `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` % in the not outsourced group. Needless to say, this means that there is a correspondingly higher proportion of workers from minority backgrounds in the outsourced group, notably from African (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "African"), "Percentage"],2)` %) and other White backgrounds (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "Any other White background"), "Percentage"],2)`, amongst others.^[Data file: outputs/data/ethnicity_stats_1.csv]
+
+```{r}
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status, Ethnicity) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  ggplot(., aes(outsourcing_status, Percentage, fill = as.factor(Ethnicity))) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values = many_colours, name = "Ethnicity") +
+  xlab("Outsourcing group") +
+  theme_minimal()
+
+ethnicity_key <- data.frame("number" = seq(1,22,1),
+                            "ethnicity" = c(levels(ethnicity_statistics$Ethnicity), NA))
+
+ethnicity_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+```
+
+Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.^[Data file: outputs/data/ethnicity_stats_2.csv]
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Ethnicity, outsourcing_status) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_status
+  )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+# ordering_df <- ethnicity_statistics %>%
+#   filter(`Outsourcing group` == "Outsourced") %>%
+#   mutate(
+#     Ethnicity = haven::as_factor(Ethnicity),
+#     Ethnicity = factor(Ethnicity),
+#     Ethnicity = forcats::fct_reorder(Ethnicity, Percentage)
+#   )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name = "Ethnicity")
+```
+
+### Arrival in the UK
+
+```{r}
+bornuk_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status, BORNUK) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(bornuk_statistics, file="../outputs/data/arrival_in_UK_stats.csv")
+```
+
+A greater proportion of outsourced workers were not born in the UK (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%) compared to non-outsourced workers (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%).^[Data file: outputs/data/arrival_in_UK_stats.csv] Looking at the figure below, it appears that no particular arrival time is especially common amongst the outsourced group, with a relatively equal distribution across arrival times (though potentially a slightly larger proportion fall into the 'Within the last 10 years category'). The is broadly the case for the likely agency and high indicators groups too, though note that amongst likely agency there is a slightly larger proportion of workers who have arrived within the last year.
+
+```{r}
+bornuk_statistics %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+bornuk_statistics %>%
+  ggplot(., aes(outsourcing_status, Percentage, fill = BORNUK)) +
+  geom_col(colour="black") +
+  annotate("text", x = bornuk_statistics$outsourcing_status, y = 75, label = paste0("n=",bornuk_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name="Arrival in UK") +
+  theme_minimal() +
+  xlab("Outsourcing group") 
+
+```
+
+### Gender^[Data file: outputs/data/sex_statistics.csv]
+
+```{r}
+sex_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status, Sex) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  )
+
+readr::write_csv(sex_statistics, file="../outputs/data/sex_statistics.csv")
+```
+
+```{r}
+sex_statistics %>%
+  ggplot(., aes(outsourcing_status, Percentage, fill = Sex)) +
+  geom_col(colour="black") +
+  annotate("text", x = sex_statistics$outsourcing_status, y = 75, label = paste0("n=", sex_statistics$Frequency)) +
+  coord_flip() +
+  scale_fill_manual(values=colours) +
+  theme_minimal() +
+  xlab("Outsourcing group") 
+```
+
+In terms of sex, the outsourced group has a larger proportion of males (`r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`% compared to `r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`%.
+
+### Region^[Data file: outputs/data/region_statistics.csv]
+
+The plot below suggests that an outsourced worker is more likely to be based in London than a non-outsourced worker.
+
+```{r}
+region_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status, Region) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency / sum(Frequency))
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_status
+  )
+
+region_statistics %>%
+  mutate(
+    Region = haven::as_factor(Region)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+region_statistics %>%
+  mutate(
+    Region = haven::as_factor(Region)
+    ) %>%
+  ggplot(., aes(`Outsourcing group`, Percentage, fill = Region)) +
+  geom_col(colour="black") +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  theme_minimal()
+
+readr::write_csv(region_statistics, file="../outputs/data/region_statistics.csv")
+
+```
+
+
+### Age
+
+```{r}
+age_statistics <- data %>%
+  # get values of labels
+  mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_status) %>%
+  mutate(
+    # make age numeric, not a labelled factor
+    Age = as.numeric(as.character(Age))
+  ) %>%
+  summarise(
+    mean = mean(Age, na.rm = T),
+    median = median(Age,na.rm = T),
+    min = min(Age,na.rm = T),
+    max = max(Age,na.rm = T),
+    stdev = sd(Age,na.rm = T)
+  )
+
+readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
+```
+
+As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.^[Data file: outputs/data/age_stats.csv]
+
+However, as the next figure shows, the age distribution is different for the outsourced and high indicator groups compared to the not outsourced and likely agency groups; the outsourced and high indicator groups have higher proportions of younger people (\~21-36 year olds).
+
+```{r age}
+knitr::kable(age_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  mutate(
+    Age = as.numeric(as.character(as_factor(Age)))
+  ) %>%
+  ggplot(.,aes(Age, colour = outsourcing_status, fill = outsourcing_status)) +
+  geom_density(alpha = 0.3) +
+  geom_vline(data =age_statistics, aes(xintercept=median, colour = outsourcing_status)) +
+  scale_x_continuous(breaks = seq(min(age_statistics$min), max(age_statistics$max),5)) +
+  theme_minimal() +
+  scale_colour_manual(values=colours, name = "Outsourcing group") +
+  scale_fill_manual(values=colours, name = "Outsourcing group")
+  
+```
