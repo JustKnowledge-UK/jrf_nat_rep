@@ -74,7 +74,7 @@ paste("IDs match: ", sum(data$ID == indicator_data$ID) == nrow(data))
 # Merge into main data set
 data <- left_join(data, indicator_data, by = "ID")
 
-data_labelled <- haven::as_factor(data)
+
 
 #------------------------#
 #### Assign to groups ####
@@ -122,6 +122,8 @@ data <- data %>%
     )
   )
 
+data_labelled <- haven::as_factor(data)
+
 readr::write_csv(data, file = "../outputs/data/whole_dataset.csv")
 ```
 
@@ -158,7 +160,9 @@ Based on this definition, we've found that just under `r round(total_outsourced$
 
 ## Who are the UK's outsourced workers?
 
-### Pay^[Data file: outputs/data/income_stats.csv]
+### Pay[^2]
+
+[^2]: Data file: outputs/data/income_stats.csv
 
 ```{r income}
 data <- data %>%
@@ -216,6 +220,20 @@ data %>%
   coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
+
+```{r income-inferential}
+temp_data <-  data %>%
+  filter(income_percentile < 95 & income_percentile > 5)
+
+ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
+       temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
+)
+
+#cohens_d(ttest)
+
+```
+
+Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["parameter"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
 
 ```{r bubble-chart, include=FALSE}
 test <- data %>%
@@ -311,8 +329,11 @@ test <- data %>%
   filter(outsourcing_status == "Outsourced")
 ```
 
-
 ### Sector/occupation
+
+```{r}
+
+```
 
 ### Ethnicity
 
@@ -332,7 +353,52 @@ ethnicity_statistics <- data %>%
 readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_1.csv")
 ```
 
-Breaking down by ethnicity shows that the outsourced group has a lower proportion of White workers compared to the non-outsourced group. For example, in the outsourced group, the proportion of British ('White') workers is `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` %, compared to `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` % in the not outsourced group. Needless to say, this means that there is a correspondingly higher proportion of workers from minority backgrounds in the outsourced group, notably from African (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "African"), "Percentage"],2)` %) and other White backgrounds (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "Any other White background"), "Percentage"],2)`, amongst others.^[Data file: outputs/data/ethnicity_stats_1.csv]
+```{r ethnicity_inferential, output=FALSE}
+ethnicities <- as.vector(unique(haven::as_factor(data$Ethnicity)))
+non_white_ethnicities <- ethnicities[!(ethnicities %in% "English / Welsh / Scottish / Northern Irish / British")]
+
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+summary_table <- data %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+  ) %>%
+  mutate(
+    Ethnicity = forcats::fct_collapse(as.character(Ethnicity),
+                                      "White British" = c("English / Welsh / Scottish / Northern Irish / British"),
+                                      "Non-White British" = non_white_ethnicities)
+  ) %>%
+  group_by(outsourcing_status, Ethnicity) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Sum = sum(n),
+    Percentage = 100 * (n / Sum)
+  )
+
+group_1 <- t(tibble("present"=summary_table[which(summary_table["Ethnicity"]=="White British" & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"],
+"not present" = summary_table[which(summary_table["Ethnicity"]=="Non-White British" & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"]
+))
+
+group_2 <- t(tibble("present"=summary_table[which(summary_table["Ethnicity"]=="White British" & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"],
+"not present" = summary_table[which(summary_table["Ethnicity"]=="Non-White British" & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"]
+))
+
+
+comp_mat <- as.matrix(cbind(group_2, group_1)) # matrix for crosstable
+x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE)
+# `r if(x2[["chisq"]][["p.value"]] < .001, "< .001", paste0("= ", round(x2[["chisq"]][["p.value"]],2)))`).
+# (chi-square = `r round(x2[["chisq"]][["statistic"]][["X-squared"]],2)`, *p* = `r round(x2[["chisq"]][["p.value"]],3)`).
+```
+
+Breaking down by ethnicity shows that the outsourced group has a lower proportion of White workers compared to the non-outsourced group. For example, in the outsourced group, the proportion of British ('White') workers is `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` %, compared to `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% in the not outsourced group. Needless to say, this means that there is a correspondingly higher proportion of workers from minority backgrounds in the outsourced group, notably from African (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "African"), "Percentage"],2)`%) and other White backgrounds (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "Any other White background"), "Percentage"],2)`, amongst others.[^3] These differences mean that **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to be a member of minority ethnicity than non-outsourced workers.**
+
+[^3]: Data file: outputs/data/ethnicity_stats_1.csv
 
 ```{r}
 ethnicity_statistics %>%
@@ -370,7 +436,9 @@ ethnicity_key %>%
 
 ```
 
-Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.^[Data file: outputs/data/ethnicity_stats_2.csv]
+Another way of looking at this is to calculate for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.[^4]
+
+[^4]: Data file: outputs/data/ethnicity_stats_2.csv
 
 ```{r}
 ethnicity_statistics <- data %>%
@@ -432,7 +500,56 @@ bornuk_statistics <- data %>%
 readr::write_csv(bornuk_statistics, file="../outputs/data/arrival_in_UK_stats.csv")
 ```
 
-A greater proportion of outsourced workers were not born in the UK (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%) compared to non-outsourced workers (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%).^[Data file: outputs/data/arrival_in_UK_stats.csv] Looking at the figure below, it appears that no particular arrival time is especially common amongst the outsourced group, with a relatively equal distribution across arrival times (though potentially a slightly larger proportion fall into the 'Within the last 10 years category'). The is broadly the case for the likely agency and high indicators groups too, though note that amongst likely agency there is a slightly larger proportion of workers who have arrived within the last year.
+```{r bornuk_inferential, output=FALSE}
+categories <- as.vector(unique(haven::as_factor(data$BORNUK)))
+non_categories <- categories[!(categories %in% "I was born in the UK")]
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+summary_table <- data %>%
+  mutate(
+    BORNUK = haven::as_factor(BORNUK)
+  ) %>%
+  mutate(
+    BORNUK = forcats::fct_collapse(as.character(BORNUK),
+                                      "Born in UK" = "I was born in the UK",
+                                      "Not born in UK" = non_categories)
+  ) %>%
+  group_by(outsourcing_status, BORNUK) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Sum = sum(n),
+    Percentage = 100 * (n / Sum)
+  )
+
+domain <- "BORNUK"
+category_1 <- "Born in UK"
+category_2 <- "Not born in UK"
+  
+group_1 <- t(tibble("present"=summary_table[which(summary_table[domain]==category_1 & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"],
+"not present" = summary_table[which(summary_table[domain]==category_2 & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"]
+))
+
+group_2 <- t(tibble("present"=summary_table[which(summary_table[domain]==category_1 & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"],
+"not present" = summary_table[which(summary_table[domain]==category_2 & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"]
+))
+
+
+comp_mat <- as.matrix(cbind(group_2, group_1)) # matrix for crosstable
+x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE, chisq = TRUE)
+ # (chi-square = `r round(x2[["chisq"]][["statistic"]][["X-squared"]],2)`, *p* = `r ifelse(x2[["chisq"]][["p.value"]] < .001, "< .001", paste0("= ", round(``x2[["chisq"]][["p.value"]],2))`).
+```
+
+A greater proportion of outsourced workers were not born in the UK (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%) compared to non-outsourced workers (`r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK == "I was born in the UK"), "Percentage"],2)`%).[^5] This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have been born outside the UK than non-outsourced workers.**
+
+[^5]: Data file: outputs/data/arrival_in_UK_stats.csv
+
+Looking at the figure below, it appears that no particular arrival time is especially common amongst the outsourced group, with a relatively equal distribution across arrival times (though potentially a slightly larger proportion fall into the 'Within the last 10 years category'). The is broadly the case for the likely agency and high indicators groups too, though note that amongst likely agency there is a slightly larger proportion of workers who have arrived within the last year.
 
 ```{r}
 bornuk_statistics %>%
@@ -450,7 +567,9 @@ bornuk_statistics %>%
 
 ```
 
-### Gender^[Data file: outputs/data/sex_statistics.csv]
+### Gender[^6]
+
+[^6]: Data file: outputs/data/sex_statistics.csv
 
 ```{r}
 sex_statistics <- data %>%
@@ -471,16 +590,62 @@ readr::write_csv(sex_statistics, file="../outputs/data/sex_statistics.csv")
 sex_statistics %>%
   ggplot(., aes(outsourcing_status, Percentage, fill = Sex)) +
   geom_col(colour="black") +
-  annotate("text", x = sex_statistics$outsourcing_status, y = 75, label = paste0("n=", sex_statistics$Frequency)) +
+  # annotate("text", x = sex_statistics$outsourcing_status, y = 75, label = paste0("n=", sex_statistics$Frequency)) +
   coord_flip() +
   scale_fill_manual(values=colours) +
   theme_minimal() +
   xlab("Outsourcing group") 
 ```
 
-In terms of sex, the outsourced group has a larger proportion of males (`r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`% compared to `r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`%.
+```{r sex_inferential, output=FALSE}
+categories <- as.vector(unique(haven::as_factor(data$Sex)))
+non_categories <- categories[!(categories %in% "Male")]
 
-### Region^[Data file: outputs/data/region_statistics.csv]
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+summary_table <- data %>%
+  mutate(
+    Sex = haven::as_factor(Sex)
+  ) %>%
+  mutate(
+    Sex = forcats::fct_collapse(as.character(Sex),
+                                      "Male" = "Male",
+                                      "Not male" = non_categories)
+  ) %>%
+  group_by(outsourcing_status, Sex) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Sum = sum(n),
+    Percentage = 100 * (n / Sum)
+  )
+
+domain <- "Sex"
+category_1 <- "Male"
+category_2 <- "Not male"
+  
+group_1 <- t(tibble("present"=summary_table[which(summary_table[domain]==category_1 & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"],
+"not present" = summary_table[which(summary_table[domain]==category_2 & 
+                                 summary_table["outsourcing_status"]=="Not outsourced"),"n"]
+))
+
+group_2 <- t(tibble("present"=summary_table[which(summary_table[domain]==category_1 & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"],
+"not present" = summary_table[which(summary_table[domain]==category_2 & 
+                                 summary_table["outsourcing_status"]=="Outsourced"),"n"]
+))
+
+
+comp_mat <- as.matrix(cbind(group_2, group_1)) # matrix for crosstable
+x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE, chisq = TRUE)
+```
+
+In terms of sex, the outsourced group has a larger proportion of males (`r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`% compared to `r round(sex_statistics[which(sex_statistics$outsourcing_status == "Not outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`%). This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have be male than non-outsourced workers.**
+
+### Region[^7]
+
+[^7]: Data file: outputs/data/region_statistics.csv
 
 The plot below suggests that an outsourced worker is more likely to be based in London than a non-outsourced worker.
 
@@ -520,18 +685,18 @@ readr::write_csv(region_statistics, file="../outputs/data/region_statistics.csv"
 
 ```
 
-
 ### Age
 
 ```{r}
 age_statistics <- data %>%
   # get values of labels
   mutate_all(haven::as_factor) %>%
-  group_by(outsourcing_status) %>%
   mutate(
     # make age numeric, not a labelled factor
     Age = as.numeric(as.character(Age))
   ) %>%
+  group_by(outsourcing_status) %>%
+
   summarise(
     mean = mean(Age, na.rm = T),
     median = median(Age,na.rm = T),
@@ -543,9 +708,62 @@ age_statistics <- data %>%
 readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
 ```
 
-As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.^[Data file: outputs/data/age_stats.csv]
+```{r age-inferential,include=FALSE}
+# note that this test calculates different means to the one above. why??
+# it's to do with haven factors...
+# using data_labelled and and combination of as.numeric(as.character()) solves it
+
+data_labelled$Age <- as.numeric(as.character(data_labelled$Age))
+ttest <- t.test(data_labelled[which(data_labelled$outsourcing_status=="Outsourced"),"Age"], 
+       data_labelled[which(data_labelled$outsourcing_status=="Not outsourced"),"Age"]
+)
+
+```
+
+```{r}
+# test <- data %>%
+#   subset(outsourcing_status=="Outsourced") %>%
+#   summarise(
+#     mean_age = mean(Age)
+#   )
+# 
+# test_1_5 <-  data %>%
+#   subset(outsourcing_status=="Outsourced") %>%
+#   summarise(
+#     mean_age = mean(Age, na.rm=T)
+#   )
+# 
+# test_2 <- data %>%
+#   subset(outsourcing_status=="Not outsourced") %>%
+#   summarise(
+#     mean_age = mean(Age)
+#   )
+# 
+# test_2_5 <- data %>%
+#   subset(outsourcing_status=="Not outsourced") %>%
+#   summarise(
+#     mean_age = mean(Age, na.rm=T)
+#   )
+# 
+# test <- data %>%
+#   select(Age) %>%
+#   summarise(
+#     Age = Age,
+#     haven_age = haven::as_factor(Age)
+#   ) %>%
+#   mutate(
+#     age_mean = mean(Age),
+#     haven_age_mean = mean(as.numeric(as.character(haven_age)), na.rm=T)
+#   )
+```
+
+As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.[^8]
+
+[^8]: Data file: outputs/data/age_stats.csv
 
 However, as the next figure shows, the age distribution is different for the outsourced and high indicator groups compared to the not outsourced and likely agency groups; the outsourced and high indicator groups have higher proportions of younger people (\~21-36 year olds).
+
+A t-test indicates that on average, **outsourced workers are significantly younger than non-outsourced workers** (*t*(`r round(ttest[["parameter"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
 
 ```{r age}
 knitr::kable(age_statistics, 
