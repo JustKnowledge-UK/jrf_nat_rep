@@ -406,10 +406,14 @@ sector_summary_2_wider <- sector_summary_2 %>%
 sector_summary_2_wider %>%
   kable(digits = 2) %>%
   kable_styling(full_width = F)
+
+readr::write_csv(sector_summary_2, "../outputs/data/majorgroupcode_summary_2_long.csv")
+
+readr::write_csv(sector_summary_2_wider, "../outputs/data/majorgroupcode_summary_2_wide.csv")
 ```
 
 
-The plot below summarises the average pay (x-axis) in each occupation (y-axis) for outsourced and non-outsourced workers (dot colour), as well as the size of the respective workforce (size of dots). Here the size of the dot represents the percentage of workers *within* the sector who are outsourced (blue) or not outsourced (purple).
+The plot below summarises the average pay (x-axis) in each occupation (y-axis) for outsourced and non-outsourced workers (dot colour), as well as the size of the respective workforce (size of dots). Here the size of the dot represents the percentage of workers *within* the sector who are outsourced (blue) or not outsourced (purple).^[Data file: "../outputs/data/majorgroupcode_summary_long.csv" & "../outputs/data/majorgroupcode_summary_wide.csv")]
 
 
 ```{r sector-bubble}
@@ -437,7 +441,7 @@ Notably, in elementary occupations and sales and customer service occupations, o
 
 A deep dive into elementary occupations, process occupations, and caring occupations reveals that there are differences between occupations in the size of the outsourced workforce and pay.
 
-##### Elementary occupations
+##### Elementary occupations^["../outputs/data/elementary_occs_summary.csv"]
 
 ```{r bubble-elementary}
 elem_summary <- data %>%
@@ -471,10 +475,12 @@ elem_summary %>%
   scale_colour_manual(values=colours) +
 
     guides(size=FALSE) 
+
+readr::write_csv(elem_summary, "../outputs/data/elementary_occs_summary.csv")
 ```
 
 
-##### Process occupations
+##### Process occupations^["../outputs/data/process_occs_summary.csv"]
 
 ```{r bubble-process}
 proc_summary <- data %>%
@@ -508,9 +514,11 @@ proc_summary %>%
   scale_colour_manual(values=colours) +
 
     guides(size=FALSE) 
+
+readr::write_csv(proc_summary, "../outputs/data/process_occs_summary.csv")
 ```
 
-##### Caring occupations
+##### Caring occupations^["../outputs/data/caring_occs_summary.csv"]
 
 ```{r bubble-caring}
 caring_summary <- data %>%
@@ -544,6 +552,9 @@ caring_summary %>%
   scale_colour_manual(values=colours) +
 
     guides(size=FALSE) 
+
+
+readr::write_csv(caring_summary, "../outputs/data/caring_occs_summary.csv")
 ```
 
 
