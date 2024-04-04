@@ -7,6 +7,7 @@ date: "`r format(Sys.time(), '%e %B %Y')`"
 format: 
   html:
     toc: true
+    toc-depth: 5
     code-fold: true
     embed-resources: true
 editor: visual
@@ -28,7 +29,7 @@ library(skimr)
 library(kableExtra)
 library(MASS)
 library(wesanderson)
-
+library(ggrepel)
 ```
 
 ```{r palette}
@@ -331,9 +332,220 @@ test <- data %>%
 
 ### Sector/occupation
 
+Comparison of Majorgroupcode indicates that a higher proportion of outsourced people work in Elementary Occupations, compared to non-outsourced people. A lower proportion of outsourced people work in administrative and secretarial occupations, associate professional occupations and professional occupations. 
+
 ```{r}
+sector_summary <- data %>%
+  group_by(outsourcing_status,Majorgroupcode) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  )
+
+readr::write_csv(sector_summary, "../outputs/data/majorgroupcode_summary.csv")
+```
+```{r sector-plot}
+sector_summary %>%
+  ggplot(aes(outsourcing_status, perc, fill = as.factor(Majorgroupcode))) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values=many_colours)
+
+sector_key <- data.frame("number" = seq(1,11,1),
+                            "Major group code" = c( levels(haven::as_factor(sector_summary$Majorgroupcode)),NA))
+
+sector_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+The table below shows the percentage of outsourced and non-outsourced workers in each majorgroupcode, as well as the difference between them (positive numbers in the difference column indicate occupations that are more common for outsourced work, negative numbers indicate occupations that are less common for outsourced work).^[Datafile:  "../outputs/data/majorgroupcode_summary.csv"]
+
+
+```{r sector-table}
+
+sector_summary %>%
+  select(outsourcing_status, Majorgroupcode, perc) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode),
+    Difference = `Outsourced` - `Not outsourced`
+    ) %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+```{r}
+sector_summary_2 <- data %>%
+  group_by(Majorgroupcode,outsourcing_status) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+sector_summary_2_wider <- sector_summary_2 %>%
+  select(outsourcing_status, Majorgroupcode, perc) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode),
+    #Difference = `Outsourced` - `Not outsourced`,
+    Ratio_10 = 10 * (`Outsourced` / `Not outsourced`)
+    )
+
+sector_summary_2_wider %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+
+The plot below summarises the average pay (x-axis) in each occupation (y-axis) for outsourced and non-outsourced workers (dot colour), as well as the size of the respective workforce (size of dots). Here the size of the dot represents the percentage of workers *within* the sector who are outsourced (blue) or not outsourced (purple).
+
+
+```{r sector-bubble}
+sector_summary_2 %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode)
+  ) %>%
+  ggplot(., aes(Majorgroupcode, wtd_avg_income, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+    coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+  scale_y_continuous(breaks=seq(0,max(sector_summary$wtd_avg_income), 25000)) +
+  scale_colour_manual(values=colours) +
+  guides(size=FALSE) # remove size legend as gauging size is difficult
 
 ```
+
+It shows, as might be expected, the size of the outsourced workforce for each sector is smaller than the non-outsourced workforce, but the ratio is not the same for all sectors. The sector with the largest non-outsourced:outsourced ratio is Elementary occupations; **for every 10 non-outsourced workers, there are `r round(sector_summary_2_wider$Ratio_10[which(sector_summary_2_wider$Majorgroupcode == "ELEMENTARY OCCUPATIONS")],0)` outsourced workers**. This is followed by caring, leisure, and other service occupations, and process, plant and machine operatives, both of which employ **`r round(sector_summary_2_wider$Ratio_10[which(sector_summary_2_wider$Majorgroupcode == "PROCESS, PLANT AND MACHINE OPERATIVES")],0)` outsourced workers for every 10 non-outsourced workers**.
+
+Notably, in elementary occupations and sales and customer service occupations, outsourced workers are on average paid more than non-outsourced workers. In contrast, workers in process, plant and machine operations are paid less if they are outsourced than if they are not outsourced.
+
+#### Unit occupations
+
+A deep dive into elementary occupations, process occupations, and caring occupations reveals that there are differences between occupations in the size of the outsourced workforce and pay.
+
+##### Elementary occupations
+
+```{r bubble-elementary}
+elem_summary <- data %>%
+  filter(Majorgroupcode %in% c(4)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+elem_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+```
+
+
+##### Process occupations
+
+```{r bubble-process}
+proc_summary <- data %>%
+  filter(Majorgroupcode %in% c(7)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+proc_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+```
+
+##### Caring occupations
+
+```{r bubble-caring}
+caring_summary <- data %>%
+  filter(Majorgroupcode %in% c(3)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+caring_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+```
+
 
 ### Ethnicity
 
