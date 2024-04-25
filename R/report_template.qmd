@@ -30,6 +30,7 @@ library(kableExtra)
 library(MASS)
 library(wesanderson)
 library(ggrepel)
+library(here)
 ```
 
 ```{r palette}
@@ -46,7 +47,6 @@ data <- read_sav("../Data/uncleaned_full_data.sav")
 # for now just combine the relevant variables
 data_2 <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
 # skim(data_2)
-
 
 data_occupations <- data_2[,c("MIProRspId","unit_code","UnitOccupation","smg_code","MajorsubgroupOccupation",
                         "major_code","Majorgroupcode","SectorCode","SectorName")]
@@ -74,8 +74,6 @@ paste("IDs match: ", sum(data$ID == indicator_data$ID) == nrow(data))
 
 # Merge into main data set
 data <- left_join(data, indicator_data, by = "ID")
-
-
 
 #------------------------#
 #### Assign to groups ####
@@ -127,6 +125,35 @@ data_labelled <- haven::as_factor(data)
 
 readr::write_csv(data, file = "../outputs/data/whole_dataset.csv")
 ```
+
+```{r data-region-denominators}
+url <- "https://www.ons.gov.uk/file?uri=/employmentandlabourmarket/peopleinwork/employmentandemployeetypes/datasets/nationallabourmarketsummarybyregions01/current/lmregsummaryfebruary2024.xls"
+
+filename <- basename(url)
+filepath <- here("./data/", filename)
+  
+if(!file.exists(filepath)){
+  cat("Downloading data\n")
+  download.file(url, destfile = filepath, mode = "wb")
+} else{
+  cat("Data already in directory. Loading it.\n")
+}
+
+employed <- readxl::read_xls(filepath, sheet = "S01.1", range = "F13:F24", col_names = F)
+area_names <- readxl::read_xls(filepath, sheet = "S01.1", range = "B13:B24",col_names = F)
+
+rgn_empl_denoms <- data.frame(area_names, employed) %>%
+  mutate(across(where(is.numeric), ~.*1000)) # *1000 to get real number
+
+colnames(rgn_empl_denoms) <- c("Region","Employed")
+
+rgn_empl_denoms <- rgn_empl_denoms %>%
+  mutate(
+    Weight = Employed/sum(Employed)
+  )
+
+```
+
 
 ## Using our working definition, how many of us could be described as outsourced?
 
@@ -790,6 +817,103 @@ bornuk_statistics %>%
 
 ```
 
+
+### Interaction: Ethnicity and arrival in UK^[../outputs/data/interaction_ethnicity_arrival_in_UK_stats.csv]
+
+```{r}
+temp_df <- data %>%
+  # filter(outsourcing_status=="Outsourced") %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity),
+    BORNUK = haven::as_factor(BORNUK)
+  )
+
+# mytable <- table(temp_df$BORNUK,temp_df$Ethnicity)
+# tab <- as.data.frame(prop.table(mytable))
+
+# int_summary <- temp_df %>%
+#   group_by(BORNUK, Ethnicity) %>%
+#   summarise(
+#     Frequency = sum(NatRepemployees)
+#   ) %>%
+#   mutate(
+#     Percentage = 100 * (Frequency/sum(Frequency))
+#   )
+# 
+# int_summary %>%
+#   ggplot(., aes(BORNUK, Percentage, fill = Ethnicity)) +
+#   geom_col() +
+#   coord_flip() +
+#   theme(legend.position = "none") +
+#   scale_fill_manual(values = many_colours)
+# 
+# int_summary %>%
+#   ggplot(., aes(BORNUK, Percentage, fill = Ethnicity)) +
+#   geom_col() +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours)
+#   # theme(legend.position = "none")
+
+
+int_summary_2 <- temp_df %>%
+  group_by(outsourcing_status, Ethnicity, BORNUK) %>%
+  summarise(
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    Percentage = 100 * (Frequency/sum(Frequency))
+  )
+
+int_summary_2 %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = BORNUK)) +
+  facet_grid(rows=vars(outsourcing_status)) +
+  geom_col() +
+  coord_flip() +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = many_colours)
+
+int_summary_2 %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = BORNUK)) +
+    facet_grid(rows=vars(outsourcing_status)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values = many_colours)
+  # theme(legend.position = "none")
+
+readr::write_csv(int_summary_2, file="../outputs/data/interaction_ethnicity_arrival_in_UK_stats.csv")
+```
+
+For the following ethnicites, **more than 50%** were born in the UK:
+
+- NA
+- Prefer not to say
+- Any other Black, Black British, or Caribbean background
+- Caribbean
+- Pakistani
+- Any other Mixed/Multiple ethnic background
+- White and Asian
+- White and Black Caribbean
+- Gypsy or Irish Traveller
+- Irish
+- English/Welsh/Scottish/Northern Irish/British
+
+For the following ethnicities **around 50%** were born in the UK, with remaining 50% split across arrival times:
+
+- Don't think of myself as any of these (second largest proportion within the last 15 years)
+- Any other ethnic group (2nd largest proportion wihtin the last 10 years)
+- Bangladeshi (2nd largest proprotion prefer not to say)
+- Indian (2nd largest proportion wthin the last 3 years)
+- White and Black African (2nd largest proportion within the last 3 years)
+
+For the following ethnicities, **less than 50%** were born in the UK:
+
+- Arab
+- African (largest proportion within the last year)
+- Any other Asian background (2nd an 3rd largest proportions are within the last year and within the last 15 years)
+- Chinese (2nd and 3rd largest proportions are within the last 3 years, wihtin the last 15 years)
+- Any other White background (largest proportion within the last 10 years)
+- Roma (largest proportion within the last 5 years)
+
 ### Gender[^6]
 
 [^6]: Data file: outputs/data/sex_statistics.csv
@@ -878,10 +1002,11 @@ region_statistics <- data %>%
   # mutate_all(haven::as_factor) %>%
   group_by(outsourcing_status, Region) %>%
   summarise(
-    Frequency = n()
+    Frequency = sum(NatRepemployees)
   ) %>%
   mutate(
-    Percentage = 100 * (Frequency / sum(Frequency))
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
   ) %>%
   rename(
     `Outsourcing group` = outsourcing_status
@@ -907,6 +1032,54 @@ region_statistics %>%
 readr::write_csv(region_statistics, file="../outputs/data/region_statistics.csv")
 
 ```
+In the plot below the percentages have been scaled to the size of the working population in the region as a function of the total working population in the UK. I need to check whether this scaling is actually necessary, given we are already using weighted data.^[../outputs/data/region_statistics_weighted.csv] Does the weighting process account for region?
+
+```{r region-with-denominators}
+region_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Region, outsourcing_status) %>%
+  summarise(
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_status
+  )
+
+region_stats_plus_denoms <- region_statistics %>%
+  mutate(
+    Region = haven::as_factor(Region)
+  ) %>%
+  merge(., rgn_empl_denoms, by = "Region") %>%
+  mutate(
+    Weighted_percentage = Percentage * Weight
+  )
+
+region_stats_plus_denoms %>%
+  # mutate(
+  #   Region = haven::as_factor(Region)
+  #   ) %>%
+  ggplot(., aes(Region, Weighted_percentage, fill = `Outsourcing group`)) +
+  geom_col(colour="black") +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  theme_minimal()
+
+readr::write_csv(region_stats_plus_denoms, file="../outputs/data/region_statistics_weighted.csv")
+```
+
+```{r}
+region_stats_plus_denoms %>%
+  filter(`Outsourcing group` == "Outsourced") %>%
+  mutate(
+    sum = sum(Weighted_percentage)
+  )
+```
+
 
 ### Age
 
