@@ -48,3 +48,9 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 R/data_exploration.qmd
+
+# venn outputs files
+outputs/venn*
+
+# word docs
+*.docx
