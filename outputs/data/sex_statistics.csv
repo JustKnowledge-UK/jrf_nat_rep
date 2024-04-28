@@ -1,9 +1,9 @@
-outsourcing_status,Sex,Frequency,Percentage
-Not outsourced,Male,3931,46.39990557129367
+outsourcing_status,Gender,Frequency,Percentage
 Not outsourced,Female,4471,52.7738432483475
-Not outsourced,Other,12,0.141643059490085
+Not outsourced,Male,3931,46.39990557129367
 Not outsourced,Prefer not to say,58,0.6846081208687441
-Outsourced,Male,973,57.81342840166369
+Not outsourced,Other,12,0.141643059490085
 Outsourced,Female,700,41.592394533571
-Outsourced,Other,2,0.11883541295306002
+Outsourced,Male,973,57.81342840166369
 Outsourced,Prefer not to say,8,0.4753416518122401
+Outsourced,Other,2,0.11883541295306002
