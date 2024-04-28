@@ -40,90 +40,8 @@ many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#
 ```
 
 ```{r data, output=FALSE}
-
-data <- read_sav("../Data/uncleaned_full_data.sav")
-
-# add new industry data
-# for now just combine the relevant variables
-data_2 <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
-# skim(data_2)
-
-data_occupations <- data_2[,c("MIProRspId","unit_code","UnitOccupation","smg_code","MajorsubgroupOccupation",
-                        "major_code","Majorgroupcode","SectorCode","SectorName")]
-
-data <- left_join(data, data_occupations, by = c("ID" = "MIProRspId"))
-
-# calculate indicator data
-# invert response function for summing
-invert_response <- function(x){
-  x <- 2 + (-1*x)
-}
-
-# Now for just indicators
-indicator_data <- data %>% 
-  select(ID, starts_with("Q1")) %>%
-  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
-  rowwise() %>%
-  mutate(
-    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
-  ) %>% 
-  select(-starts_with("Q1"))
-
-# Check ID the same
-paste("IDs match: ", sum(data$ID == indicator_data$ID) == nrow(data))
-
-# Merge into main data set
-data <- left_join(data, indicator_data, by = "ID")
-
-#------------------------#
-#### Assign to groups ####
-#------------------------#
-# As of 17 February, the definitions are:
-# 
-# -   **Outsourced**, defined as responding 'I am sure I am outsourced' or 'I might be outsourced', and responding 'I do work on a long-term basis'.
-# -   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
-# -   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
-
-data <- data %>%
-  mutate(
-    # SURE outsourced or MIGHT BE outsourced + LONGTERM
-    outsourced = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
-    # NOT outsourced, SURE agency, and LONG-TERM
-    likely_agency = ifelse(outsourced == 0 & Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
-    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
-    # NOT outsourced, NOT likely agency, 5 or more indicators, & LONGTERM
-    high_indicators = ifelse(outsourced == 0 & likely_agency == 0 & (Q2 == 1 & sum_true >= 5), 1, 0)
-  )
-
-# count the groupings
-print("Totals: 1=Outsourced, 2=Likely agency, 3=High indicators")
-lapply(list(data$outsourced,
-            data$likely_agency,
-            data$high_indicators), sum)
-
-# Flatten these groupings into a single variable
-
-data <- data %>%
-  mutate(
-    outsourcing_group = factor(case_when(outsourced == 1 ~ 'outsourced',
-                                         likely_agency == 1 ~ 'likely_agency',
-                                         high_indicators == 1 ~ 'high_indicators',
-                                         TRUE ~ 'not_outsourced'), 
-                               levels = c("not_outsourced",
-                                          "outsourced",
-                                          "likely_agency",
-                                          "high_indicators")
-    ),
-    outsourcing_status = factor(case_when(outsourced == 1 | likely_agency == 1 | high_indicators == 1 ~ 'Outsourced',
-                                         TRUE ~ 'Not outsourced'),
-                                levels = c('Not outsourced',
-                                           'Outsourced')
-    )
-  )
-
-data_labelled <- haven::as_factor(data)
-
-readr::write_csv(data, file = "../outputs/data/whole_dataset.csv")
+#data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
+data <- readRDS("../Data/2024-04-28 - Cleaned_Data.rds") 
 ```
 
 ```{r data-region-denominators}
@@ -193,25 +111,9 @@ Based on this definition, we've found that just under `r round(total_outsourced$
 [^2]: Data file: outputs/data/income_stats.csv
 
 ```{r income}
-data <- data %>%
-  # get values of labels
-  # mutate_all(haven::as_factor) %>%
-  mutate(
-    # make all annual incomes. Note this assumes 52 working weeks!
-    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1,
-                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12,
-                              INCOME_FREQ == 3 ~ INCOME_OPEN_1*52,
-                              INCOME_FREQ == 4 ~ INCOME_OPEN_1*HOURS*52,
-                              TRUE ~ NA),
-    income_percentile = ntile(income_annual, 100)
-  )
-options(scipen = 999)
-
-num_dropped <- sum(data$income_percentile > 95 & data$income_percentile > 5, na.rm=T)
-
 # filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
 income_statistics <- data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
   group_by(outsourcing_status) %>%
   summarise(
     mean = mean(income_annual, na.rm = T),
@@ -237,7 +139,7 @@ readr::write_csv(income_statistics, file="../outputs/data/income_stats.csv")
 ```{r income-plot}
 # plot the distribution of income for the two groups
 data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
   ggplot(., aes(outsourcing_status, income_annual)) + 
   geom_violin() +
   geom_boxplot(width = 0.3) +
@@ -250,8 +152,8 @@ data %>%
 ```
 
 ```{r income-inferential}
-temp_data <-  data %>%
-  filter(income_percentile < 95 & income_percentile > 5)
+temp_data <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) 
 
 ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
        temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
@@ -265,7 +167,7 @@ Although the average pay between non-outsourced and outsourced workers looks sim
 
 ```{r bubble-chart, include=FALSE}
 test <- data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
   mutate(
     income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
                                income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
@@ -291,7 +193,7 @@ test <- data %>%
   )
 
 test_2 <- data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
   mutate(
     income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
                                income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
@@ -319,7 +221,7 @@ test_2 <- data %>%
   rename(
     `Outsourced workforce` = Percentage
   ) %>%
-  select(c(SectorName, `Outsourced workforce`))
+  dplyr::select(c(SectorName, `Outsourced workforce`))
 
 combined <- merge(test, test_2, by="SectorName")
 
@@ -330,7 +232,7 @@ ggplot(combined, aes(income_bracket, as.factor(SectorName), size=Percentage, col
 
 ```{r bubble-2, include=FALSE}
 test <- data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
   mutate(
     income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
                                income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
@@ -916,13 +818,13 @@ For the following ethnicities, **less than 50%** were born in the UK:
 
 ### Gender[^6]
 
-[^6]: Data file: outputs/data/sex_statistics.csv
+[^6]: Data file: outputs/data/gender_statistics.csv
 
 ```{r}
-sex_statistics <- data %>%
+gender_statistics <- data %>%
   # get values of labels
   mutate_all(haven::as_factor) %>%
-  group_by(outsourcing_status, Sex) %>%
+  group_by(outsourcing_status, Gender) %>%
   summarise(
     Frequency = n()
   ) %>%
@@ -930,35 +832,35 @@ sex_statistics <- data %>%
     Percentage = 100 * (Frequency / sum(Frequency))
   )
 
-readr::write_csv(sex_statistics, file="../outputs/data/sex_statistics.csv")
+readr::write_csv(gender_statistics, file="../outputs/data/gender_statistics.csv")
 ```
 
 ```{r}
-sex_statistics %>%
-  ggplot(., aes(outsourcing_status, Percentage, fill = Sex)) +
+gender_statistics %>%
+  ggplot(., aes(outsourcing_status, Percentage, fill = Gender)) +
   geom_col(colour="black") +
-  # annotate("text", x = sex_statistics$outsourcing_status, y = 75, label = paste0("n=", sex_statistics$Frequency)) +
+  # annotate("text", x = gender_statistics$outsourcing_status, y = 75, label = paste0("n=", gender_statistics$Frequency)) +
   coord_flip() +
   scale_fill_manual(values=colours) +
   theme_minimal() +
   xlab("Outsourcing group") 
 ```
 
-```{r sex_inferential, output=FALSE}
-categories <- as.vector(unique(haven::as_factor(data$Sex)))
+```{r gender_inferential, output=FALSE}
+categories <- as.vector(unique(haven::as_factor(data$Gender)))
 non_categories <- categories[!(categories %in% "Male")]
 
 # Will throw NA warning. I think this OK but investigate how to avoid the problem
 summary_table <- data %>%
   mutate(
-    Sex = haven::as_factor(Sex)
+    Gender = haven::as_factor(Gender)
   ) %>%
   mutate(
-    Sex = forcats::fct_collapse(as.character(Sex),
+    Gender = forcats::fct_collapse(as.character(Gender),
                                       "Male" = "Male",
                                       "Not male" = non_categories)
   ) %>%
-  group_by(outsourcing_status, Sex) %>%
+  group_by(outsourcing_status, Gender) %>%
   summarise(
     n = n()
   ) %>%
@@ -967,7 +869,7 @@ summary_table <- data %>%
     Percentage = 100 * (n / Sum)
   )
 
-domain <- "Sex"
+domain <- "Gender"
 category_1 <- "Male"
 category_2 <- "Not male"
   
@@ -988,7 +890,7 @@ comp_mat <- as.matrix(cbind(group_2, group_1)) # matrix for crosstable
 x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE, chisq = TRUE)
 ```
 
-In terms of sex, the outsourced group has a larger proportion of males (`r round(sex_statistics[which(sex_statistics$outsourcing_status == "Outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`% compared to `r round(sex_statistics[which(sex_statistics$outsourcing_status == "Not outsourced" & sex_statistics$Sex == "Male"),"Percentage"], 2)`%). This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have be male than non-outsourced workers.**
+In terms of Gender, the outsourced group has a larger proportion of males (`r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`% compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`%). This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have be male than non-outsourced workers.**
 
 ### Region[^7]
 
@@ -1109,9 +1011,8 @@ readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
 # it's to do with haven factors...
 # using data_labelled and and combination of as.numeric(as.character()) solves it
 
-data_labelled$Age <- as.numeric(as.character(data_labelled$Age))
-ttest <- t.test(data_labelled[which(data_labelled$outsourcing_status=="Outsourced"),"Age"], 
-       data_labelled[which(data_labelled$outsourcing_status=="Not outsourced"),"Age"]
+ttest <- t.test(data[which(data$outsourcing_status=="Outsourced"),"Age"], 
+       data[which(data$outsourcing_status=="Not outsourced"),"Age"]
 )
 
 ```
