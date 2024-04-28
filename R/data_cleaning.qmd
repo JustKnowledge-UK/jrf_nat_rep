@@ -1,19 +1,30 @@
 ---
-title: "Data cleaning"
+title: "Outsourcing Report template"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
 format: 
   html:
-    code-fold: true
     toc: true
+    toc-depth: 5
+    code-fold: true
+    embed-resources: true
 editor: visual
+execute: 
+  warning: false
 ---
 
 ```{r}
 rm(list = ls())
 # Load libraries
+library(gridExtra)
+library(skimr)
 library(haven)
 library(tidyverse)
-library(skimr)
-library(gridExtra)
+library(wesanderson)
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+
 ```
 
 # Resolving the two datasets received from Opinium
@@ -70,7 +81,7 @@ vars_absent2 <- check_columns(data_2, data)
 Looking at the variables in data that are missing from data_2, all but two are completely missing (complete_rate = 0), and the remaining two (startTime and agegender_recode_useforquota) are not needed. This exercise indicates that we can just switch to using data_2 instead of data.
 
 ```{r}
-vars_absent1_subset <- select(data, all_of(vars_absent1))
+vars_absent1_subset <- dplyr::select(data, dplyr::all_of(vars_absent1))
 
 skim(vars_absent1_subset)
 ```
@@ -91,10 +102,9 @@ In this section, we clean the second dataset to make it ready for analysis.
 
 ```{r}
 # Just use the new dataset
-# remove unncessary data objects, then read
-rm(list = ls())
+# remove unncessary data objects, then read new data (keep colour palette)
+rm(list = setdiff(ls(), "colours"))
 data <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
-
 
 ```
 
@@ -419,7 +429,7 @@ options(scipen = 999)
 num_dropped <- sum(data$income_percentile > 95 & data$income_percentile > 5, na.rm=T)
 ```
 
-The range of salaries is massive, with extreme values at either end. This suggests to me that respondents may have entered in their salaries incorrectly. 
+The range of salaries is massive, with extreme values at either end. This suggests to me that respondents may have entered in their salaries incorrectly.
 
 ```{r}
 # filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
@@ -435,101 +445,230 @@ income_statistics <- data %>%
   )
 ```
 
-The distribution of income is highly skewed, with extremely high values creating a tail. It is likely that many extreme values are artefacts of the method of reporting. Below, we identify outliers as values 3 standard deviations above or below the mean, and exlude them from the data. We do this iteratively until outliers are no longer identified. 
+The distribution of income is highly skewed, with extremely high values creating a tail. It is likely that many extreme values are artefacts of the method of reporting. Below, we identify outliers as values 3 standard deviations above or below the mean. We do this iteratively, removing identified outliers and retesting, until no more outliers are identified.
+
+Outliers are given a marker (`income_drop == 1`) to identify them. In analyses involving income, these outliers can be removed by only selecting cases where `income_drop == 0`.
+
+<!--# NOTE: Need to convert all this to account for the weights!Use Hmisc wtd.mean and wtd.var -->
 
 ```{r}
-x <- data$income_annual
+x <- data
 
 # calculate the mean and sd, and 3x sd
-mean = mean(x, na.rm=T)
-std = sd(x, na.rm = T)
+mean = mean(x$income_annual, na.rm=T)
+std = sd(x$income_annual, na.rm = T)
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
+# identify the first set of outliers
+outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+outlier_count <- length(outliers) # count how many removed this iteration
+all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
+
+# initialise some variables, i.e. iteration 0
+count <- 0 # iteration counter
+total_cases_removed <- 0 # total cases removed
+
+cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+
 # Take a look at the distribution
 par(mfrow = c(1, 3)) # this lets us plot three plots in a row
-hist(x, main = "Histogram") 
+hist(x$income_annual, main = "Histogram") 
 # mark the mean and sds for the histogram
 abline(v = mean, col='red', lwd = 3)
 abline(v = Tmin, col='blue', lwd = 3)
 abline(v = Tmax, col='blue', lwd = 3)
-boxplot(x, main = "Boxplot")
-qqnorm(x, main = "Normal Q-Q plot")
-
-# identify the first set of outliers
-outliers <- which(x < Tmin | x > Tmax)
-
-# initialise some variables, i.e. iteration 0
-count <- 0 # iteration counter
-cases_removed <- 0 # number of cases removed this iteration
-total_cases_removed <- 0 # total cases removed
-all_outlier_ids <- data$ID[outliers] # list of ids removed (to be removed from data later)
+boxplot(x$income_annual, main = "Boxplot")
+qqnorm(x$income_annual, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 
 # While there are still outliers detected, remove the outliers and recalculate 
 # mean, sd, and 3*sd and remove the outliers based on these new figures.
 while(length(outliers) != 0){
   count <- count + 1
-  cases_removed <- length(outliers) # count how many removed this iteration
-  cat("Iteration ", count, ": ", cases_removed, " case(s) removed\n")
-  x <- x[-outliers] # remove the outliers
-
+  x <- x[-outliers,] # remove the outliers identified in the previous iteration
+  
   # recalculate
-  mean = mean(x, na.rm = T)
-  std = sd(x, na.rm = T)
+  mean = mean(x$income_annual, na.rm = T)
+  std = sd(x$income_annual, na.rm = T)
   Tmin = mean - (3 * std)
   Tmax = mean + (3 * std)
-  outliers <- which(x < Tmin | x > Tmax)
-  outlier_ids <- data$ID[outliers] # get outlier ids
+  outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+  outlier_ids <- x$ID[outliers] # get outlier ids
   all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
-  total_cases_removed <- total_cases_removed + cases_removed # count total
+  total_cases_removed <- total_cases_removed + outlier_count # count total
+  
+  outlier_count <- length(outliers) # count how many removed this iteration
+  cat("Iteration ", count, ": ", outlier_count, " outliers\n")
   
   # Replot distributions to see how they've changed
   par(mfrow = c(1, 3))
-  hist(x, main = "Histogram") 
+  hist(x$income_annual, main = "Histogram") 
   abline(v = mean, col='red', lwd = 3)
   abline(v = Tmin, col='blue', lwd = 3)
   abline(v = Tmax, col='blue', lwd = 3)
-  boxplot(x, main = "Boxplot")
-  qqnorm(x, main = "Normal Q-Q plot")
-  mtext(paste0("Iteration ", count, ": ", cases_removed, " case(s) removed"), side = 1, line = -2, outer = TRUE)
+  boxplot(x$income_annual, main = "Boxplot")
+  qqnorm(x$income_annual, main = "Normal Q-Q plot")
+  mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 }
 cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
 
-# Somethign still hasn't worked here. mismatch of rows from while loop comapred to output. think it could be to do wiht the final iteration. return ot this
+# Drop the cases identified as outliers from data
 data$income_drop[which(data$ID %in% all_outlier_ids)] <- 1
-data$income_drop[is.na(data$income_drop)] <- 0
-sum(data$income_drop, na.rm = T)
+data$income_drop[is.na(data$income_drop)] <- 0 # make NAs 0
+
+# Check this looks right
+sum(data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
+
+# This should look the same as the last iteration above#
+test <- data %>%
+  filter(income_drop == 0)
+
+mean = mean(test$income_annual, na.rm = T)
+std = sd(test$income_annual, na.rm = T)
+Tmin = mean - (3 * std)
+Tmax = mean + (3 * std)
+
+par(mfrow = c(1, 3))
+hist(test$income_annual, main = "Histogram") 
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(test$income_annual, main = "Boxplot")
+qqnorm(test$income_annual, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
 
 ```
 
-The below shows the exericse hasn't worked. Need to figure it out but not now.
+As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total N after removal = `r nrow(data) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
+
+## Applying income brackets
+
+We want to group people into income brackets. Based on conversation in April, suggested methods for doing this include
+
+1.  Use the standard low pay measure of 2/3 median wage (or we could bump this up to 80% median wage given the National Living Wage is now 2/3 median so there are probably fewer people below the 2/3 median line) and splitting the sample in half this way
+
+2.  Use ASHE deciles, e.g., 20%, 40%, or 50% (50% may be an approximate proxy for the JRF Minimum Income Standard for an individual)
+
+In any event we could use the ASHE deciles to sense check/contextualise the income distributions in our sample. We use the most recent [ASHE data](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/allemployeesashetable1), using median income of all workers (£29,699). As a proxy for the low payment threshold (which is set at 2/3 median hourly pay, see [here](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/lowandhighpayuk/2023)), we use 2/3 median gross annual income. As an alternative, we also calculate 80% median gross annual income as a higher threshold.
 
 ```{r}
-x <- data$income_annual[which(data$income_drop!=1)]
-  par(mfrow = c(1, 3))
-  hist(x, main = "Histogram") 
-  abline(v = mean, col='red', lwd = 3)
-  abline(v = Tmin, col='blue', lwd = 3)
-  abline(v = Tmax, col='blue', lwd = 3)
-  boxplot(x, main = "Boxplot")
-  qqnorm(x, main = "Normal Q-Q plot")
+ashe_data <- readxl::read_xls("../Data/raw_data/ashetable12023provisional/PROV - Total Table 1.7a   Annual pay - Gross 2023.xls",
+                              sheet = "All", skip = 4, n_max = 1) %>%
+  select(Median, "10":"90") %>%
+  rename(
+    `50` = Median # rename median to 50th percentile
+  ) %>%
+  pivot_longer(everything(), names_to = "Decile", values_to = "Value") %>%
+  mutate(
+    Decile = as.numeric(Decile)
+  ) %>%
+  arrange(Decile)
+
+# make a smaller table with just 25, 50 and 75 percentiles - for plotting
+ashe_data_2 <- ashe_data %>%
+  subset(Decile %in% c(25, 50, 75)) %>%
+  mutate(
+    Label = case_when(Decile == 25 ~ "ASHE 25th percentile",
+                      Decile == 50 ~ "ASHE median",
+                      Decile == 75 ~ "ASHE 75th percentile",
+                      TRUE ~ NA)
+  )
+
+# make tibble of possible pay thresholds
+low_pay_thresholds <- tibble("Threshold" = c("Two thirds median", 
+                                         "Four fifths median"),
+                             "Value" = c(29669 * (2/3), 29669 * 0.8)
+)
+
 ```
 
-As shown above, this involved `r count` iterations, and in total removed `r total_cases_removed` observations from the data (total N = `r nrow(data) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
+The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
 
-We want to look at high and low income. A sensible threshold on which to split could be JRF's Minimum Income Standard of £25,500.
+Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
+
+```{r}
+income_statistics <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    mean = mean(income_annual, na.rm = T),
+    median = median(income_annual,na.rm = T),
+    min = min(income_annual,na.rm = T),
+    max = max(income_annual,na.rm = T),
+    stdev = sd(income_annual,na.rm = T),
+    n = n()
+  )
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  ggplot(., aes(outsourcing_status, income_annual)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000)) +
+  geom_hline(data = ashe_data_2, aes(yintercept = Value)) +
+  geom_text(inherit.aes = F, data = ashe_data_2, aes(x = 1.5, y = Value,label = Label), nudge_y = -2000) +
+  geom_hline(data = low_pay_thresholds, aes(yintercept = Value, colour = Threshold)) +
+  scale_colour_manual(values=colours)
+```
+
+Splitting income by this threshold indicates that in the there is a marginally greater proportion of outsourced workers in the low income group compared to the high income group (note this needs to be determined statistically, which we will do in the analysis script).
 
 ```{r}
 data <- data %>%
   mutate(
-    income_status = case_when(income_annual >= 25500 ~ "high",
-                              income_annual < 25500 ~ "low",
+    income_group = case_when(income_annual < low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")]  ~ "Low",
+                        income_annual >= low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")] ~ "Not low",
                               TRUE ~ NA)
   )
+
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(income_group, outsourcing_status) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(income_group, perc, fill = outsourcing_status)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
 ```
 
+Framing this another way, a greater proportion of outsourced workers fall into the low pay bracket compared to non-outsourced workers (again, this needs qualifying statistically).
 
-We may be interested to combine data from the CLOSED questions with the OPEN ones.
+```{r}
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(outsourcing_status, income_group) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(outsourcing_status, perc, fill = income_group)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
+```
+
+### Improving N for income
+
+When reporting income, respondents could choose whether to report income using an open text method or a bracket method. All income-based work in this report so far has used only the open text methods. We may be interested to combine data from the CLOSED questions with the OPEN ones, although there is not a clear method for doing so. Possible options are:
+
+1.  Make all numeric. This would involve taking the midpoint of the bracket for CLOSED responses and using that as a numeric value. I think this is very questionable because it will impact the distribution and effectively make it meaningless.
+2.  Make all brackets. This would involve categorising the numeric income data into the same brackets that are present in the CLOSED method. This would maximise our coverage - as all incomes can be sensibly harmonised - but it would mean we don't have a distribution to work with, which limits how we apply thresholds to responses and limits the resolution with which we can look at the income data.
+3.  Continue to keep them separate. This involves doing what we can separately with the two types of reporting method. Advantage is we maximise coverage. Disadvantages are that it will double the work and muddy the picture (as we have to consider income in two different ways).
 
 <!-- One solution could be to explore this by comparing to the closed method of reporting, but on inspection it seems that respondents either reported OPEN or CLOSED, but not both. -->
 
@@ -550,9 +689,10 @@ for(i in vars){
 skim(income_subset)
 ```
 
-
 ## Save
 
 ```{r}
+saveRDS(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.rds"))
+# haven::write_sav(as.data.frame(data), path = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.sav"))
 write_csv(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.csv"))
 ```
