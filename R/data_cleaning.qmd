@@ -1,0 +1,698 @@
+---
+title: "Outsourcing Report template"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    toc: true
+    toc-depth: 5
+    code-fold: true
+    embed-resources: true
+editor: visual
+execute: 
+  warning: false
+---
+
+```{r}
+rm(list = ls())
+# Load libraries
+library(gridExtra)
+library(skimr)
+library(haven)
+library(tidyverse)
+library(wesanderson)
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+
+```
+
+# Resolving the two datasets received from Opinium
+
+We received two datasets on two separate occasions from Opinium. The second contains occupation and sector data that the first didn't include. The first thing we need to do is understand the differences between these two datasets to determine whether we can simply choose one dataset, and which one this should be.
+
+::: callout-note
+## TLDR
+
+The second dataset is an updated version of the first. Although there are some variables that are present in one dataset but not in the other, investigating these differences indicates that there is no problem with simply using the second dataset instead of the first. Read on for details on the steps taken to determine this.
+:::
+
+```{r}
+# Read the first data we received from opinium
+data <- read_sav("../Data/UK23626 Workers sample data with nat rep and graduates weight.sav")
+# View(data)
+
+# read the second data we received from opinium. This includes more job/sector information
+data_2 <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
+# skim(data_2)
+
+```
+
+```{r}
+# Investigate the differences between the two datasets
+check_columns <- function(data1, data2){
+  variables_absent <- c()
+  total <- 0
+  cols1 <- colnames(data1)
+  cols2 <- colnames(data2)
+  
+  # For each item in cols1, check whether it exists in cols2
+  for(x in seq_along(cols1)){
+    this_var = cols1[x]
+    present = this_var %in% cols2
+    total = total + present 
+    missing = length(cols1) - total
+    # Create vector of all missing vars
+    if(!present){
+      variables_absent = append(variables_absent, this_var)
+    }
+  }
+  cat(paste0(missing, " columns in ", deparse(substitute(data1)), " missing from ", deparse(substitute(data2)),":"))
+  cat(paste0("\n",variables_absent))
+  cat("\n")
+  return(variables_absent)
+}
+
+vars_absent1 <- check_columns(data, data_2)
+
+vars_absent2 <- check_columns(data_2, data)
+```
+
+Looking at the variables in data that are missing from data_2, all but two are completely missing (complete_rate = 0), and the remaining two (startTime and agegender_recode_useforquota) are not needed. This exercise indicates that we can just switch to using data_2 instead of data.
+
+```{r}
+vars_absent1_subset <- dplyr::select(data, dplyr::all_of(vars_absent1))
+
+skim(vars_absent1_subset)
+```
+
+Visual inspection of a skim of each dataset indicates they are the same.
+
+```{r}
+skim(data)
+```
+
+```{r}
+skim(data_2)
+```
+
+# Data preparation
+
+In this section, we clean the second dataset to make it ready for analysis.
+
+```{r}
+# Just use the new dataset
+# remove unncessary data objects, then read new data (keep colour palette)
+rm(list = setdiff(ls(), "colours"))
+data <- read_sav("../Data/JRF Outsourced Workers - Occupations and Sectors.sav")
+
+```
+
+## Rename variables and drop unwanted
+
+```{r column-names}
+# Change column names
+data <- data %>%
+  rename(
+    ID = MIProRspId,
+    Gender = D1_Gender_C,
+    Age = D2_Age,
+    Region = D4_Region_C,
+    Employment_Status = D3_employment,
+    Employment_Type = E2,
+    Consent_1_Ethnicity = SCD_Opt_In_1, 
+    Consent_2_TU = SCD_Opt_In_2,                
+    Consent_3_Health = SCD_Opt_In_3,
+    Has_Degree = D6_educ1,
+    Has_Second_Job = E1,
+    Who_Pays_You = E3,
+    Job_Security = E5,
+    Work_Circumstance_Agency = E6_1,
+    Work_Circumstance_Contract = E6_2,
+    Work_Circumstance_Seasonal = E6_3,                       
+    Work_Circumstance_Trainee = E6_4,
+    Work_Circumstance_Other = E6_5,                       
+    Work_Circumstance_Other_TEXT = E6_5_other,
+    Org_Size = E7A,
+    Is_Supervisor = E7B,
+    Job_Title_TEXT = E8A,
+    Main_Activity_TEXT = E8B,
+    Employer_Activity_TEXT = E9A,
+    Employer_Activity_SIC = E9B, #need to check that these were SIC and translate to digits if so
+    Biz_Type = E10A,
+    Non_Private_Biz_Type = E10B,
+    Non_Private_Biz_Type_TEXT = E10B_9_other,
+    # Don't rename the indicator questions and outsourcing questions variables 
+    # because it creates more work when running statistics (i.e., remembering 
+    # and typing out these longer var names)
+    # Paid_One_Work_Other = Q1_1,
+    # Third_Party = Q1_2,
+    # Employer_Is_Agency = Q1_3,
+    # Instructed_By_Other = Q1_4,
+    # Work_In_Other = Q1_5,
+    # Diff_Uniform = Q1_6,
+    # Short_Long_Employ = Q2,
+    # Short_Long_Employ_TEXT = Q2_3_other,
+    # I_Am_Outsourced = Q3v3a,
+    # Outsourced_And_Agency = Q3v3b,
+    # Might_Be_Outsourced_And_Agency = Q3v3c,
+    # Not_Outsourced_And_Agency = Q3v3d,
+    Disability = D7_Disability1,
+    Disability_Impact = D8_Disability2,
+    #some form of multiplication between INCOME_FREQ and INCOME_OPEN_1 is necessary to create equivalence to an annual salary
+  )
+
+# drop unwanted columns
+data <- data %>%
+  select(-c(starts_with(c("D6_", "D7_"))))
+```
+
+## Allocate to groups
+
+As of 17 February 2024, the definitions are:
+
+-   **Outsourced**, defined as responding 'I am sure I am outsourced' or 'I might be outsourced', and responding 'I do work on a long-term basis'.
+
+-   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
+
+-   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
+
+```{r group-allocation}
+# calculate indicator data
+# invert response function for summing
+invert_response <- function(x){
+  x <- 2 + (-1*x)
+}
+
+# Now for just indicators
+indicator_data <- data %>% 
+  select(ID, starts_with("Q1")) %>%
+  reframe(across(starts_with("Q1"), ~invert_response(.x)), .by = ID) %>%
+  rowwise() %>%
+  mutate(
+    sum_true = sum(Q1_1, Q1_2, Q1_3, Q1_4, Q1_5, Q1_6)
+  ) %>% 
+  select(-starts_with("Q1"))
+
+# Check ID the same
+paste("IDs match: ", sum(data$ID == indicator_data$ID) == nrow(data))
+
+# Merge into main data set
+data <- left_join(data, indicator_data, by = "ID")
+
+# remove redundant indicator data
+rm(indicator_data)
+
+#------------------------#
+#### Assign to groups ####
+#------------------------#
+# As of 17 February, the definitions are:
+# 
+# -   **Outsourced**, defined as responding 'I am sure I am outsourced' or 'I might be outsourced', and responding 'I do work on a long-term basis'.
+# -   **Likely agency**, defined as those responding 'I am sure I am agency' and 'I do work on a long-term basis', **excluding** those people who are already defined as being outsourced.
+# -   **High indicators**: defined as responding TRUE to 5 or 6 of the outsourcing indicators, as well as responding 'I do work on a long-term basis', **excluding** those people who are already defined as outsourced or likely agency.
+
+data <- data %>%
+  mutate(
+    # SURE outsourced or MIGHT BE outsourced + LONGTERM
+    outsourced = ifelse((Q3v3a == 1 & Q2 == 1) | (Q3v3a == 2 & Q2 == 1), 1, 0),
+    # NOT outsourced, SURE agency, and LONG-TERM
+    likely_agency = ifelse(outsourced == 0 & Q2 == 1 & (Q3v3b == 1 | Q3v3c == 1 | Q3v3d == 1), 1, 0),
+    likely_agency = ifelse(is.na(likely_agency), 0, likely_agency),
+    # NOT outsourced, NOT likely agency, 5 or more indicators, & LONGTERM
+    high_indicators = ifelse(outsourced == 0 & likely_agency == 0 & (Q2 == 1 & sum_true >= 5), 1, 0)
+  )
+
+# count the groupings
+print("Totals: 1 = Outsourced, 2 = Likely agency, 3 = High indicators")
+lapply(list(data$outsourced,
+            data$likely_agency,
+            data$high_indicators), sum)
+
+# Flatten these groupings into a single variable
+
+data <- data %>%
+  mutate(
+    # outsroucing group is subdivided 'type' of outsourcing, 
+    # i.e., straight outsourced, likely agency, high indicators
+    outsourcing_group = factor(case_when(outsourced == 1 ~ 'Outsourced',
+                                         likely_agency == 1 ~ 'Likely agency',
+                                         high_indicators == 1 ~ 'High indicators',
+                                         TRUE ~ 'Not outsourced'), 
+                               levels = c("Not outsourced",
+                                          "Outsourced",
+                                          "Likely agency",
+                                          "High indicators")
+    ),
+    # outsourcing status is the binary split, anyone who is one of the not
+    # outsourced groups is outsourced, everyone else is not outsourced
+    outsourcing_status = factor(case_when(outsourced == 1 | likely_agency == 1 | high_indicators == 1 ~ 'Outsourced',
+                                         TRUE ~ 'Not outsourced'),
+                                levels = c('Not outsourced',
+                                           'Outsourced')
+    )
+  )
+
+```
+
+## Age
+
+```{r fix-age}
+# Age to numeric
+# Remove 'under 16' level
+data <- data %>%
+  mutate(
+    # Get labels
+    Age = haven::as_factor(Age),
+    # Drop under 16s as we're interested in adult labour market
+    Age = droplevels(Age, exclude = "Under 16"),
+    # There are 2 responses that are 'over 80'. Change this to 80 so we can have
+    # a numeric variable for age.
+    # Set Age to numeric
+    Age = as.numeric(case_when(
+                      Age == "Over 80" ~ "80",
+                      TRUE ~ Age)
+                     )
+  )
+```
+
+## Labels
+
+Applying haven::as_factor() to the whole dataset is inappropriate because it makes data wrangling a lot more cumbersome; for example, writing out labels for conditioning becomes very long, and plots become very busy with many level names (e.g., for occupation variables, ethnicity, etc.). However, some variables *need* to be have their labels extracted because these vars could ostensibly be numeric ones, and leaving them in their unlabelled state risks confusion later on (e.g., with age, org size). It is therefore necessary to translate the numeric-type variables to their labels, replacing the old values, whilst for the factor-like variables to keep a version of the variable unlabelled.
+
+**1: Variables to translate to labels**:
+
+-   Age -\> numeric <!--# Already done -->
+-   Gender
+-   Region
+-   Employment_Type
+-   Has_Degree
+-   TradeUnion
+-   Has_Second_Job
+-   Work_Circumstance\_\*
+-   Org_size
+-   Is_Supervisor
+-   Biz_Type
+-   Disability
+-   Disability_Impact
+-   smg_code
+-   major_code
+-   SectorCode
+
+**2: Variables to keep as is and create a labelled duplicate**:
+
+-   Ethnicity
+-   Employment_Status
+-   Who_Pays_You
+-   Job_Security
+-   Employer_Activity_SIC
+-   Non_Private_Biz_Type
+-   Q1\_\*
+-   Q2
+-   Q3\*
+-   INCOME_CLOSED\_\* <!--# Here we could cross-check with our calculated incomes to see if we can sensibly resolve inconsistencies. Also, can we just use these brackets instead? -->
+-   BORNUK
+-   unit_code
+-   UnitOccupation
+-   MajorsubgroupOccupation
+-   Majorgroupcode
+-   SectorName
+
+**3: All other variables leave as they are**
+
+Consider dropping:
+
+-   INCOME_OPEN_2: Only 0s and NAs. Completion rate = 0.26
+
+```{r output=FALSE}
+glimpse(data)
+```
+
+```{r translate-labels-1}
+# Translate the variables in category 1 above, i.e. translate to labels
+# Note age is omitted here because we've done something different with it earlier
+variables_to_labels <- c("Gender",
+                         "Region",
+                         "Employment_Type",
+                         "ed_bands",
+                         "Has_Degree",
+                         "TradeUnion",
+                         "Has_Second_Job",
+                         colnames(select(data, contains("Work_Circumstance"))),
+                         "Org_Size",
+                         "Is_Supervisor",
+                         "Biz_Type",
+                         "Disability",
+                         "Disability_Impact",
+                         "smg_code",
+                         "major_code",
+                         "SectorCode"
+                         )
+
+
+# test to see if this method works
+# test <- data
+# 
+# # This works:
+# test[variables_to_labels] <- sapply(test[variables_to_labels], haven::as_factor)
+
+# Check it works:
+# test <- test %>%
+#   relocate(new_age, .after = Age) %>%
+#   relocate(new_gender, .after = Gender)
+
+data[variables_to_labels] <- sapply(data[variables_to_labels], haven::as_factor)
+```
+
+```{r translate-labels-2}
+variables_to_duplicate <- c("Ethnicity",
+                            "Employment_Status",
+                            "Who_Pays_You",
+                            "Job_Security",
+                            "Employer_Activity_SIC",
+                            "Non_Private_Biz_Type",
+                            colnames(select(data, contains("Q1"))),
+                            "Q2",
+                            colnames(select(data, contains("Q3"))),
+                            colnames(select(data, contains("INCOME_CLOSED"))),
+                            "BORNUK",
+                            "unit_code",
+                            "UnitOccupation",
+                            "MajorsubgroupOccupation",
+                            "Majorgroupcode",
+                            "SectorName")
+                            
+# Translate the variables in category 1 above. i.e., create labelled duplicates
+duplicate_label <- function(data, variables){
+  for(i in variables){
+    #print(data[i])
+    old_var <- data[i]
+    new_var <- paste0(i,"_labelled") # append labelled to new var name
+    data[new_var] <- haven::as_factor(old_var) # set new var as labelled old var
+    
+    # locate new var after old var for easy viewing
+    data <- data %>%
+      relocate(
+        new_var, .after = colnames(old_var)
+      )
+  }
+  return(data)
+}
+
+# Test this works. It does
+# test <- data
+# test <- duplicate_label(test, variables_to_duplicate)
+
+
+data <- duplicate_label(data, variables_to_duplicate)
+```
+
+## Income
+
+Income has an open question and a closed question. For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
+
+```{r}
+data <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  mutate(
+    # make all annual incomes. Note this assumes 52 working weeks!
+    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1,
+                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12,
+                              INCOME_FREQ == 3 ~ INCOME_OPEN_1*52,
+                              INCOME_FREQ == 4 ~ INCOME_OPEN_1*HOURS*52,
+                              TRUE ~ NA),
+    income_percentile = ntile(income_annual, 100)
+  )
+options(scipen = 999)
+
+num_dropped <- sum(data$income_percentile > 95 & data$income_percentile > 5, na.rm=T)
+```
+
+The range of salaries is massive, with extreme values at either end. This suggests to me that respondents may have entered in their salaries incorrectly.
+
+```{r}
+# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+income_statistics <- data %>%
+  filter(income_percentile < 95 & income_percentile > 5) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    mean = mean(income_annual, na.rm = T),
+    median = median(income_annual,na.rm = T),
+    min = min(income_annual,na.rm = T),
+    max = max(income_annual,na.rm = T),
+    stdev = sd(income_annual,na.rm = T)
+  )
+```
+
+The distribution of income is highly skewed, with extremely high values creating a tail. It is likely that many extreme values are artefacts of the method of reporting. Below, we identify outliers as values 3 standard deviations above or below the mean. We do this iteratively, removing identified outliers and retesting, until no more outliers are identified.
+
+Outliers are given a marker (`income_drop == 1`) to identify them. In analyses involving income, these outliers can be removed by only selecting cases where `income_drop == 0`.
+
+<!--# NOTE: Need to convert all this to account for the weights!Use Hmisc wtd.mean and wtd.var -->
+
+```{r}
+x <- data
+
+# calculate the mean and sd, and 3x sd
+mean = mean(x$income_annual, na.rm=T)
+std = sd(x$income_annual, na.rm = T)
+Tmin = mean-(3*std)
+Tmax = mean+(3*std)
+
+# identify the first set of outliers
+outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+outlier_count <- length(outliers) # count how many removed this iteration
+all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
+
+# initialise some variables, i.e. iteration 0
+count <- 0 # iteration counter
+total_cases_removed <- 0 # total cases removed
+
+cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+
+# Take a look at the distribution
+par(mfrow = c(1, 3)) # this lets us plot three plots in a row
+hist(x$income_annual, main = "Histogram") 
+# mark the mean and sds for the histogram
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(x$income_annual, main = "Boxplot")
+qqnorm(x$income_annual, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+# While there are still outliers detected, remove the outliers and recalculate 
+# mean, sd, and 3*sd and remove the outliers based on these new figures.
+while(length(outliers) != 0){
+  count <- count + 1
+  x <- x[-outliers,] # remove the outliers identified in the previous iteration
+  
+  # recalculate
+  mean = mean(x$income_annual, na.rm = T)
+  std = sd(x$income_annual, na.rm = T)
+  Tmin = mean - (3 * std)
+  Tmax = mean + (3 * std)
+  outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+  outlier_ids <- x$ID[outliers] # get outlier ids
+  all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
+  total_cases_removed <- total_cases_removed + outlier_count # count total
+  
+  outlier_count <- length(outliers) # count how many removed this iteration
+  cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+  
+  # Replot distributions to see how they've changed
+  par(mfrow = c(1, 3))
+  hist(x$income_annual, main = "Histogram") 
+  abline(v = mean, col='red', lwd = 3)
+  abline(v = Tmin, col='blue', lwd = 3)
+  abline(v = Tmax, col='blue', lwd = 3)
+  boxplot(x$income_annual, main = "Boxplot")
+  qqnorm(x$income_annual, main = "Normal Q-Q plot")
+  mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+}
+cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
+
+# Drop the cases identified as outliers from data
+data$income_drop[which(data$ID %in% all_outlier_ids)] <- 1
+data$income_drop[is.na(data$income_drop)] <- 0 # make NAs 0
+
+# Check this looks right
+sum(data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
+
+# This should look the same as the last iteration above#
+test <- data %>%
+  filter(income_drop == 0)
+
+mean = mean(test$income_annual, na.rm = T)
+std = sd(test$income_annual, na.rm = T)
+Tmin = mean - (3 * std)
+Tmax = mean + (3 * std)
+
+par(mfrow = c(1, 3))
+hist(test$income_annual, main = "Histogram") 
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(test$income_annual, main = "Boxplot")
+qqnorm(test$income_annual, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+
+```
+
+As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total N after removal = `r nrow(data) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
+
+## Applying income brackets
+
+We want to group people into income brackets. Based on conversation in April, suggested methods for doing this include
+
+1.  Use the standard low pay measure of 2/3 median wage (or we could bump this up to 80% median wage given the National Living Wage is now 2/3 median so there are probably fewer people below the 2/3 median line) and splitting the sample in half this way
+
+2.  Use ASHE deciles, e.g., 20%, 40%, or 50% (50% may be an approximate proxy for the JRF Minimum Income Standard for an individual)
+
+In any event we could use the ASHE deciles to sense check/contextualise the income distributions in our sample. We use the most recent [ASHE data](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/allemployeesashetable1), using median income of all workers (£29,699). As a proxy for the low payment threshold (which is set at 2/3 median hourly pay, see [here](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/lowandhighpayuk/2023)), we use 2/3 median gross annual income. As an alternative, we also calculate 80% median gross annual income as a higher threshold.
+
+```{r}
+ashe_data <- readxl::read_xls("../Data/raw_data/ashetable12023provisional/PROV - Total Table 1.7a   Annual pay - Gross 2023.xls",
+                              sheet = "All", skip = 4, n_max = 1) %>%
+  select(Median, "10":"90") %>%
+  rename(
+    `50` = Median # rename median to 50th percentile
+  ) %>%
+  pivot_longer(everything(), names_to = "Decile", values_to = "Value") %>%
+  mutate(
+    Decile = as.numeric(Decile)
+  ) %>%
+  arrange(Decile)
+
+# make a smaller table with just 25, 50 and 75 percentiles - for plotting
+ashe_data_2 <- ashe_data %>%
+  subset(Decile %in% c(25, 50, 75)) %>%
+  mutate(
+    Label = case_when(Decile == 25 ~ "ASHE 25th percentile",
+                      Decile == 50 ~ "ASHE median",
+                      Decile == 75 ~ "ASHE 75th percentile",
+                      TRUE ~ NA)
+  )
+
+# make tibble of possible pay thresholds
+low_pay_thresholds <- tibble("Threshold" = c("Two thirds median", 
+                                         "Four fifths median"),
+                             "Value" = c(29669 * (2/3), 29669 * 0.8)
+)
+
+```
+
+The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
+
+Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
+
+```{r}
+income_statistics <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    mean = mean(income_annual, na.rm = T),
+    median = median(income_annual,na.rm = T),
+    min = min(income_annual,na.rm = T),
+    max = max(income_annual,na.rm = T),
+    stdev = sd(income_annual,na.rm = T),
+    n = n()
+  )
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  ggplot(., aes(outsourcing_status, income_annual)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000)) +
+  geom_hline(data = ashe_data_2, aes(yintercept = Value)) +
+  geom_text(inherit.aes = F, data = ashe_data_2, aes(x = 1.5, y = Value,label = Label), nudge_y = -2000) +
+  geom_hline(data = low_pay_thresholds, aes(yintercept = Value, colour = Threshold)) +
+  scale_colour_manual(values=colours)
+```
+
+Splitting income by this threshold indicates that in the there is a marginally greater proportion of outsourced workers in the low income group compared to the high income group (note this needs to be determined statistically, which we will do in the analysis script).
+
+```{r}
+data <- data %>%
+  mutate(
+    income_group = case_when(income_annual < low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")]  ~ "Low",
+                        income_annual >= low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")] ~ "Not low",
+                              TRUE ~ NA)
+  )
+
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(income_group, outsourcing_status) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(income_group, perc, fill = outsourcing_status)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
+```
+
+Framing this another way, a greater proportion of outsourced workers fall into the low pay bracket compared to non-outsourced workers (again, this needs qualifying statistically).
+
+```{r}
+data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  group_by(outsourcing_status, income_group) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(outsourcing_status, perc, fill = income_group)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
+```
+
+### Improving N for income
+
+When reporting income, respondents could choose whether to report income using an open text method or a bracket method. All income-based work in this report so far has used only the open text methods. We may be interested to combine data from the CLOSED questions with the OPEN ones, although there is not a clear method for doing so. Possible options are:
+
+1.  Make all numeric. This would involve taking the midpoint of the bracket for CLOSED responses and using that as a numeric value. I think this is very questionable because it will impact the distribution and effectively make it meaningless.
+2.  Make all brackets. This would involve categorising the numeric income data into the same brackets that are present in the CLOSED method. This would maximise our coverage - as all incomes can be sensibly harmonised - but it would mean we don't have a distribution to work with, which limits how we apply thresholds to responses and limits the resolution with which we can look at the income data.
+3.  Continue to keep them separate. This involves doing what we can separately with the two types of reporting method. Advantage is we maximise coverage. Disadvantages are that it will double the work and muddy the picture (as we have to consider income in two different ways).
+
+<!-- One solution could be to explore this by comparing to the closed method of reporting, but on inspection it seems that respondents either reported OPEN or CLOSED, but not both. -->
+
+```{r}
+income_subset <- data %>%
+  select(INCOME_FREQ, contains("INCOME_OPEN"), income_annual, contains("INCOME_CLOSED_")) %>%
+  mutate(
+    INCOME_FREQ = haven::as_factor(INCOME_FREQ)
+  )
+
+# Check whether any of the income closed variables has non-missing on same rows as income open (derived). There are none.
+vars <- colnames(select(income_subset, contains("INCOME_CLOSED")))
+for(i in vars){
+  cat(paste0(i,": ",sum(!is.na(income_subset$income_annual) & !is.na(income_subset[i]))), "\n")
+}
+
+# Skim indicates completion of closed weekly/hourly is really low, but monthyl/annual is a bit better. We might want to try and combine somehow. Think about code to exract hte numbers from brackets, then take the midpoint of the two numbers. Extract after '£', to ' '. But into two separate elements to start
+skim(income_subset)
+```
+
+## Save
+
+```{r}
+saveRDS(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.rds"))
+# haven::write_sav(as.data.frame(data), path = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.sav"))
+write_csv(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.csv"))
+```
