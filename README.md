@@ -1,6 +1,8 @@
 # Outsourced workers in the UK: Joseph Rowntree Foundation
 # Nationally representative analysis
 
+[Click here for the report template](https://project-x-uk.github.io/jrf_nat_rep/R/report_template)
+
 The focus of this project is to co-develop a piece of research on the low-paid outsourced workforce in the UK, with a particular focus on the experiences of Black workers.
 
 The quantitative aspect of this work involves three surveys:
