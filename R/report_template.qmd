@@ -31,6 +31,7 @@ library(MASS)
 library(wesanderson)
 library(ggrepel)
 library(here)
+library(emmeans)
 ```
 
 ```{r palette}
@@ -259,13 +260,17 @@ test <- data %>%
 ```
 
 
+
 ```{r income-inferentials}
-test <- lm(income_annual ~ outsourcing_status*income_group, data)
+test <- lm(income_annual ~ Age + Gender + Ethnicity + Region + outsourcing_status*income_group, data, weights = NatRepemployees)
 summary(test)
 
+emmeans(test, specs = "outsourcing_status", by = "income_group")
+
+sjPlot::plot_model(test, type = "int")
 ```
 
-
+The results here indicate that among workers that are not paid below our low pay threshold, an outsourced worker can typically be expected to earn considerably more than a non-outsourced worker, whereas among workers that are paid below our low pay threshold, an outsourced worker can typically be expected to be paid the same as a non-outsourced worker (maybe slightly less).
 
 ### Major group code
 
@@ -507,7 +512,6 @@ readr::write_csv(caring_summary, "../outputs/data/caring_occs_summary.csv")
 
 This framing shows how outsourced and non-outsourced workers are distributed across sectors.
 
-
 ```{r sector-summary}
 sector_summary <- data %>%
   group_by(outsourcing_status, SectorName, SectorName_labelled) %>%
@@ -542,7 +546,6 @@ readr::write_csv(sector_summary, "../outputs/data/sector_summary.csv")
 The plot below shows the sector breakdown by outsourcing status. I.e. this is how outsourced and not outsourced workers are distributed across sectors.
 
 ::: callout-note
-
 With this framing we could say things like "as an outsourced worker, you are x times more likely to work in <sector> than a non-outsourced worker"
 :::
 
@@ -569,12 +572,12 @@ The table below shows what percentage of outsourced and non-outsourced workers w
 
 It indicates that sectors that are *less common* for outsourced workers compared to not outsourced are:
 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])` 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])` 
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
 
 And sectors that are *more common* for outsourced workers compared to not outsourced are:
 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` 
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
 
 For these sectors that differ most in the concentration of the outsourced workforce, there is a pattern (if three data points can be called that) whereby in sectors with a relatively higher concentration of outsourced workers, outsourced workers are paid less, and in sectors with a relatively lower concentration of outsourced workers, outsourced workers are paid more. This is tenuous, but it is an example of the heterogeneity in income between sectors, and should be explored further.
 
@@ -596,13 +599,12 @@ sector_summary_3 %>%
   kable_styling(full_width = F)
 ```
 
-
 The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers. These sectors are:
 
-- `r unique(plot_data$SectorName[plot_data$SectorName==5])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])` 
-- `r unique(plot_data$SectorName[plot_data$SectorName==6])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])` 
-- `r unique(plot_data$SectorName[plot_data$SectorName==9])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])` 
-- `r unique(plot_data$SectorName[plot_data$SectorName==20])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])` 
+-   `r unique(plot_data$SectorName[plot_data$SectorName==5])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==6])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==9])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==20])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
 
 ```{r}
 annotations <- data.frame(
@@ -665,7 +667,6 @@ sector_summary_2 <- data %>%
 The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
 
 ::: callout-note
-
 With this framing we could say things like "sector a is x times more likely to employ outsourced workers than sector b"
 :::
 
@@ -702,11 +703,11 @@ ggplot(plot_data,aes(SectorName_short, perc, fill = outsourcing_status)) +
 #   kable_styling(full_width = F)
 ```
 
-The table below shows the percentage of outsourced workers in each Sector, ordered descending by percentage. It shows that the top three Sectors with the highest proportion of outsourced workers are: 
+The table below shows the percentage of outsourced workers in each Sector, ordered descending by percentage. It shows that the top three Sectors with the highest proportion of outsourced workers are:
 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
 
 Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
 
@@ -723,26 +724,26 @@ Exploring this workforce makeup in the context of income shows that there are so
 
 Sectors where outsourced workers are paid less:
 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32) 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])` 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
 
 Sectors where outsourced workers are paid more:
 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])` 
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
-- `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
 
 Note that in 2 or 3 of the Sectors where outsourced workers are paid less are low-paying Sectors. (this needs to be double-checked)
 
@@ -842,8 +843,7 @@ for(group in unique(sector_summary_paysplit$income_group)){
 }
 ```
 
-
-The percentages below show be read as e.g. 20% of low paid workers in accommodation and food services are outsourced, compared to 16% of not low paid workers in accommodation and food services. 
+The percentages below show be read as e.g. 20% of low paid workers in accommodation and food services are outsourced, compared to 16% of not low paid workers in accommodation and food services.
 
 ```{r test}
 plot_data <- sector_summary_paysplit %>%
@@ -869,8 +869,6 @@ ggplot(plot_data, aes(SectorName_short, perc, fill = income_group)) +
     scale_y_continuous(breaks=seq(0,50,10)) +
     ggtitle("Percentage of outsourced workers within\neach sector by income group")
 ```
-
-
 
 ```{r sector-paysplit-income-plot}
 
@@ -911,10 +909,6 @@ for(group in unique(sector_summary_paysplit$income_group)){
 
 
 ```
-
-
-
-
 
 ### Ethnicity
 
@@ -1104,7 +1098,7 @@ test <- glm(outsourcing_status ~ Age + Gender + income_group + Ethnicity_short, 
 summary(test)
 ```
 
-<!---# We should construct a full model predicting outsourcing status from demographics ---> 
+<!---# We should construct a full model predicting outsourcing status from demographics --->
 
 Another way of looking at this is to calculate, for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.[^9]
 
