@@ -922,8 +922,14 @@ ethnicity_statistics <- data %>%
   mutate(
     N = sum(n),
     Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  )
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+    separate_wider_delim(Ethnicity_short, 
+                         names = c("Ethnicity_short", "Ethnicity detail"), 
+                         delim = stringr::regex(" / |, "),  # use multiple delims
+                         too_few = "align_start",
+                         too_many = "merge")
 
 readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_1.csv")
 ```
@@ -971,15 +977,15 @@ x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE)
 # (chi-square = `r round(x2[["chisq"]][["statistic"]][["X-squared"]],2)`, *p* = `r round(x2[["chisq"]][["p.value"]],3)`).
 ```
 
-Breaking down by ethnicity shows that the outsourced group has a lower proportion of White workers compared to the non-outsourced group. For example, in the outsourced group, the proportion of British ('White') workers is `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` %, compared to `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% in the not outsourced group. Needless to say, this means that there is a correspondingly higher proportion of workers from minority backgrounds in the outsourced group, notably from African (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "African"), "Percentage"],2)`%) and other White backgrounds (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity == "Any other White background"), "Percentage"],2)`, amongst others.[^8] These differences mean that **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to be a member of minority ethnicity than non-outsourced workers.**
+Breaking down by ethnicity shows that the outsourced group has a lower proportion of White workers compared to the non-outsourced group. For example, in the outsourced group, the proportion of British ('White') workers is `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)` %, compared to `r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% in the not outsourced group. Needless to say, this means that there is a correspondingly higher proportion of workers from minority backgrounds in the outsourced group, notably from African (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_labelled == "African"), "Percentage"],2)`%) and other White backgrounds (`r round(ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_labelled == "Any other White background"), "Percentage"],2)`, amongst others.[^8] These differences mean that **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to be a member of minority ethnicity than non-outsourced workers.**
 
 [^8]: Data file: outputs/data/ethnicity_stats_1.csv
 
 ```{r ethnicity-plot}
 ethnicity_statistics %>%
-  mutate(
-    Ethnicity = haven::as_factor(Ethnicity)
-    ) %>%
+  # mutate(
+  #   Ethnicity = haven::as_factor(Ethnicity)
+  #   ) %>%
   knitr::kable(.,digits = 2) %>%
   kable_styling(full_width = F)
 
@@ -1003,7 +1009,7 @@ data %>%
   theme_minimal()
 
 ethnicity_key <- data.frame("number" = seq(1,22,1),
-                            "ethnicity" = c(levels(ethnicity_statistics$Ethnicity), NA))
+                            "ethnicity" = c(levels(ethnicity_statistics$Ethnicity_labelled), NA))
 
 ethnicity_key %>%
   kable() %>%
