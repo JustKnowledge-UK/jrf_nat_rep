@@ -626,7 +626,8 @@ data <- data %>%
   mutate(
     income_group = case_when(income_annual < low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")]  ~ "Low",
                         income_annual >= low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")] ~ "Not low",
-                              TRUE ~ NA)
+                              TRUE ~ NA),
+    income_group = factor(income_group, levels = c("Not low","Low"), exclude=NA)
   )
 
 data %>%
