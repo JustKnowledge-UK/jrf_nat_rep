@@ -32,11 +32,15 @@ library(wesanderson)
 library(ggrepel)
 library(here)
 library(emmeans)
+library(Hmisc)
+library(sjstats)
+library(readr)
 ```
 
 ```{r palette}
 rm(list = ls())
 colours <- wes_palette("GrandBudapest2",4,"discrete")
+better_colours <- c('#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462')
 many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f')
 ```
 
@@ -79,10 +83,10 @@ rgn_empl_denoms <- rgn_empl_denoms %>%
 total_outsourced <- data %>%
   group_by(outsourcing_status) %>%
   summarise(
-    n = n()
+    Sum = sum(NatRepemployees)
   ) %>%
   mutate(
-    Proportion = n / sum(n),
+    Proportion = Sum / sum(Sum),
     Percentage = 100 * Proportion
   )
 
@@ -116,11 +120,11 @@ income_statistics <- data %>%
   filter(income_drop == 0 & !is.na(income_annual)) %>%
   group_by(outsourcing_status) %>%
   summarise(
-    mean = mean(income_annual, na.rm = T),
-    median = median(income_annual,na.rm = T),
-    min = min(income_annual,na.rm = T),
-    max = max(income_annual,na.rm = T),
-    stdev = sd(income_annual,na.rm = T)
+    mean = weighted.mean(income_annual, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual, w = NatRepemployees, na.rm = T))
   )
 
 knitr::kable(income_statistics, 
@@ -155,15 +159,16 @@ data %>%
 temp_data <- data %>%
   filter(income_drop == 0 & !is.na(income_annual)) 
 
-ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
-       temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
-)
+# ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
+#        temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
+# )
 
+ttest <-  sjstats::weighted_ttest(income_annual ~ outsourcing_status + NatRepemployees, temp_data)
 #cohens_d(ttest)
 
 ```
 
-Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["parameter"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
+Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
 
 ```{r bubble-chart, include=FALSE}
 test <- data %>%
@@ -260,17 +265,17 @@ test <- data %>%
 ```
 
 
+Below, we run a linear regression testing whether the relationship between outsourcing status and  annual income is influenced by income group (not low vs low), controlling for age, gender, ethnicity, and region. We do indeed find a significant interaction effect. The figure below plots this.
 
 ```{r income-inferentials}
 test <- lm(income_annual ~ Age + Gender + Ethnicity + Region + outsourcing_status*income_group, data, weights = NatRepemployees)
-summary(test)
+# summary(test)
 
 emmeans(test, specs = "outsourcing_status", by = "income_group")
 
 sjPlot::plot_model(test, type = "int")
 ```
-
-The results here indicate that among workers that are not paid below our low pay threshold, an outsourced worker can typically be expected to earn considerably more than a non-outsourced worker, whereas among workers that are paid below our low pay threshold, an outsourced worker can typically be expected to be paid the same as a non-outsourced worker (maybe slightly less).
+The results here indicate that among workers that are not paid below our low pay threshold, an outsourced worker can typically be expected to earn considerably more than a non-outsourced worker, whereas among workers that are paid below our low pay threshold, an outsourced worker can typically be expected to be paid the same as a non-outsourced worker (maybe slightly less). Of note is that for both pay groups, the variance in pay is higher for the outsourced groups.
 
 ### Major group code
 
@@ -543,7 +548,7 @@ readr::write_csv(sector_summary, "../outputs/data/sector_summary.csv")
 
 ```
 
-The plot below shows the sector breakdown by outsourcing status. I.e. this is how outsourced and not outsourced workers are distributed across sectors.
+The plot below shows the sector breakdown by outsourcing status. I.e. this is how outsourced and not outsourced workers are distributed across sectors.^["outputs/data/sector_summary.csv"]
 
 ::: callout-note
 With this framing we could say things like "as an outsourced worker, you are x times more likely to work in <sector> than a non-outsourced worker"
@@ -568,7 +573,7 @@ sector_key %>%
   kable_styling(full_width = F)
 ```
 
-The table below shows what percentage of outsourced and non-outsourced workers work in each sector, as well as the difference between them (positive numbers in the difference column indicate sectors that are more common for outsourced work, negative numbers indicate sectors that are less common for outsourced work).\[\^Datafile: "../outputs/data/sector_summary.csv"\]
+The table below shows what percentage of outsourced and non-outsourced workers work in each sector, as well as the difference between them (positive numbers in the difference column indicate sectors that are more common for outsourced work, negative numbers indicate sectors that are less common for outsourced work).^["outputs/data/sector_summary_2.csv"]
 
 It indicates that sectors that are *less common* for outsourced workers compared to not outsourced are:
 
@@ -582,7 +587,7 @@ And sectors that are *more common* for outsourced workers compared to not outsou
 For these sectors that differ most in the concentration of the outsourced workforce, there is a pattern (if three data points can be called that) whereby in sectors with a relatively higher concentration of outsourced workers, outsourced workers are paid less, and in sectors with a relatively lower concentration of outsourced workers, outsourced workers are paid more. This is tenuous, but it is an example of the heterogeneity in income between sectors, and should be explored further.
 
 ```{r sector-table}
-sector_summary_3 <- plot_data %>%
+sector_summary_2 <- plot_data %>%
   select(outsourcing_status, SectorName, SectorName_short, perc, wtd_avg_income) %>%
   pivot_wider(names_from = outsourcing_status, values_from = c(perc, wtd_avg_income)) %>%
   mutate(
@@ -593,10 +598,12 @@ sector_summary_3 <- plot_data %>%
     perc_difference, .after = perc_Outsourced
   )
 
-sector_summary_3 %>%
+sector_summary_2 %>%
   arrange(desc(abs(perc_difference))) %>%
   kable(digits = 2) %>%
   kable_styling(full_width = F)
+
+readr::write_csv(sector_summary_2, file="../outputs/data/sector_summary_2.csv")
 ```
 
 The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers. These sectors are:
@@ -616,7 +623,7 @@ annotations <- data.frame(
         vjustvar = c(-0.5,1,-0.5,1) # higher values = up, lower values = down
         )
 
-sector_summary_3 %>%
+sector_summary_2 %>%
   ggplot(aes(perc_difference, income_difference)) +
   geom_point() +
   geom_smooth(method="lm", colour=many_colours[2], se=FALSE) +
@@ -628,16 +635,16 @@ sector_summary_3 %>%
 ```
 
 ```{r}
-test <- lm(income_difference ~ perc_difference, sector_summary_3)
+test <- lm(income_difference ~ perc_difference, sector_summary_2)
 summary(test)
 ```
 
-#### Outsourcing status within sector
+#### Outsourcing status within sector^["outputs/data/sector_summary_3.csv"]
 
 This framing shows how sectors are composed, i.e., what proportion of workers in each sector are outsourced vs non-outsourced.
 
-```{r sector-summary-2}
-sector_summary_2 <- data %>%
+```{r sector-summary-3}
+sector_summary_3 <- data %>%
   group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
   summarise(
     n = n(),
@@ -662,6 +669,8 @@ sector_summary_2 <- data %>%
     SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
     SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
   )
+
+write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
 ```
 
 The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
@@ -671,7 +680,7 @@ With this framing we could say things like "sector a is x times more likely to e
 :::
 
 ```{r sector-plot-2}
-plot_data <- sector_summary_2 %>%
+plot_data <- sector_summary_3 %>%
   drop_na(SectorName_short) %>%
   droplevels()
 
@@ -749,7 +758,7 @@ Note that in 2 or 3 of the Sectors where outsourced workers are paid less are lo
 
 ```{r sector-bubble}
 
-annotation_df <- sector_summary_2 %>%
+annotation_df <- sector_summary_3 %>%
   filter(outsourcing_status == "Not outsourced") %>%
   select(SectorName_short, N) %>%
   group_by(SectorName_short) %>%
@@ -760,7 +769,7 @@ annotation_df <- sector_summary_2 %>%
     ypos = 110000
   ) 
 
-sector_summary_2 %>%
+sector_summary_3 %>%
   # mutate(
   #   SectorName = as.factor(SectorName)
   # ) %>%
@@ -779,7 +788,7 @@ sector_summary_2 %>%
 
 <!--# Note: Do statistical comparisons for the above chart. Also split by low-pay split --->
 
-##### Apply the paysplit
+##### Apply the paysplit^["outputs/sector_summary_paysplit.csv"]
 
 ```{r sector-summary-paysplit}
 sector_summary_paysplit <- data %>%
@@ -808,6 +817,9 @@ sector_summary_paysplit <- data %>%
     SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
     SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
   )
+
+write_csv(sector_summary_paysplit, file="../outputs/sector_summary_paysplit.csv")
+
 ```
 
 ```{r sector-paysplit-composition-plot}
@@ -1017,7 +1029,7 @@ ethnicity_key %>%
 
 ```
 
-#### Paysplit
+#### Paysplit^["outputs/data/ethnicity_stats_paysplit_1.csv"]
 
 ```{r ethnicity-summary-paysplit}
 ethnicity_summary_paysplit <- data %>%
@@ -1150,6 +1162,9 @@ ethnicity_statistics %>%
   annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
   coord_flip() +
   scale_fill_manual(values=many_colours, name = "Ethnicity")
+
+
+write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
 ```
 
 ### Arrival in the UK
@@ -1506,73 +1521,29 @@ region_stats_plus_denoms %>%
 
 ### Age
 
-```{r}
-age_statistics <- data %>%
-  # get values of labels
-  mutate_all(haven::as_factor) %>%
-  mutate(
-    # make age numeric, not a labelled factor
-    Age = as.numeric(as.character(Age))
-  ) %>%
-  group_by(outsourcing_status) %>%
+#### Outsourcing status
 
+```{r age-by-status}
+age_statistics <- data %>%
+  group_by(outsourcing_status) %>%
   summarise(
-    mean = mean(Age, na.rm = T),
-    median = median(Age,na.rm = T),
-    min = min(Age,na.rm = T),
-    max = max(Age,na.rm = T),
-    stdev = sd(Age,na.rm = T)
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
   )
 
 readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
 ```
 
 ```{r age-inferential,include=FALSE}
-# note that this test calculates different means to the one above. why??
-# it's to do with haven factors...
-# using data_labelled and and combination of as.numeric(as.character()) solves it
+# weighted ttest
+# formula:
+# weighted_ttest(<var_of_interest> ~ <groups_to_compare> + <weights>, <data>)
 
-ttest <- t.test(data[which(data$outsourcing_status=="Outsourced"),"Age"], 
-       data[which(data$outsourcing_status=="Not outsourced"),"Age"]
-)
+ttest <-  sjstats::weighted_ttest(Age ~ outsourcing_status + NatRepemployees, data)
 
-```
-
-```{r}
-# test <- data %>%
-#   subset(outsourcing_status=="Outsourced") %>%
-#   summarise(
-#     mean_age = mean(Age)
-#   )
-# 
-# test_1_5 <-  data %>%
-#   subset(outsourcing_status=="Outsourced") %>%
-#   summarise(
-#     mean_age = mean(Age, na.rm=T)
-#   )
-# 
-# test_2 <- data %>%
-#   subset(outsourcing_status=="Not outsourced") %>%
-#   summarise(
-#     mean_age = mean(Age)
-#   )
-# 
-# test_2_5 <- data %>%
-#   subset(outsourcing_status=="Not outsourced") %>%
-#   summarise(
-#     mean_age = mean(Age, na.rm=T)
-#   )
-# 
-# test <- data %>%
-#   select(Age) %>%
-#   summarise(
-#     Age = Age,
-#     haven_age = haven::as_factor(Age)
-#   ) %>%
-#   mutate(
-#     age_mean = mean(Age),
-#     haven_age_mean = mean(as.numeric(as.character(haven_age)), na.rm=T)
-#   )
 ```
 
 As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.[^15]
@@ -1581,9 +1552,9 @@ As shown in the table below, the median age of the outsourced group is `r age_st
 
 However, as the next figure shows, the age distribution is different for the outsourced and high indicator groups compared to the not outsourced and likely agency groups; the outsourced and high indicator groups have higher proportions of younger people (\~21-36 year olds).
 
-A t-test indicates that on average, **outsourced workers are significantly younger than non-outsourced workers** (*t*(`r round(ttest[["parameter"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
+A t-test indicates that on average, **outsourced workers are significantly younger than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
 
-```{r age}
+```{r age-by-status-plot}
 knitr::kable(age_statistics, 
              digits = 2, 
              col.names = c("Outsourcing group",
@@ -1603,7 +1574,50 @@ data %>%
   geom_vline(data =age_statistics, aes(xintercept=median, colour = outsourcing_status)) +
   scale_x_continuous(breaks = seq(min(age_statistics$min), max(age_statistics$max),5)) +
   theme_minimal() +
-  scale_colour_manual(values=colours, name = "Outsourcing group") +
-  scale_fill_manual(values=colours, name = "Outsourcing group")
+  scale_colour_manual(values=colours, name = "Outsourcing status") +
+  scale_fill_manual(values=colours, name = "Outsourcing status")
+  
+```
+
+#### Outsourcing group^["outputs/data/age_stats_2.csv"]
+
+
+```{r age-by-group}
+age_statistics_2 <- data %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
+  )
+
+readr::write_csv(age_statistics_2, file = "../outputs/data/age_stats_2.csv")
+```
+
+
+Exploring the age distribution for the different outsourced groups, the high density concentration of slightly younger workers identified above appears to be driven primarily by the 'outsourced' and 'high indicator' groups. The 'likely agency' group follows a similar pattern, but has a lower density peak than the other groups, with a higher density of workers of more advanced ages. 
+
+
+```{r age-by-group-plot}
+knitr::kable(age_statistics_2, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  ggplot(.,aes(Age, colour = outsourcing_group, fill = outsourcing_group)) +
+  geom_density(alpha = 0.2) +
+  geom_vline(data = age_statistics_2, aes(xintercept=median, colour = outsourcing_group)) +
+  scale_x_continuous(breaks = seq(min(age_statistics_2$min), max(age_statistics_2$max),5)) +
+  theme_minimal() +
+  scale_colour_manual(values=better_colours, name = "Outsourcing group") +
+  scale_fill_manual(values=better_colours, name = "Outsourcing group")
   
 ```
