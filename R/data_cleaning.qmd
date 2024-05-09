@@ -445,7 +445,7 @@ number_closed <- data_subset %>%
   nrow()
 ```
 
-`r number_open` respondents answered using the open method. `r number_closed` respondents answered using the closed method.
+`r number_open` respondents answered using the open method. `r number_closed` respondents answered using the closed method. `r nrow(data) - sum(number_open,number_closed)` did not answer either.
 
 For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
 
