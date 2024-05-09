@@ -409,7 +409,45 @@ data <- duplicate_label(data, variables_to_duplicate)
 
 ## Income
 
-Income has an open question and a closed question. For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
+Income has an open question and a closed question. They are mutually exclusive, i.e., respondents can report their income in **either** open **or** closed format, but not both:
+
+```{r}
+# Select just the income columns (and ID)
+data_subset <- data %>%
+  select(c(ID, contains("INCOME", ignore.case = F))) %>%
+  select(!ends_with("labelled") & !ends_with("FREQ") & !ends_with("2"))
+
+# Count how many NAs there are in each row. If any respondent has responded to both OPEN and CLOSED questions, the number of NAs in the row should be less than 4.
+na_count <- data_subset %>%
+  summarise(
+    ID = ID,
+    NA_per_row = rowSums(is.na(.))
+  )
+
+# No rows have less than 4 NAs
+sum(na_count$NA_per_row < 4)
+# one row has five NAS - they didn't answer ANY income question
+sum(na_count$NA_per_row > 4)
+
+# Take a look at this respondent to check
+test_id <- na_count$ID[which(na_count$NA_per_row > 4)]
+data_subset[which(data_subset$ID == test_id),]
+```
+
+```{r}
+number_open <- data_subset %>%
+  filter(!is.na(INCOME_OPEN_1)) %>%
+  nrow()
+
+number_closed <- data_subset %>%
+  filter(is.na(INCOME_OPEN_1)) %>%
+  select(c(ID, contains("CLOSED"))) %>%
+  nrow()
+```
+
+`r number_open` respondents answered using the open method. `r number_closed` respondents answered using the closed method.
+
+For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
 
 ```{r}
 data <- data %>%
@@ -541,7 +579,7 @@ mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1,
 
 ```
 
-As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total N after removal = `r nrow(data) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
+As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total non-NA income_annual N after removal = `r sum(!is.na(data$income_annual)) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
 
 ## Applying income brackets
 
@@ -586,7 +624,7 @@ low_pay_thresholds <- tibble("Threshold" = c("Two thirds median",
 
 The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
 
-Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
+Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exhibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
 
 ```{r}
 income_statistics <- data %>%
@@ -688,6 +726,9 @@ for(i in vars){
 
 # Skim indicates completion of closed weekly/hourly is really low, but monthyl/annual is a bit better. We might want to try and combine somehow. Think about code to exract hte numbers from brackets, then take the midpoint of the two numbers. Extract after '£', to ' '. But into two separate elements to start
 skim(income_subset)
+```
+
+```         
 ```
 
 ## Save

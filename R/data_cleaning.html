@@ -8,7 +8,7 @@
 
 <meta name="author" content="Jolyon Miles-Wilson">
 <meta name="author" content="Celestin Okoroji">
-<meta name="dcterms.date" content="2024-05-08">
+<meta name="dcterms.date" content="2024-05-09">
 
 <title>Outsourcing Report template</title>
 <style>
@@ -3117,7 +3117,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 8, 2024</p>
+      <p class="date">May 9, 2024</p>
     </div>
   </div>
   
@@ -6241,42 +6241,101 @@ SectorName</code></pre>
 </section>
 <section id="income" class="level2">
 <h2 class="anchored" data-anchor-id="income">Income</h2>
-<p>Income has an open question and a closed question. For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.</p>
+<p>Income has an open question and a closed question. They are mutually exclusive, i.e., respondents can report their income in <strong>either</strong> open <strong>or</strong> closed format, but not both:</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get values of labels</span></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mutate_all(haven::as_factor) %&gt;%</span></span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># make all annual incomes. Note this assumes 52 working weeks!</span></span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_annual =</span> <span class="fu">case_when</span>(INCOME_FREQ <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> INCOME_OPEN_1,</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span><span class="dv">12</span>,</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">3</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span><span class="dv">52</span>,</span>
-<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">4</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span>HOURS<span class="sc">*</span><span class="dv">52</span>,</span>
-<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>),</span>
-<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_percentile =</span> <span class="fu">ntile</span>(income_annual, <span class="dv">100</span>)</span>
-<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">999</span>)</span>
-<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>num_dropped <span class="ot">&lt;-</span> <span class="fu">sum</span>(data<span class="sc">$</span>income_percentile <span class="sc">&gt;</span> <span class="dv">95</span> <span class="sc">&amp;</span> data<span class="sc">$</span>income_percentile <span class="sc">&gt;</span> <span class="dv">5</span>, <span class="at">na.rm=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select just the income columns (and ID)</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>data_subset <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">c</span>(ID, <span class="fu">contains</span>(<span class="st">&quot;INCOME&quot;</span>, <span class="at">ignore.case =</span> F))) <span class="sc">%&gt;%</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">!</span><span class="fu">ends_with</span>(<span class="st">&quot;labelled&quot;</span>) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">ends_with</span>(<span class="st">&quot;FREQ&quot;</span>) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">ends_with</span>(<span class="st">&quot;2&quot;</span>))</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Count how many NAs there are in each row. If any respondent has responded to both OPEN and CLOSED questions, the number of NAs in the row should be less than 4.</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>na_count <span class="ot">&lt;-</span> data_subset <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">ID =</span> ID,</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">NA_per_row =</span> <span class="fu">rowSums</span>(<span class="fu">is.na</span>(.))</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="co"># No rows have less than 4 NAs</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(na_count<span class="sc">$</span>NA_per_row <span class="sc">&lt;</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># one row has five NAS - they didn&#39;t answer ANY income question</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(na_count<span class="sc">$</span>NA_per_row <span class="sc">&gt;</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Take a look at this respondent to check</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>test_id <span class="ot">&lt;-</span> na_count<span class="sc">$</span>ID[<span class="fu">which</span>(na_count<span class="sc">$</span>NA_per_row <span class="sc">&gt;</span> <span class="dv">4</span>)]</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>data_subset[<span class="fu">which</span>(data_subset<span class="sc">$</span>ID <span class="sc">==</span> test_id),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  ID                    INCOME_OPEN_1 INCOME_CLOSED_ANNUAL INCOME_CLOSED_MONTHLY
+  &lt;chr&gt;                         &lt;dbl&gt; &lt;dbl+lbl&gt;            &lt;dbl+lbl&gt;            
+1 b9ace7e0-2129-49a3-9…            NA NA                   NA                   
+# ℹ 2 more variables: INCOME_CLOSED_WEEKLY &lt;dbl+lbl&gt;,
+#   INCOME_CLOSED_HOURLY &lt;dbl+lbl&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>number_open <span class="ot">&lt;-</span> data_subset <span class="sc">%&gt;%</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(INCOME_OPEN_1)) <span class="sc">%&gt;%</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>number_closed <span class="ot">&lt;-</span> data_subset <span class="sc">%&gt;%</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(INCOME_OPEN_1)) <span class="sc">%&gt;%</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">c</span>(ID, <span class="fu">contains</span>(<span class="st">&quot;CLOSED&quot;</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>7499 respondents answered using the open method. 2656 respondents answered using the closed method.</p>
+<p>For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get values of labels</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mutate_all(haven::as_factor) %&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># make all annual incomes. Note this assumes 52 working weeks!</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_annual =</span> <span class="fu">case_when</span>(INCOME_FREQ <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> INCOME_OPEN_1,</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span><span class="dv">12</span>,</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">3</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span><span class="dv">52</span>,</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>                              INCOME_FREQ <span class="sc">==</span> <span class="dv">4</span> <span class="sc">~</span> INCOME_OPEN_1<span class="sc">*</span>HOURS<span class="sc">*</span><span class="dv">52</span>,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>),</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_percentile =</span> <span class="fu">ntile</span>(income_annual, <span class="dv">100</span>)</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen =</span> <span class="dv">999</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>num_dropped <span class="ot">&lt;-</span> <span class="fu">sum</span>(data<span class="sc">$</span>income_percentile <span class="sc">&gt;</span> <span class="dv">95</span> <span class="sc">&amp;</span> data<span class="sc">$</span>income_percentile <span class="sc">&gt;</span> <span class="dv">5</span>, <span class="at">na.rm=</span>T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>The range of salaries is massive, with extreme values at either end. This suggests to me that respondents may have entered in their salaries incorrectly.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>income_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_percentile <span class="sc">&lt;</span> <span class="dv">95</span> <span class="sc">&amp;</span> income_percentile <span class="sc">&gt;</span> <span class="dv">5</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status) <span class="sc">%&gt;%</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">mean</span>(income_annual, <span class="at">na.rm =</span> T),</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> <span class="fu">median</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">min =</span> <span class="fu">min</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">max =</span> <span class="fu">max</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">stdev =</span> <span class="fu">sd</span>(income_annual,<span class="at">na.rm =</span> T)</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>income_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_percentile <span class="sc">&lt;</span> <span class="dv">95</span> <span class="sc">&amp;</span> income_percentile <span class="sc">&gt;</span> <span class="dv">5</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status) <span class="sc">%&gt;%</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">mean</span>(income_annual, <span class="at">na.rm =</span> T),</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> <span class="fu">median</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">min =</span> <span class="fu">min</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">max =</span> <span class="fu">max</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">stdev =</span> <span class="fu">sd</span>(income_annual,<span class="at">na.rm =</span> T)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>The distribution of income is highly skewed, with extremely high values creating a tail. It is likely that many extreme values are artefacts of the method of reporting. Below, we identify outliers as values 3 standard deviations above or below the mean. We do this iteratively, removing identified outliers and retesting, until no more outliers are identified.</p>
@@ -6285,40 +6344,40 @@ SectorName</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> data</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the mean and sd, and 3x sd</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>mean <span class="ot">=</span> <span class="fu">mean</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm=</span>T)</span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>std <span class="ot">=</span> <span class="fu">sd</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>Tmin <span class="ot">=</span> mean<span class="sc">-</span>(<span class="dv">3</span><span class="sc">*</span>std)</span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>Tmax <span class="ot">=</span> mean<span class="sc">+</span>(<span class="dv">3</span><span class="sc">*</span>std)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co"># identify the first set of outliers</span></span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>outliers <span class="ot">&lt;-</span> <span class="fu">which</span>(x<span class="sc">$</span>income_annual <span class="sc">&lt;</span> Tmin <span class="sc">|</span> x<span class="sc">$</span>income_annual <span class="sc">&gt;</span> Tmax)</span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>outlier_count <span class="ot">&lt;-</span> <span class="fu">length</span>(outliers) <span class="co"># count how many removed this iteration</span></span>
-<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>all_outlier_ids <span class="ot">&lt;-</span> x<span class="sc">$</span>ID[outliers] <span class="co"># list of ids removed (to be removed from data later)</span></span>
-<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co"># initialise some variables, i.e. iteration 0</span></span>
-<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>count <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># iteration counter</span></span>
-<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>total_cases_removed <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># total cases removed</span></span>
-<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outliers</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> data</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="co"># calculate the mean and sd, and 3x sd</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>mean <span class="ot">=</span> <span class="fu">mean</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm=</span>T)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>std <span class="ot">=</span> <span class="fu">sd</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>Tmin <span class="ot">=</span> mean<span class="sc">-</span>(<span class="dv">3</span><span class="sc">*</span>std)</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>Tmax <span class="ot">=</span> mean<span class="sc">+</span>(<span class="dv">3</span><span class="sc">*</span>std)</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co"># identify the first set of outliers</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>outliers <span class="ot">&lt;-</span> <span class="fu">which</span>(x<span class="sc">$</span>income_annual <span class="sc">&lt;</span> Tmin <span class="sc">|</span> x<span class="sc">$</span>income_annual <span class="sc">&gt;</span> Tmax)</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>outlier_count <span class="ot">&lt;-</span> <span class="fu">length</span>(outliers) <span class="co"># count how many removed this iteration</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>all_outlier_ids <span class="ot">&lt;-</span> x<span class="sc">$</span>ID[outliers] <span class="co"># list of ids removed (to be removed from data later)</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a><span class="co"># initialise some variables, i.e. iteration 0</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>count <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># iteration counter</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>total_cases_removed <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># total cases removed</span></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outliers</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Iteration  0 :  132  outliers</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Take a look at the distribution</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)) <span class="co"># this lets us plot three plots in a row</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># mark the mean and sds for the histogram</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="fu">qqnorm</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Take a look at the distribution</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>)) <span class="co"># this lets us plot three plots in a row</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># mark the mean and sds for the histogram</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="fu">qqnorm</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -6329,35 +6388,35 @@ SectorName</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># While there are still outliers detected, remove the outliers and recalculate </span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co"># mean, sd, and 3*sd and remove the outliers based on these new figures.</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(<span class="fu">length</span>(outliers) <span class="sc">!=</span> <span class="dv">0</span>){</span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  count <span class="ot">&lt;-</span> count <span class="sc">+</span> <span class="dv">1</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">-</span>outliers,] <span class="co"># remove the outliers identified in the previous iteration</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># recalculate</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  mean <span class="ot">=</span> <span class="fu">mean</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  std <span class="ot">=</span> <span class="fu">sd</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  Tmin <span class="ot">=</span> mean <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>  Tmax <span class="ot">=</span> mean <span class="sc">+</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  outliers <span class="ot">&lt;-</span> <span class="fu">which</span>(x<span class="sc">$</span>income_annual <span class="sc">&lt;</span> Tmin <span class="sc">|</span> x<span class="sc">$</span>income_annual <span class="sc">&gt;</span> Tmax)</span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>  outlier_ids <span class="ot">&lt;-</span> x<span class="sc">$</span>ID[outliers] <span class="co"># get outlier ids</span></span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>  all_outlier_ids <span class="ot">&lt;-</span> <span class="fu">append</span>(all_outlier_ids, outlier_ids) <span class="co"># add removed outliers to outlier list</span></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>  total_cases_removed <span class="ot">&lt;-</span> total_cases_removed <span class="sc">+</span> outlier_count <span class="co"># count total</span></span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>  outlier_count <span class="ot">&lt;-</span> <span class="fu">length</span>(outliers) <span class="co"># count how many removed this iteration</span></span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outliers</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Replot distributions to see how they&#39;ve changed</span></span>
-<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">hist</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
-<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">boxplot</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
-<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">qqnorm</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
-<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># While there are still outliers detected, remove the outliers and recalculate </span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co"># mean, sd, and 3*sd and remove the outliers based on these new figures.</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(<span class="fu">length</span>(outliers) <span class="sc">!=</span> <span class="dv">0</span>){</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  count <span class="ot">&lt;-</span> count <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">-</span>outliers,] <span class="co"># remove the outliers identified in the previous iteration</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># recalculate</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  mean <span class="ot">=</span> <span class="fu">mean</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>  std <span class="ot">=</span> <span class="fu">sd</span>(x<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  Tmin <span class="ot">=</span> mean <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>  Tmax <span class="ot">=</span> mean <span class="sc">+</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>  outliers <span class="ot">&lt;-</span> <span class="fu">which</span>(x<span class="sc">$</span>income_annual <span class="sc">&lt;</span> Tmin <span class="sc">|</span> x<span class="sc">$</span>income_annual <span class="sc">&gt;</span> Tmax)</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>  outlier_ids <span class="ot">&lt;-</span> x<span class="sc">$</span>ID[outliers] <span class="co"># get outlier ids</span></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>  all_outlier_ids <span class="ot">&lt;-</span> <span class="fu">append</span>(all_outlier_ids, outlier_ids) <span class="co"># add removed outliers to outlier list</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>  total_cases_removed <span class="ot">&lt;-</span> total_cases_removed <span class="sc">+</span> outlier_count <span class="co"># count total</span></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>  outlier_count <span class="ot">&lt;-</span> <span class="fu">length</span>(outliers) <span class="co"># count how many removed this iteration</span></span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outliers</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Replot distributions to see how they&#39;ve changed</span></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">hist</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">boxplot</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">qqnorm</span>(x<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Iteration  1 :  144  outliers</code></pre>
@@ -6441,42 +6500,42 @@ SectorName</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(total_cases_removed, <span class="st">&quot; cases removed in total, across &quot;</span>, count, <span class="st">&quot; iterations&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(total_cases_removed, <span class="st">&quot; cases removed in total, across &quot;</span>, count, <span class="st">&quot; iterations&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>635  cases removed in total, across  8  iterations</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop the cases identified as outliers from data</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>income_drop[<span class="fu">which</span>(data<span class="sc">$</span>ID <span class="sc">%in%</span> all_outlier_ids)] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>income_drop[<span class="fu">is.na</span>(data<span class="sc">$</span>income_drop)] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># make NAs 0</span></span>
-<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check this looks right</span></span>
-<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(data<span class="sc">$</span>income_drop, <span class="at">na.rm =</span> T) <span class="co"># this should be equal to all_outlier_ids</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Drop the cases identified as outliers from data</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>income_drop[<span class="fu">which</span>(data<span class="sc">$</span>ID <span class="sc">%in%</span> all_outlier_ids)] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>income_drop[<span class="fu">is.na</span>(data<span class="sc">$</span>income_drop)] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># make NAs 0</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check this looks right</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(data<span class="sc">$</span>income_drop, <span class="at">na.rm =</span> T) <span class="co"># this should be equal to all_outlier_ids</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 635</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This should look the same as the last iteration above#</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>mean <span class="ot">=</span> <span class="fu">mean</span>(test<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>std <span class="ot">=</span> <span class="fu">sd</span>(test<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>Tmin <span class="ot">=</span> mean <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>Tmax <span class="ot">=</span> mean <span class="sc">+</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a><span class="fu">qqnorm</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
-<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># This should look the same as the last iteration above#</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>mean <span class="ot">=</span> <span class="fu">mean</span>(test<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>std <span class="ot">=</span> <span class="fu">sd</span>(test<span class="sc">$</span>income_annual, <span class="at">na.rm =</span> T)</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>Tmin <span class="ot">=</span> mean <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>Tmax <span class="ot">=</span> mean <span class="sc">+</span> (<span class="dv">3</span> <span class="sc">*</span> std)</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Histogram&quot;</span>) </span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> mean, <span class="at">col=</span><span class="st">&#39;red&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmin, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> Tmax, <span class="at">col=</span><span class="st">&#39;blue&#39;</span>, <span class="at">lwd =</span> <span class="dv">3</span>)</span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Boxplot&quot;</span>)</span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a><span class="fu">qqnorm</span>(test<span class="sc">$</span>income_annual, <span class="at">main =</span> <span class="st">&quot;Normal Q-Q plot&quot;</span>)</span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="fu">paste0</span>(<span class="st">&quot;Iteration &quot;</span>, count, <span class="st">&quot;: &quot;</span>, outlier_count, <span class="st">&quot; outlier(s)&quot;</span>), <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">outer =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -6486,7 +6545,7 @@ SectorName</code></pre>
 </div>
 </div>
 </div>
-<p>As shown above, the process involved 8 iterations, and in total identified 635 observations which should be removed when examining income data (total N after removal = 9520). The resulting income distribution is now more sensibly distributed.</p>
+<p>As shown above, the process involved 8 iterations, and in total identified 635 observations which should be removed when examining income data (total non-NA income_annual N after removal = 6864). The resulting income distribution is now more sensibly distributed.</p>
 </section>
 <section id="applying-income-brackets" class="level2">
 <h2 class="anchored" data-anchor-id="applying-income-brackets">Applying income brackets</h2>
@@ -6499,68 +6558,68 @@ SectorName</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>ashe_data <span class="ot">&lt;-</span> readxl<span class="sc">::</span><span class="fu">read_xls</span>(<span class="st">&quot;../Data/raw_data/ashetable12023provisional/PROV - Total Table 1.7a   Annual pay - Gross 2023.xls&quot;</span>,</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">sheet =</span> <span class="st">&quot;All&quot;</span>, <span class="at">skip =</span> <span class="dv">4</span>, <span class="at">n_max =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Median, <span class="st">&quot;10&quot;</span><span class="sc">:</span><span class="st">&quot;90&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">50</span><span class="st">`</span> <span class="ot">=</span> Median <span class="co"># rename median to 50th percentile</span></span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">&quot;Decile&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;Value&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">Decile =</span> <span class="fu">as.numeric</span>(Decile)</span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Decile)</span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="co"># make a smaller table with just 25, 50 and 75 percentiles - for plotting</span></span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>ashe_data_2 <span class="ot">&lt;-</span> ashe_data <span class="sc">%&gt;%</span></span>
-<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(Decile <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">50</span>, <span class="dv">75</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">Label =</span> <span class="fu">case_when</span>(Decile <span class="sc">==</span> <span class="dv">25</span> <span class="sc">~</span> <span class="st">&quot;ASHE 25th percentile&quot;</span>,</span>
-<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>                      Decile <span class="sc">==</span> <span class="dv">50</span> <span class="sc">~</span> <span class="st">&quot;ASHE median&quot;</span>,</span>
-<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>                      Decile <span class="sc">==</span> <span class="dv">75</span> <span class="sc">~</span> <span class="st">&quot;ASHE 75th percentile&quot;</span>,</span>
-<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>                      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>)</span>
-<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a><span class="co"># make tibble of possible pay thresholds</span></span>
-<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>low_pay_thresholds <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="st">&quot;Threshold&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Two thirds median&quot;</span>, </span>
-<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">&quot;Four fifths median&quot;</span>),</span>
-<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>                             <span class="st">&quot;Value&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">29669</span> <span class="sc">*</span> (<span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>), <span class="dv">29669</span> <span class="sc">*</span> <span class="fl">0.8</span>)</span>
-<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>ashe_data <span class="ot">&lt;-</span> readxl<span class="sc">::</span><span class="fu">read_xls</span>(<span class="st">&quot;../Data/raw_data/ashetable12023provisional/PROV - Total Table 1.7a   Annual pay - Gross 2023.xls&quot;</span>,</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">sheet =</span> <span class="st">&quot;All&quot;</span>, <span class="at">skip =</span> <span class="dv">4</span>, <span class="at">n_max =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Median, <span class="st">&quot;10&quot;</span><span class="sc">:</span><span class="st">&quot;90&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">50</span><span class="st">`</span> <span class="ot">=</span> Median <span class="co"># rename median to 50th percentile</span></span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">&quot;Decile&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;Value&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">Decile =</span> <span class="fu">as.numeric</span>(Decile)</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Decile)</span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="co"># make a smaller table with just 25, 50 and 75 percentiles - for plotting</span></span>
+<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>ashe_data_2 <span class="ot">&lt;-</span> ashe_data <span class="sc">%&gt;%</span></span>
+<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">subset</span>(Decile <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">25</span>, <span class="dv">50</span>, <span class="dv">75</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb49-17"><a href="#cb49-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">Label =</span> <span class="fu">case_when</span>(Decile <span class="sc">==</span> <span class="dv">25</span> <span class="sc">~</span> <span class="st">&quot;ASHE 25th percentile&quot;</span>,</span>
+<span id="cb49-18"><a href="#cb49-18" aria-hidden="true" tabindex="-1"></a>                      Decile <span class="sc">==</span> <span class="dv">50</span> <span class="sc">~</span> <span class="st">&quot;ASHE median&quot;</span>,</span>
+<span id="cb49-19"><a href="#cb49-19" aria-hidden="true" tabindex="-1"></a>                      Decile <span class="sc">==</span> <span class="dv">75</span> <span class="sc">~</span> <span class="st">&quot;ASHE 75th percentile&quot;</span>,</span>
+<span id="cb49-20"><a href="#cb49-20" aria-hidden="true" tabindex="-1"></a>                      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>)</span>
+<span id="cb49-21"><a href="#cb49-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb49-22"><a href="#cb49-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-23"><a href="#cb49-23" aria-hidden="true" tabindex="-1"></a><span class="co"># make tibble of possible pay thresholds</span></span>
+<span id="cb49-24"><a href="#cb49-24" aria-hidden="true" tabindex="-1"></a>low_pay_thresholds <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="st">&quot;Threshold&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Two thirds median&quot;</span>, </span>
+<span id="cb49-25"><a href="#cb49-25" aria-hidden="true" tabindex="-1"></a>                                         <span class="st">&quot;Four fifths median&quot;</span>),</span>
+<span id="cb49-26"><a href="#cb49-26" aria-hidden="true" tabindex="-1"></a>                             <span class="st">&quot;Value&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">29669</span> <span class="sc">*</span> (<span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>), <span class="dv">29669</span> <span class="sc">*</span> <span class="fl">0.8</span>)</span>
+<span id="cb49-27"><a href="#cb49-27" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <p>The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The ‘two thirds’ threshold (19779.3333333) is almost exactly equal to the ASHE 25th percentile (19783), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The ‘four fifths’ threshold sits closer to the outsourced group’s median, at 23735.2. The ASHE median income is 29669. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.</p>
-<p>Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group’s median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.</p>
+<p>Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group’s median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exhibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>income_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status) <span class="sc">%&gt;%</span></span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">mean</span>(income_annual, <span class="at">na.rm =</span> T),</span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> <span class="fu">median</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">min =</span> <span class="fu">min</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">max =</span> <span class="fu">max</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">stdev =</span> <span class="fu">sd</span>(income_annual,<span class="at">na.rm =</span> T),</span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>()</span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the distribution of income for the two groups</span></span>
-<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
-<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
-<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(., <span class="fu">aes</span>(outsourcing_status, income_annual)) <span class="sc">+</span> </span>
-<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_violin</span>() <span class="sc">+</span></span>
-<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">width =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">inherit.aes=</span>F, <span class="at">data=</span>income_statistics, <span class="fu">aes</span>(outsourcing_status, <span class="at">y =</span> <span class="fl">6e+04</span>), <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">&quot;Mean = &quot;</span>, <span class="fu">round</span>(income_statistics<span class="sc">$</span>mean,<span class="dv">0</span>),<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>, <span class="st">&quot;Median = &quot;</span>, income_statistics<span class="sc">$</span>median), <span class="at">nudge_x =</span> <span class="fl">0.1</span>, <span class="at">hjust=</span><span class="dv">0</span>) <span class="sc">+</span></span>
-<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="fl">2.5</span>)) <span class="sc">+</span></span>
-<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Annual income&quot;</span>) <span class="sc">+</span></span>
-<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">ylim =</span> <span class="fu">c</span>(plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">min</span>(income_statistics<span class="sc">$</span>min), <span class="dv">5000</span>, <span class="at">f =</span> floor),plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">max</span>(income_statistics<span class="sc">$</span>max),<span class="dv">5000</span>, <span class="at">f =</span> ceiling))) <span class="sc">+</span></span>
-<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">min</span>(income_statistics<span class="sc">$</span>min), <span class="dv">5000</span>, <span class="at">f =</span> ceiling), plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">max</span>(income_statistics<span class="sc">$</span>max),<span class="dv">5000</span>, <span class="at">f =</span> ceiling), <span class="dv">10000</span>)) <span class="sc">+</span></span>
-<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">data =</span> ashe_data_2, <span class="fu">aes</span>(<span class="at">yintercept =</span> Value)) <span class="sc">+</span></span>
-<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">inherit.aes =</span> F, <span class="at">data =</span> ashe_data_2, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fl">1.5</span>, <span class="at">y =</span> Value,<span class="at">label =</span> Label), <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">2000</span>) <span class="sc">+</span></span>
-<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">data =</span> low_pay_thresholds, <span class="fu">aes</span>(<span class="at">yintercept =</span> Value, <span class="at">colour =</span> Threshold)) <span class="sc">+</span></span>
-<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values=</span>colours)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>income_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status) <span class="sc">%&gt;%</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">mean</span>(income_annual, <span class="at">na.rm =</span> T),</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> <span class="fu">median</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">min =</span> <span class="fu">min</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">max =</span> <span class="fu">max</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">stdev =</span> <span class="fu">sd</span>(income_annual,<span class="at">na.rm =</span> T),</span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>()</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the distribution of income for the two groups</span></span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(., <span class="fu">aes</span>(outsourcing_status, income_annual)) <span class="sc">+</span> </span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_violin</span>() <span class="sc">+</span></span>
+<span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_boxplot</span>(<span class="at">width =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb50-19"><a href="#cb50-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">inherit.aes=</span>F, <span class="at">data=</span>income_statistics, <span class="fu">aes</span>(outsourcing_status, <span class="at">y =</span> <span class="fl">6e+04</span>), <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">&quot;Mean = &quot;</span>, <span class="fu">round</span>(income_statistics<span class="sc">$</span>mean,<span class="dv">0</span>),<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>, <span class="st">&quot;Median = &quot;</span>, income_statistics<span class="sc">$</span>median), <span class="at">nudge_x =</span> <span class="fl">0.1</span>, <span class="at">hjust=</span><span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb50-20"><a href="#cb50-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="fl">2.5</span>)) <span class="sc">+</span></span>
+<span id="cb50-21"><a href="#cb50-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb50-22"><a href="#cb50-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Annual income&quot;</span>) <span class="sc">+</span></span>
+<span id="cb50-23"><a href="#cb50-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">ylim =</span> <span class="fu">c</span>(plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">min</span>(income_statistics<span class="sc">$</span>min), <span class="dv">5000</span>, <span class="at">f =</span> floor),plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">max</span>(income_statistics<span class="sc">$</span>max),<span class="dv">5000</span>, <span class="at">f =</span> ceiling))) <span class="sc">+</span></span>
+<span id="cb50-24"><a href="#cb50-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">min</span>(income_statistics<span class="sc">$</span>min), <span class="dv">5000</span>, <span class="at">f =</span> ceiling), plyr<span class="sc">::</span><span class="fu">round_any</span>(<span class="fu">max</span>(income_statistics<span class="sc">$</span>max),<span class="dv">5000</span>, <span class="at">f =</span> ceiling), <span class="dv">10000</span>)) <span class="sc">+</span></span>
+<span id="cb50-25"><a href="#cb50-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">data =</span> ashe_data_2, <span class="fu">aes</span>(<span class="at">yintercept =</span> Value)) <span class="sc">+</span></span>
+<span id="cb50-26"><a href="#cb50-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="at">inherit.aes =</span> F, <span class="at">data =</span> ashe_data_2, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fl">1.5</span>, <span class="at">y =</span> Value,<span class="at">label =</span> Label), <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">2000</span>) <span class="sc">+</span></span>
+<span id="cb50-27"><a href="#cb50-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">data =</span> low_pay_thresholds, <span class="fu">aes</span>(<span class="at">yintercept =</span> Value, <span class="at">colour =</span> Threshold)) <span class="sc">+</span></span>
+<span id="cb50-28"><a href="#cb50-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values=</span>colours)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -6574,27 +6633,27 @@ SectorName</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_group =</span> <span class="fu">case_when</span>(income_annual <span class="sc">&lt;</span> low_pay_thresholds<span class="sc">$</span>Value[<span class="fu">which</span>(low_pay_thresholds<span class="sc">$</span>Threshold <span class="sc">==</span> <span class="st">&quot;Four fifths median&quot;</span>)]  <span class="sc">~</span> <span class="st">&quot;Low&quot;</span>,</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>                        income_annual <span class="sc">&gt;=</span> low_pay_thresholds<span class="sc">$</span>Value[<span class="fu">which</span>(low_pay_thresholds<span class="sc">$</span>Threshold <span class="sc">==</span> <span class="st">&quot;Four fifths median&quot;</span>)] <span class="sc">~</span> <span class="st">&quot;Not low&quot;</span>,</span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>),</span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_group =</span> <span class="fu">factor</span>(income_group, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;Not low&quot;</span>,<span class="st">&quot;Low&quot;</span>), <span class="at">exclude=</span><span class="cn">NA</span>)</span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(income_group, outsourcing_status) <span class="sc">%&gt;%</span></span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">sum</span>(NatRepemployees)</span>
-<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">perc =</span> <span class="dv">100</span> <span class="sc">*</span> (n <span class="sc">/</span> <span class="fu">sum</span>(n))</span>
-<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(income_group, perc, <span class="at">fill =</span> outsourcing_status)) <span class="sc">+</span></span>
-<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours) <span class="sc">+</span></span>
-<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_group =</span> <span class="fu">case_when</span>(income_annual <span class="sc">&lt;</span> low_pay_thresholds<span class="sc">$</span>Value[<span class="fu">which</span>(low_pay_thresholds<span class="sc">$</span>Threshold <span class="sc">==</span> <span class="st">&quot;Four fifths median&quot;</span>)]  <span class="sc">~</span> <span class="st">&quot;Low&quot;</span>,</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>                        income_annual <span class="sc">&gt;=</span> low_pay_thresholds<span class="sc">$</span>Value[<span class="fu">which</span>(low_pay_thresholds<span class="sc">$</span>Threshold <span class="sc">==</span> <span class="st">&quot;Four fifths median&quot;</span>)] <span class="sc">~</span> <span class="st">&quot;Not low&quot;</span>,</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>                              <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA</span>),</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">income_group =</span> <span class="fu">factor</span>(income_group, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;Not low&quot;</span>,<span class="st">&quot;Low&quot;</span>), <span class="at">exclude=</span><span class="cn">NA</span>)</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(income_group, outsourcing_status) <span class="sc">%&gt;%</span></span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">sum</span>(NatRepemployees)</span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">perc =</span> <span class="dv">100</span> <span class="sc">*</span> (n <span class="sc">/</span> <span class="fu">sum</span>(n))</span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(income_group, perc, <span class="at">fill =</span> outsourcing_status)) <span class="sc">+</span></span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours) <span class="sc">+</span></span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -6608,19 +6667,19 @@ SectorName</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status, income_group) <span class="sc">%&gt;%</span></span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">sum</span>(NatRepemployees)</span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">perc =</span> <span class="dv">100</span> <span class="sc">*</span> (n <span class="sc">/</span> <span class="fu">sum</span>(n))</span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(outsourcing_status, perc, <span class="at">fill =</span> income_group)) <span class="sc">+</span></span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours) <span class="sc">+</span></span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(income_drop <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_annual)) <span class="sc">%&gt;%</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(outsourcing_status, income_group) <span class="sc">%&gt;%</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">sum</span>(NatRepemployees)</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">perc =</span> <span class="dv">100</span> <span class="sc">*</span> (n <span class="sc">/</span> <span class="fu">sum</span>(n))</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(outsourcing_status, perc, <span class="at">fill =</span> income_group)) <span class="sc">+</span></span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours) <span class="sc">+</span></span>
+<span id="cb52-13"><a href="#cb52-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>
@@ -6642,17 +6701,17 @@ SectorName</code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>income_subset <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(INCOME_FREQ, <span class="fu">contains</span>(<span class="st">&quot;INCOME_OPEN&quot;</span>), income_annual, <span class="fu">contains</span>(<span class="st">&quot;INCOME_CLOSED_&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">INCOME_FREQ =</span> haven<span class="sc">::</span><span class="fu">as_factor</span>(INCOME_FREQ)</span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Check whether any of the income closed variables has non-missing on same rows as income open (derived). There are none.</span></span>
-<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">colnames</span>(<span class="fu">select</span>(income_subset, <span class="fu">contains</span>(<span class="st">&quot;INCOME_CLOSED&quot;</span>)))</span>
-<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> vars){</span>
-<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">paste0</span>(i,<span class="st">&quot;: &quot;</span>,<span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(income_subset<span class="sc">$</span>income_annual) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_subset[i]))), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>income_subset <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(INCOME_FREQ, <span class="fu">contains</span>(<span class="st">&quot;INCOME_OPEN&quot;</span>), income_annual, <span class="fu">contains</span>(<span class="st">&quot;INCOME_CLOSED_&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">INCOME_FREQ =</span> haven<span class="sc">::</span><span class="fu">as_factor</span>(INCOME_FREQ)</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Check whether any of the income closed variables has non-missing on same rows as income open (derived). There are none.</span></span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">&lt;-</span> <span class="fu">colnames</span>(<span class="fu">select</span>(income_subset, <span class="fu">contains</span>(<span class="st">&quot;INCOME_CLOSED&quot;</span>)))</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> vars){</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">paste0</span>(i,<span class="st">&quot;: &quot;</span>,<span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(income_subset<span class="sc">$</span>income_annual) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(income_subset[i]))), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>INCOME_CLOSED_ANNUAL: 0 
@@ -6666,8 +6725,8 @@ INCOME_CLOSED_HOURLY_labelled: 0 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Skim indicates completion of closed weekly/hourly is really low, but monthyl/annual is a bit better. We might want to try and combine somehow. Think about code to exract hte numbers from brackets, then take the midpoint of the two numbers. Extract after &#39;£&#39;, to &#39; &#39;. But into two separate elements to start</span></span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="fu">skim</span>(income_subset)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Skim indicates completion of closed weekly/hourly is really low, but monthyl/annual is a bit better. We might want to try and combine somehow. Think about code to exract hte numbers from brackets, then take the midpoint of the two numbers. Extract after &#39;£&#39;, to &#39; &#39;. But into two separate elements to start</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">skim</span>(income_subset)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <table class="table table-sm table-striped small">
@@ -6900,6 +6959,7 @@ INCOME_CLOSED_HOURLY_labelled: 0 </code></pre>
 </table>
 </div>
 </div>
+<pre><code></code></pre>
 </section>
 </section>
 <section id="save" class="level2">
@@ -6907,9 +6967,9 @@ INCOME_CLOSED_HOURLY_labelled: 0 </code></pre>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(data, <span class="at">file =</span> <span class="fu">paste0</span>(<span class="st">&quot;../Data/&quot;</span>, <span class="fu">format</span>(<span class="fu">Sys.Date</span>(), <span class="st">&quot;%Y-%m-%d&quot;</span>), <span class="st">&quot; - Cleaned_Data.rds&quot;</span>))</span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="co"># haven::write_sav(as.data.frame(data), path = paste0(&quot;../Data/&quot;, format(Sys.Date(), &quot;%Y-%m-%d&quot;), &quot; - Cleaned_Data.sav&quot;))</span></span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data, <span class="at">file =</span> <span class="fu">paste0</span>(<span class="st">&quot;../Data/&quot;</span>, <span class="fu">format</span>(<span class="fu">Sys.Date</span>(), <span class="st">&quot;%Y-%m-%d&quot;</span>), <span class="st">&quot; - Cleaned_Data.csv&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(data, <span class="at">file =</span> <span class="fu">paste0</span>(<span class="st">&quot;../Data/&quot;</span>, <span class="fu">format</span>(<span class="fu">Sys.Date</span>(), <span class="st">&quot;%Y-%m-%d&quot;</span>), <span class="st">&quot; - Cleaned_Data.rds&quot;</span>))</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="co"># haven::write_sav(as.data.frame(data), path = paste0(&quot;../Data/&quot;, format(Sys.Date(), &quot;%Y-%m-%d&quot;), &quot; - Cleaned_Data.sav&quot;))</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data, <span class="at">file =</span> <span class="fu">paste0</span>(<span class="st">&quot;../Data/&quot;</span>, <span class="fu">format</span>(<span class="fu">Sys.Date</span>(), <span class="st">&quot;%Y-%m-%d&quot;</span>), <span class="st">&quot; - Cleaned_Data.csv&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
