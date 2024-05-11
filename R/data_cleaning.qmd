@@ -23,6 +23,7 @@ library(skimr)
 library(haven)
 library(tidyverse)
 library(wesanderson)
+library(Hmisc)
 colours <- wes_palette("GrandBudapest2",4,"discrete")
 
 ```
@@ -443,9 +444,26 @@ number_closed <- data_subset %>%
   filter(is.na(INCOME_OPEN_1)) %>%
   select(c(ID, contains("CLOSED"))) %>%
   nrow()
+
+# but also check how many "prefer not to say"
+closed_income <- data %>%
+  filter(is.na(INCOME_OPEN_1)) %>%
+  select(c(ID, contains("INCOME", ignore.case = F))) %>%
+  select(ends_with("labelled"))
+
+pref_not_say <- closed_income %>%
+  rowwise() %>%
+  summarise(
+    sum = sum(c_across(everything()) == "Prefer not to say", na.rm=TRUE)
+  ) %>%
+  summarise(
+    total_not_answered = sum(sum)
+  )
+
+closed_answered <- number_closed - pref_not_say$total_not_answered
 ```
 
-`r number_open` respondents answered using the open method. `r number_closed` respondents answered using the closed method. `r nrow(data) - sum(number_open,number_closed)` did not answer either.
+`r number_open` respondents answered using the open method. `r closed_answered` respondents answered using the closed method. `r nrow(data) - sum(number_open,closed_answered)` did not answer either. 
 
 For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
 
@@ -462,25 +480,25 @@ data <- data %>%
                               TRUE ~ NA),
     income_percentile = ntile(income_annual, 100)
   )
+
 options(scipen = 999)
 
-num_dropped <- sum(data$income_percentile > 95 & data$income_percentile > 5, na.rm=T)
 ```
 
 The range of salaries is massive, with extreme values at either end. This suggests to me that respondents may have entered in their salaries incorrectly.
 
 ```{r}
-# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+# filter to just cases where income is above the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
 income_statistics <- data %>%
-  filter(income_percentile < 95 & income_percentile > 5) %>%
   group_by(outsourcing_status) %>%
   summarise(
-    mean = mean(income_annual, na.rm = T),
-    median = median(income_annual,na.rm = T),
-    min = min(income_annual,na.rm = T),
-    max = max(income_annual,na.rm = T),
-    stdev = sd(income_annual,na.rm = T)
+    mean = weighted.mean(income_annual, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual, w = NatRepemployees, na.rm = T))
   )
+
 ```
 
 The distribution of income is highly skewed, with extremely high values creating a tail. It is likely that many extreme values are artefacts of the method of reporting. Below, we identify outliers as values 3 standard deviations above or below the mean. We do this iteratively, removing identified outliers and retesting, until no more outliers are identified.
@@ -581,7 +599,193 @@ mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1,
 
 As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total non-NA income_annual N after removal = `r sum(!is.na(data$income_annual)) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
 
-## Applying income brackets
+### Converting closed responses to continuous
+
+The function below extracts the midpoint of the income brackets, or the value of the "less than" and "over" values. 
+
+```{r}
+closed_income <- data %>%
+  filter(is.na(INCOME_OPEN_1)) %>%
+  select(c(ID, contains("INCOME", ignore.case = F))) %>%
+  select(ends_with("labelled"))
+
+convert_to_numeric <- function(data) {
+  # Select the closed income columns. We only want the labelled ones.
+  matching_columns <- grep("CLOSED", colnames(data), ignore.case = FALSE)
+  matching_columns <- matching_columns[grep("labelled", colnames(data)[matching_columns], ignore.case = FALSE)]
+  matching_column_names <- colnames(data)[matching_columns]
+  
+  #column <- "INCOME_CLOSED_ANNUAL_labelled"
+  # Iterate through the closed variables
+  # For each one, split its range into two separate values and calculate the midpoint,
+  # or for "less than" and "over", just take the value and use that
+  for(column in matching_column_names){
+    temp_df <- data %>%
+      #mutate(copy = INCOME_CLOSED_ANNUAL_labelled) %>% # just for testing
+      separate_wider_delim(column, names = c("min_income","max_income"), delim=" up to £", too_few = "align_start")
+    
+    temp_df <- temp_df %>%
+      mutate(across(c(min_income, max_income), ~gsub("£","",.))) %>% # sub out the £ sign
+      # This is for extracting the less than and over values as well subbing out the comma separators
+      # regex = 1-3 digits, comma, three digits, decimal point any number of digits
+      # In same operation, we also sub out the comma separator
+      mutate(
+        min_income = gsub(",","", str_extract(min_income, "\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?")) 
+      ) %>%
+      # sub out the comma separator again (this is just going to be for max_income, but leave in min_income anyway)
+      mutate(across(c(min_income, max_income), ~gsub(",","",.))) %>%
+      mutate(across(c(min_income, max_income), as.numeric)) %>% # note we lose 'prefer not to say' here
+      # Where we have both min and max, calculate the midpoint, otherwise, just keep min 
+      mutate(midpoint = case_when(!is.na(min_income) & !is.na(max_income) ~ (min_income + max_income) / 2,
+                                TRUE ~ min_income)
+      )
+
+    # Add the new variable into the data
+    data <- data %>%
+      mutate(
+        midpoint = temp_df$midpoint, .after = column
+      )
+    # make a sensible colname 
+    colnames(data)[colnames(data) == "midpoint"] <- paste0(column, "_midpoint")
+    }
+  
+  return(data)
+}
+
+data <- convert_to_numeric(data)
+
+
+
+```
+
+Now calculate annual income in the same way as we did for the open questions
+
+```{r}
+data <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  mutate(
+    # make all annual incomes. Note this assumes 52 working weeks!
+    income_annual_closed = case_when(INCOME_FREQ == 1 ~ INCOME_CLOSED_ANNUAL_labelled_midpoint,
+                              INCOME_FREQ == 2 ~ INCOME_CLOSED_MONTHLY_labelled_midpoint*12,
+                              INCOME_FREQ == 3 ~ INCOME_CLOSED_WEEKLY_labelled_midpoint*52,
+                              INCOME_FREQ == 4 ~ INCOME_CLOSED_HOURLY_labelled_midpoint*HOURS*52,
+                              TRUE ~ NA),
+    income_percentile_closed = ntile(income_annual, 100)
+  )
+```
+
+Next, combine the open and closed into a single variable.
+
+```{r}
+data <- data %>%
+  mutate(
+    income_annual_all = case_when(!is.na(income_annual) ~ income_annual,
+                                   !is.na(income_annual_closed) ~ income_annual_closed,
+                                   TRUE ~ NA)
+  )
+
+# Double check this leads to what we expect
+# Yes, this provides the same number of non-na values as calculated above,
+# i.e., 1213 total nas: 1212 from closed reponses, 1 from open responses
+sum(!is.na(data$income_annual_all))
+sum(is.na(data$income_annual_all))
+```
+
+Apply the same outliers removal process as done above for the income_all_subset
+
+```{r}
+x <- data
+
+# calculate the mean and sd, and 3x sd
+mean = mean(x$income_annual_all, na.rm=T)
+std = sd(x$income_annual_all, na.rm = T)
+Tmin = mean-(3*std)
+Tmax = mean+(3*std)
+
+# identify the first set of outliers
+outliers <- which(x$income_annual_all < Tmin | x$income_annual_all > Tmax)
+outlier_count <- length(outliers) # count how many removed this iteration
+all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
+
+# initialise some variables, i.e. iteration 0
+count <- 0 # iteration counter
+total_cases_removed <- 0 # total cases removed
+
+cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+
+# Take a look at the distribution
+par(mfrow = c(1, 3)) # this lets us plot three plots in a row
+hist(x$income_annual_all, main = "Histogram") 
+# mark the mean and sds for the histogram
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(x$income_annual_all, main = "Boxplot")
+qqnorm(x$income_annual_all, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+# While there are still outliers detected, remove the outliers and recalculate 
+# mean, sd, and 3*sd and remove the outliers based on these new figures.
+while(length(outliers) != 0){
+  count <- count + 1
+  x <- x[-outliers,] # remove the outliers identified in the previous iteration
+  
+  # recalculate
+  mean = mean(x$income_annual_all, na.rm = T)
+  std = sd(x$income_annual_all, na.rm = T)
+  Tmin = mean - (3 * std)
+  Tmax = mean + (3 * std)
+  outliers <- which(x$income_annual_all < Tmin | x$income_annual_all > Tmax)
+  outlier_ids <- x$ID[outliers] # get outlier ids
+  all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
+  total_cases_removed <- total_cases_removed + outlier_count # count total
+  
+  outlier_count <- length(outliers) # count how many removed this iteration
+  cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+  
+  # Replot distributions to see how they've changed
+  par(mfrow = c(1, 3))
+  hist(x$income_annual_all, main = "Histogram") 
+  abline(v = mean, col='red', lwd = 3)
+  abline(v = Tmin, col='blue', lwd = 3)
+  abline(v = Tmax, col='blue', lwd = 3)
+  boxplot(x$income_annual_all, main = "Boxplot")
+  qqnorm(x$income_annual_all, main = "Normal Q-Q plot")
+  mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+}
+cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
+
+# Drop the cases identified as outliers from data
+data$income_drop_all[which(data$ID %in% all_outlier_ids)] <- 1
+data$income_drop_all[is.na(data$income_drop_all)] <- 0 # make NAs 0
+
+# Check this looks right
+sum(data$income_drop_all, na.rm = T) # this should be equal to all_outlier_ids
+
+# This should look the same as the last iteration above#
+test <- data %>%
+  filter(income_drop_all == 0)
+
+mean = mean(test$income_annual_all, na.rm = T)
+std = sd(test$income_annual_all, na.rm = T)
+Tmin = mean - (3 * std)
+Tmax = mean + (3 * std)
+
+par(mfrow = c(1, 3))
+hist(test$income_annual_all, main = "Histogram") 
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(test$income_annual_all, main = "Boxplot")
+qqnorm(test$income_annual_all, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+```
+
+
+
+### Applying income brackets
 
 We want to group people into income brackets. Based on conversation in April, suggested methods for doing this include
 
@@ -622,20 +826,23 @@ low_pay_thresholds <- tibble("Threshold" = c("Two thirds median",
 
 ```
 
+#### Income just open
+
 The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
 
 Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exhibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
 
-```{r}
+
+```{r income-open}
 income_statistics <- data %>%
   filter(income_drop == 0 & !is.na(income_annual)) %>%
   group_by(outsourcing_status) %>%
   summarise(
-    mean = mean(income_annual, na.rm = T),
-    median = median(income_annual,na.rm = T),
-    min = min(income_annual,na.rm = T),
-    max = max(income_annual,na.rm = T),
-    stdev = sd(income_annual,na.rm = T),
+    mean = weighted.mean(income_annual, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual, w = NatRepemployees, na.rm = T)),
     n = n()
   )
 
@@ -657,7 +864,48 @@ data %>%
   scale_colour_manual(values=colours)
 ```
 
+#### Income open + closed
+
+```{r income-open-closed}
+# same as above but for income_annual_all
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T)),
+    n = n()
+  )
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_status, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000)) +
+  geom_hline(data = ashe_data_2, aes(yintercept = Value)) +
+  geom_text(inherit.aes = F, data = ashe_data_2, aes(x = 1.5, y = Value,label = Label), nudge_y = -2000) +
+  geom_hline(data = low_pay_thresholds, aes(yintercept = Value, colour = Threshold)) +
+  scale_colour_manual(values=colours)
+
+```
+
+Including the closed responses paints a similar picture to just considering the open ones, but of course adds greater reliability.
+
+
+#### Split outsourcing just open
+
 Splitting income by this threshold indicates that in the there is a marginally greater proportion of outsourced workers in the low income group compared to the high income group (note this needs to be determined statistically, which we will do in the analysis script).
+
 
 ```{r}
 data <- data %>%
@@ -701,6 +949,64 @@ data %>%
   theme_minimal()
 ```
 
+#### Split outsourcing open and closed
+
+Same plots as above for for open and closed income combined
+
+```{r}
+data <- data %>%
+  mutate(
+    income_group = case_when(income_annual_all < low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")]  ~ "Low",
+                        income_annual_all >= low_pay_thresholds$Value[which(low_pay_thresholds$Threshold == "Four fifths median")] ~ "Not low",
+                              TRUE ~ NA),
+    income_group = factor(income_group, levels = c("Not low","Low"), exclude=NA)
+  )
+
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(income_group, outsourcing_status) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(income_group, perc, fill = outsourcing_status)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
+```
+
+```{r}
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(outsourcing_status, income_group) %>%
+  summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(outsourcing_status, perc, fill = income_group)) +
+  geom_col() +
+  scale_fill_manual(values=colours) +
+  theme_minimal()
+```
+
+
+```{r}
+# test significance
+mod <- glm(income_group ~ outsourcing_status, data, family="binomial", weights = NatRepemployees)
+summary(mod)
+
+test <- summary(mod)
+
+or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
+p <- test[["coefficients"]][2,4]
+```
+
+The difference is confirmed statistically. An outsourced person is `r round(or,2)` times more likely to be in the low income group compared to a non-outsourced person (*p* = `r round(p, 3)`). In the full analysis we can control for other factors when testing this relationship (e.g., age, gender, etc).
+
 ### Improving N for income
 
 When reporting income, respondents could choose whether to report income using an open text method or a bracket method. All income-based work in this report so far has used only the open text methods. We may be interested to combine data from the CLOSED questions with the OPEN ones, although there is not a clear method for doing so. Possible options are:
@@ -728,8 +1034,8 @@ for(i in vars){
 skim(income_subset)
 ```
 
-```         
-```
+Feedback from 8 May was to incorporate the closed responses with the open responses. This has been done in the section above [Converting closed responses to continuous]('#-Converting-closed-responses-to-continuous).
+
 
 ## Save
 
