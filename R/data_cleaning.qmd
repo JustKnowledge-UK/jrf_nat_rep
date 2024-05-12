@@ -311,7 +311,7 @@ Applying haven::as_factor() to the whole dataset is inappropriate because it mak
 -   Q1\_\*
 -   Q2
 -   Q3\*
--   INCOME_CLOSED\_\* <!--# Here we could cross-check with our calculated incomes to see if we can sensibly resolve inconsistencies. Also, can we just use these brackets instead? -->
+-   INCOME_CLOSED\_\*
 -   BORNUK
 -   unit_code
 -   UnitOccupation
@@ -408,6 +408,94 @@ duplicate_label <- function(data, variables){
 data <- duplicate_label(data, variables_to_duplicate)
 ```
 
+## Ethnicity
+
+We have many ethnicity categories, which is great for disaggregation but challenging for visualising and determining general trends. Here we make a second ethnicity category that collapses ethnicity into fewer, broader categories. The super-categories are formed as follows:
+
+**White**
+
+- English / Welsh / Scottish / Northern Irish / British,
+- Irish
+- Any other White background
+
+**White other**
+- Gypsy or Irish Traveller
+- Roma
+
+**Black African**
+
+- African
+- White and Black African
+
+**Black Caribbean**
+
+- Caribbean
+- White and Black Caribbean
+
+**Black other**
+
+- Any other Black, Black British, or Caribbean background
+
+**South Asian** 
+
+- Indian
+- Pakistani
+- Bangladeshi
+
+**East Asian**
+
+- Chinese
+
+**Arab** 
+
+- Arab
+
+**Mixed other** 
+
+- White and Asian
+- Any other Mixed / Multiple ethnic background
+
+**Other**
+
+- Any other ethnic group
+- Any other Asian background
+- Don’t think of myself as any of these
+- Prefer not to say
+- NA
+
+```{r} 
+data <- data %>%   
+  mutate(     
+    Ethnicity_collapsed = forcats::fct_collapse(Ethnicity_labelled,
+                                                "White" = c("English / Welsh / Scottish / Northern Irish / British",
+                                                            "Irish",
+                                                            "Any other White background"),
+                                                "White other" = c("Gypsy or Irish Traveller",
+                                                                  "Roma"),
+                                                "Black African" = c("African",
+                                                                    "White and Black African"),
+                                                "Black Caribbean" = c("Caribbean",
+                                                                      "White and Black Caribbean"),
+                                                "Black other" = c("Any other Black, Black British, or Caribbean background"),     
+                                                "South Asian" = c("Indian",
+                                                                  "Pakistani", 
+                                                                  "Bangladeshi"),
+                                                "East Asian" = c("Chinese"),
+                                                "Arab" = "Arab",
+                                                "Mixed other" = c("White and Asian",
+                                                                  "Any other Mixed / Multiple ethnic background"),
+                                                "Other" = c("Any other ethnic group",
+                                                            "Any other Asian background",
+                                                            "Don’t think of myself as any of these",
+                                                            "Prefer not to say")
+    ),
+    Ethnicity_collapsed = replace_na(Ethnicity_collapsed, "Other"), # allocate NA responses to 'Other' group
+    Ethnicity_collapsed = forcats::fct_relevel(Ethnicity_collapsed, "White") # make White the reference category
+  ) %>%
+  relocate(Ethnicity_collapsed, .after = Ethnicity_labelled) # put the new var after the old one
+
+```
+
 ## Income
 
 Income has an open question and a closed question. They are mutually exclusive, i.e., respondents can report their income in **either** open **or** closed format, but not both:
@@ -463,7 +551,7 @@ pref_not_say <- closed_income %>%
 closed_answered <- number_closed - pref_not_say$total_not_answered
 ```
 
-`r number_open` respondents answered using the open method. `r closed_answered` respondents answered using the closed method. `r nrow(data) - sum(number_open,closed_answered)` did not answer either. 
+`r number_open` respondents answered using the open method. `r closed_answered` respondents answered using the closed method. `r nrow(data) - sum(number_open,closed_answered)` did not answer either.
 
 For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
 
@@ -601,7 +689,7 @@ As shown above, the process involved `r count` iterations, and in total identifi
 
 ### Converting closed responses to continuous
 
-The function below extracts the midpoint of the income brackets, or the value of the "less than" and "over" values. 
+The function below extracts the midpoint of the income brackets, or the value of the "less than" and "over" values.
 
 ```{r}
 closed_income <- data %>%
@@ -783,8 +871,6 @@ mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1,
 
 ```
 
-
-
 ### Applying income brackets
 
 We want to group people into income brackets. Based on conversation in April, suggested methods for doing this include
@@ -831,7 +917,6 @@ low_pay_thresholds <- tibble("Threshold" = c("Two thirds median",
 The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
 
 Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exhibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
-
 
 ```{r income-open}
 income_statistics <- data %>%
@@ -901,11 +986,9 @@ data %>%
 
 Including the closed responses paints a similar picture to just considering the open ones, but of course adds greater reliability.
 
-
 #### Split outsourcing just open
 
 Splitting income by this threshold indicates that in the there is a marginally greater proportion of outsourced workers in the low income group compared to the high income group (note this needs to be determined statistically, which we will do in the analysis script).
-
 
 ```{r}
 data <- data %>%
@@ -993,7 +1076,6 @@ data %>%
   theme_minimal()
 ```
 
-
 ```{r}
 # test significance
 mod <- glm(income_group ~ outsourcing_status, data, family="binomial", weights = NatRepemployees)
@@ -1035,7 +1117,6 @@ skim(income_subset)
 ```
 
 Feedback from 8 May was to incorporate the closed responses with the open responses. This has been done in the section above [Converting closed responses to continuous]('#-Converting-closed-responses-to-continuous).
-
 
 ## Save
 
