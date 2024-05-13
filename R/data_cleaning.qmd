@@ -416,11 +416,12 @@ We have many ethnicity categories, which is great for disaggregation but challen
 
 - English / Welsh / Scottish / Northern Irish / British,
 - Irish
-- Any other White background
 
 **White other**
+
 - Gypsy or Irish Traveller
 - Roma
+- Any other White background
 
 **Black African**
 
@@ -468,10 +469,10 @@ data <- data %>%
   mutate(     
     Ethnicity_collapsed = forcats::fct_collapse(Ethnicity_labelled,
                                                 "White" = c("English / Welsh / Scottish / Northern Irish / British",
-                                                            "Irish",
-                                                            "Any other White background"),
+                                                            "Irish"),
                                                 "White other" = c("Gypsy or Irish Traveller",
-                                                                  "Roma"),
+                                                                  "Roma",
+                                                                  "Any other White background"),
                                                 "Black African" = c("African",
                                                                     "White and Black African"),
                                                 "Black Caribbean" = c("Caribbean",

@@ -8,7 +8,7 @@
 
 <meta name="author" content="Jolyon Miles-Wilson">
 <meta name="author" content="Celestin Okoroji">
-<meta name="dcterms.date" content="2024-05-12">
+<meta name="dcterms.date" content="2024-05-13">
 
 <title>Outsourcing Report template</title>
 <style>
@@ -3125,7 +3125,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 12, 2024</p>
+      <p class="date">May 13, 2024</p>
     </div>
   </div>
   
@@ -6255,9 +6255,13 @@ SectorName</code></pre>
 <ul>
 <li>English / Welsh / Scottish / Northern Irish / British,</li>
 <li>Irish</li>
+</ul>
+<p><strong>White other</strong></p>
+<ul>
+<li>Gypsy or Irish Traveller</li>
+<li>Roma</li>
 <li>Any other White background</li>
 </ul>
-<p><strong>White other</strong> - Gypsy or Irish Traveller - Roma</p>
 <p><strong>Black African</strong></p>
 <ul>
 <li>African</li>
@@ -6306,10 +6310,10 @@ SectorName</code></pre>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(     </span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">Ethnicity_collapsed =</span> forcats<span class="sc">::</span><span class="fu">fct_collapse</span>(Ethnicity_labelled,</span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">&quot;White&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;English / Welsh / Scottish / Northern Irish / British&quot;</span>,</span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                                            <span class="st">&quot;Irish&quot;</span>,</span>
-<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                                            <span class="st">&quot;Any other White background&quot;</span>),</span>
-<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">&quot;White other&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Gypsy or Irish Traveller&quot;</span>,</span>
-<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="st">&quot;Roma&quot;</span>),</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                                                            <span class="st">&quot;Irish&quot;</span>),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">&quot;White other&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Gypsy or Irish Traveller&quot;</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="st">&quot;Roma&quot;</span>,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>                                                                  <span class="st">&quot;Any other White background&quot;</span>),</span>
 <span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">&quot;Black African&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;African&quot;</span>,</span>
 <span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>                                                                    <span class="st">&quot;White and Black African&quot;</span>),</span>
 <span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">&quot;Black Caribbean&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;Caribbean&quot;</span>,</span>
