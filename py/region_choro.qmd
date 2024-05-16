@@ -1,0 +1,72 @@
+---
+title: "Outsourced workers by region"
+format: html
+---
+
+```{python}
+import pandas as pd
+import os
+import glob
+import geopandas as gpd
+import matplotlib as mpl
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+import matplotlib.pyplot as plt
+```
+
+```{python}
+cmap = mpl.colormaps['viridis']
+```
+
+```{python}
+file = os.path.join('..', 'outputs','data','region_stats_2.csv')
+data = pd.read_csv(file)
+
+data = data[data['Outsourcing status']=="Outsourced"]
+data.loc[data['Region']=='Yorkshire and the Humber','Region'] = 'Yorkshire and The Humber'
+
+```
+
+
+```{python}
+# regions
+pattern = os.path.join('..','Data','RGN_23_boundaries', '*.shp') # use ultra-generalised to make it look nicer zoomed out
+files = glob.glob(pattern)
+region_boundaries = gpd.read_file(files[0])
+
+# countries
+pattern = os.path.join('..','Data','CTRY_23_boundaries','*.shp')
+files = glob.glob(pattern)
+country_boundaries = gpd.read_file(files[0])
+
+```
+
+
+```{python}
+data_gpd = region_boundaries.merge(data, how='left', left_on='RGN23NM', right_on='Region')
+```
+
+
+```{python}
+fig, ax = plt.subplots(figsize=[12,12])
+
+data_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap)
+ax.set_title('Proportion of outsourced workers by region')
+ax.set_axis_off()
+
+fig.savefig('../outputs/figures/outsourcing_by_region.svg', format='svg')
+fig.savefig('../outputs/figures/outsourcing_by_region.png', format='png')
+```
+
+
+```{python}
+subset_gpd = data_gpd[data_gpd['Region'] != 'London']
+
+fig, ax = plt.subplots(figsize=[12,12])
+
+subset_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap)
+ax.set_title('Proportion of outsourced workers by region, excl. London')
+ax.set_axis_off()
+
+fig.savefig('../outputs/figures/outsourcing_by_region_excl_london.svg', format='svg')
+fig.savefig('../outputs/figures/outsourcing_by_region_excl_london.png', format='png')
+```
