@@ -1811,6 +1811,33 @@ In terms of Gender, the outsourced group has a larger proportion of males (`r ro
 
 [^13]: Data file: outputs/data/region_statistics.csv
 
+Let's cross check the size of the employed workforce across regions, and compare this to how many people are in each region in our sample. The percentages should work out the same if they're weighted.
+
+The tables below show that our sample is weighted by region. The weighted percentage of our sampled workers in each region matches the percentages from the ONS employment by region tables. This means that the weighted percentage of workers (and therefore outsourced workers) in our sample can be considered to be representative of the national picture.
+
+```{r}
+our_sample <- data %>%
+  group_by(Region) %>%
+  summarise(
+    n = n(), 
+    sum = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n)),
+    wtd_perc = 100 * (sum/sum(sum))
+  ) %>% 
+  kable() %>%
+  kable_styling()
+
+denoms <- rgn_empl_denoms %>%
+  mutate(
+    perc = 100 * (Employed / sum(Employed))
+  ) %>% 
+  kable() %>%
+  kable_styling()
+  
+```
+
 The plot below suggests that an outsourced worker is more likely to be based in London than a non-outsourced worker.
 
 ```{r}
@@ -1850,55 +1877,9 @@ readr::write_csv(region_statistics, file="../outputs/data/region_statistics.csv"
 
 ```
 
-In the plot below the percentages have been scaled to the size of the working population in the region as a function of the total working population in the UK. I need to check whether this scaling is actually necessary, given we are already using weighted data.[^14] Does the weighting process account for region?
 
-[^14]: ../outputs/data/region_statistics_weighted.csv
 
-```{r region-with-denominators}
-region_statistics <- data %>%
-  # get values of labels
-  # mutate_all(haven::as_factor) %>%
-  group_by(Region, outsourcing_status) %>%
-  summarise(
-    Frequency = sum(NatRepemployees)
-  ) %>%
-  mutate(
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  ) %>%
-  rename(
-    `Outsourcing group` = outsourcing_status
-  )
 
-region_stats_plus_denoms <- region_statistics %>%
-  mutate(
-    Region = haven::as_factor(Region)
-  ) %>%
-  merge(., rgn_empl_denoms, by = "Region") %>%
-  mutate(
-    Weighted_percentage = Percentage * Weight
-  )
-
-region_stats_plus_denoms %>%
-  # mutate(
-  #   Region = haven::as_factor(Region)
-  #   ) %>%
-  ggplot(., aes(Region, Weighted_percentage, fill = `Outsourcing group`)) +
-  geom_col(colour="black") +
-  coord_flip() +
-  scale_fill_manual(values=many_colours) +
-  theme_minimal()
-
-readr::write_csv(region_stats_plus_denoms, file="../outputs/data/region_statistics_weighted.csv")
-```
-
-```{r}
-region_stats_plus_denoms %>%
-  filter(`Outsourcing group` == "Outsourced") %>%
-  mutate(
-    sum = sum(Weighted_percentage)
-  )
-```
 
 ### Age
 
