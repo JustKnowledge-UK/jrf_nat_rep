@@ -623,6 +623,11 @@ sector_key %>%
   kable_styling(full_width = F)
 ```
 
+
+
+
+
+
 The table below shows what percentage of outsourced and non-outsourced workers work in each sector, as well as the difference between them (positive numbers in the difference column indicate sectors that are more common for outsourced work, negative numbers indicate sectors that are less common for outsourced work).[^9]
 
 [^9]: "outputs/data/sector_summary_2.csv"
@@ -1443,6 +1448,360 @@ ethnicity_statistics %>%
 write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
 ```
 
+
+
+
+### Ethnicity repeat: Outsourcing groups
+
+```{r ethnicity-summary-2}
+ethnicity_statistics <- data %>%
+  group_by(outsourcing_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+    separate_wider_delim(Ethnicity_short, 
+                         names = c("Ethnicity_short", "Ethnicity detail"), 
+                         delim = stringr::regex(" / |, "),  # use multiple delims
+                         too_few = "align_start",
+                         too_many = "merge")
+
+readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_outsourcing_groups_1.csv")
+```
+
+```{r output=FALSE}
+# test <- multinom(outsourcing_group ~ Ethnicity_collapsed, data, weights = NatRepemployees)
+# summary(test)
+# 
+# z <- summary(test)$coefficients/summary(test)$standard.errors
+# z
+# 
+# p <- (1 - pnorm(abs(z), 0, 1)) * 2
+# p
+# 
+# # Assuming your dataframe is named 'p'
+# p_2 <- apply(p, 2, function(x) ifelse(x < 0.01, 1, NA))
+# 
+# sig_ors <- exp(summary(test)$coefficients * p_2)
+
+# we can take the results of this forward and plot the ors
+
+```
+
+
+
+```{r ethnicity-plot-2}
+ethnicity_statistics %>%
+  # mutate(
+  #   Ethnicity = haven::as_factor(Ethnicity)
+  #   ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Ethnicity) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    n = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    N = n()
+  ) %>%
+  ggplot(., aes(outsourcing_group, Percentage, fill = as.factor(Ethnicity))) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$outsourcing_group, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values = many_colours, name = "Ethnicity") +
+  xlab("Outsourcing group") +
+  theme_minimal()
+
+ethnicity_key <- data.frame("number" = seq(1,22,1),
+                            "ethnicity" = c(levels(ethnicity_statistics$Ethnicity_labelled), NA))
+
+ethnicity_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+```
+
+```{r ethnicity-collapsed-summary-2}
+ethnicity_statistics_2 <- data %>%
+  group_by(outsourcing_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) #%>%
+    # separate_wider_delim(Ethnicity_short, 
+    #                      names = c("Ethnicity_short", "Ethnicity detail"), 
+    #                      delim = stringr::regex(" / |, "),  # use multiple delims
+    #                      too_few = "align_start",
+    #                      too_many = "merge")
+
+#readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_2.csv")
+```
+
+```{r}
+ethnicity_statistics_2 %>%
+  # mutate(
+  #   Ethnicity = haven::as_factor(Ethnicity)
+  #   ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(outsourcing_group, Ethnicity_collapsed) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    n = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    N = n()
+  ) %>%
+  ggplot(., aes(outsourcing_group, Percentage, fill = Ethnicity_collapsed)) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$outsourcing_group, y = 75, label = paste0("n=",ethnicity_statistics$N)) +
+  coord_flip() +
+  scale_fill_manual(values = many_colours, name = "Ethnicity") +
+  xlab("Outsourcing group") +
+  theme_minimal()
+
+```
+
+```{r}
+# mod <- glm(outsourcing_status ~ Ethnicity_collapsed, data, family="binomial", weights=NatRepemployees)
+# summary(mod)
+# 
+# coef_table <- data.frame("estimate" = mod[["coefficients"]]) %>%
+#   mutate(
+#     or = round(exp(estimate),2)
+#   )
+```
+
+#### Paysplit[^13]
+
+[^13]: "outputs/data/ethnicity_stats_paysplit_1.csv"
+
+```{r ethnicity-summary-paysplit-2}
+ethnicity_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+    separate_wider_delim(Ethnicity_short, 
+                         names = c("Ethnicity_short", "Ethnicity detail"), 
+                         delim = stringr::regex(" / |, "),  # use multiple delims
+                         too_few = "align_start",
+                         too_many = "merge")
+
+readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
+```
+
+```{r ethnicity-paysplit-plot-2}
+
+temp_data <-  ethnicity_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(Ethnicity_short, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+
+# ethnicity_summary_paysplit %>%
+#   drop_na(income_group) %>%
+#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
+#   facet_grid(rows=~income_group) +
+#   geom_col(colour="black") +
+#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
+#   xlab("Outsourcing group") +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
+
+```
+
+```{r ethnicity-collapsed-summary-paysplit-2}
+ethnicity_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) 
+
+#readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
+```
+
+```{r ethnicity-collapsed-paysplit-plot-2}
+
+temp_data <-  ethnicity_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(Ethnicity_collapsed, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+
+# ethnicity_summary_paysplit %>%
+#   drop_na(income_group) %>%
+#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
+#   facet_grid(rows=~income_group) +
+#   geom_col(colour="black") +
+#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
+#   xlab("Outsourcing group") +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
+
+```
+
+```{r}
+mod <- glm(outsourcing_status ~ income_group*Ethnicity_collapsed, data, family="binomial")
+summary(mod)
+```
+
+```{r test-tangent-2}
+test_data <- data %>%
+  drop_na(income_group) %>%
+  mutate(
+    income_group = factor(income_group, levels = c("Not low", "Low")),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+  separate_wider_delim(Ethnicity_short, 
+                       names = c("Ethnicity_short", "Ethnicity detail"), 
+                       delim = " / ", 
+                       too_few = "align_start",
+                       too_many = "merge") %>%
+  mutate(
+    Ethnicity_short = forcats::fct_relevel(factor(Ethnicity_short), "English")
+  )
+
+
+test <- glm(outsourcing_status ~ Age + Gender + income_group + Ethnicity_short, family = "binomial", data = test_data)
+summary(test)
+```
+
+<!---# We should construct a full model predicting outsourcing status from demographics --->
+
+Another way of looking at this is to calculate, for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.[^14]
+
+[^14]: Data file: outputs/data/ethnicity_stats_2.csv
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Ethnicity, outsourcing_status) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_status
+  )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+# ordering_df <- ethnicity_statistics %>%
+#   filter(`Outsourcing group` == "Outsourced") %>%
+#   mutate(
+#     Ethnicity = haven::as_factor(Ethnicity),
+#     Ethnicity = factor(Ethnicity),
+#     Ethnicity = forcats::fct_reorder(Ethnicity, Percentage)
+#   )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name = "Ethnicity")
+
+
+write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
+```
+
+
+
+
 ### Arrival in the UK
 
 ```{r}
@@ -1530,6 +1889,80 @@ bornuk_statistics %>%
   scale_fill_manual(values=many_colours, name="Arrival in UK") +
   theme_minimal() +
   xlab("Outsourcing group") 
+
+```
+#### Paysplit
+
+```{r bornuk-summary-paysplit}
+bornuk_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, BORNUK_labelled) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(bornuk_summary_paysplit, file = "../outputs/data/bornuk_stats_paysplit_1.csv")
+```
+```{r}
+mod <- glm(outsourcing_status ~ income_group * BORNUK_labelled, data, weights = NatRepemployees, family="binomial")
+summary(mod)
+
+# To me this indicates that htere is main effect - arrival time pre
+sjPlot::plot_model(mod, type = "int", legend.title = "")
+```
+
+Results of a glm suggest that any arrival time positively predicts outsroucing status, apart from 'within the last 15 years' and 'within the last 30 years'. Takeaway is that people having migrated in the past 20 years are more likely to be outsourced than people born in the uk. People having migrated in the past 15 years are less likely to be outsourced if they're in the low income group, whilst people having migrated in the past 30 years are more likely to be outsourced if they're in the low income group. I would take caution in interpreting these interaction results in isolation as they may be influence by other factors (e.g., ethnicity). 
+
+::: callout-note
+We should test this with a more complex model that includes covariates
+:::
+
+The plot below shows the percentage of outrouced and non-outsourced people by income group and arrival time.
+
+```{r bornuk-paysplit-plot}
+
+temp_data <-  bornuk_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(BORNUK_labelled, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+
+# ethnicity_summary_paysplit %>%
+#   drop_na(income_group) %>%
+#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
+#   facet_grid(rows=~income_group) +
+#   geom_col(colour="black") +
+#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
+#   xlab("Outsourcing group") +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
 
 ```
 
@@ -1809,6 +2242,59 @@ x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE, chisq = TRUE)
 
 In terms of Gender, the outsourced group has a larger proportion of males (`r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`% compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`%). This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have be male than non-outsourced workers.**
 
+#### Paysplit
+
+
+```{r gender-summary-paysplit}
+gender_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(ethnicity_statistics, file = "../outputs/data/gender_stats_paysplit_1.csv")
+```
+```{r}
+mod <- glm(outsourcing_status ~ Gender * income_group, data, family="binomial", weights = NatRepemployees)
+summary(mod)
+
+sjPlot::plot_model(mod, type = "int")
+```
+A glm finds that income group is a significant factor for females but not for males. Whilst males are more likely than females overall to be outsourced, females are significantly more likely to be outsourced if they are in the low income group than if they are in the not-low income group. The plots below show the percentage of outsourced workers by income group and gender.
+
+```{r gender-summary-paysplit-plot}
+temp_data <-  gender_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(Gender, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+```
+
+
 ### Region[^18]
 
 [^18]: Data file: outputs/data/region_statistics.csv
@@ -1822,23 +2308,34 @@ our_sample <- data %>%
   group_by(Region) %>%
   summarise(
     n = n(), 
-    sum = sum(NatRepemployees)
+    sample_sum = sum(NatRepemployees)
   ) %>%
   mutate(
     perc = 100 * (n / sum(n)),
-    wtd_perc = 100 * (sum/sum(sum))
-  ) 
+    sample_wtd_perc = 100 * (sample_sum/sum(sample_sum))
+  ) %>% 
+  arrange(desc(sample_wtd_perc))
 
 denoms <- rgn_empl_denoms %>%
   mutate(
-    perc = 100 * (Employed / sum(Employed))
-  )
+    employment_data_perc = 100 * (Employed / sum(Employed))
+  ) %>% 
+  select(-Weight) %>%
+  arrange(desc(employment_data_perc))
 
-our_sample %>% 
-  kable() %>%
-  kable_styling()
+combined <- merge(denoms,our_sample, by="Region") %>%
+  select(c(Region, Employed, sample_sum, employment_data_perc, sample_wtd_perc)) %>%
+  arrange(desc(sample_wtd_perc))
 
-denoms %>%
+# our_sample %>% 
+#   kable() %>%
+#   kable_styling()
+# 
+# denoms %>%
+#   kable() %>%
+#   kable_styling()
+
+combined %>%
   kable() %>%
   kable_styling()
   
