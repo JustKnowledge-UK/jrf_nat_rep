@@ -2429,6 +2429,7 @@ Visualised on a map, excluding London to enable us to differentiate better betwe
 knitr::include_graphics('../outputs/figures/outsourcing_by_region_excl_london.svg')
 ```
 
+
 As we can see, London has the highest proportion of outsourced workers (`r round(region_statistics_2[which(region_statistics_2$Region == "London" & region_statistics_2["Outsourcing status"] == "Outsourced"), "Percentage"],0)`%). After London, the regions with the highest proportion of outsourced workers are:
 
 1. `r region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 1), "Region"]` (`r round(region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 1), "Percentage"],0)`%)
