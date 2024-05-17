@@ -38,11 +38,18 @@ pattern = os.path.join('..','Data','CTRY_23_boundaries','*.shp')
 files = glob.glob(pattern)
 country_boundaries = gpd.read_file(files[0])
 
+
+# Combine regions and countries to incorporate wales
+country_boundaries_altered = country_boundaries.drop('CTRY23NMW',axis=1) # drop welsh name column
+country_boundaries_altered.rename(columns={'CTRY23CD': 'RGN23CD', 'CTRY23NM': 'RGN23NM'}, inplace=True) # rename columns to make consistent
+regions_filled = pd.concat([region_boundaries, country_boundaries_altered]) # combine the two dfs
+regions_filled = regions_filled[regions_filled.RGN23NM != "England"] # drop England so that we don't double plot it
+
 ```
 
 
 ```{python}
-data_gpd = region_boundaries.merge(data, how='left', left_on='RGN23NM', right_on='Region')
+data_gpd = regions_filled.merge(data, how='left', left_on='RGN23NM', right_on='Region')
 ```
 
 
