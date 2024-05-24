@@ -35,6 +35,7 @@ library(emmeans)
 library(Hmisc)
 library(sjstats)
 library(readr)
+library(sjPlot)
 ```
 
 ```{r palette}
@@ -130,24 +131,75 @@ In terms of the the different possible types of outsourced groups, the numbers a
 
 ## Who are the UK's outsourced workers?
 
-### Pay[^2]
+To start with, we can create a generalised linear model predicting outsourcing status from the various demographics
 
-[^2]: Data file: outputs/data/income_stats.csv
+create sectorname short - should add this to cleaning script
 
-```{r income}
-# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
-income_statistics <- data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+```{r}
+data <- data %>%
+  mutate(
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail))
+  )
+```
+
+
+```{r}
+# quasibinomial because we're using weights that are non-integers
+mod_1  <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region + income_annual, data, family = "quasibinomial", weights = NatRepemployees)
+summary(mod_1)
+
+mod_2 <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region + income_annual + SectorName_short, data, family = "quasibinomial", weights = NatRepemployees)
+summary(mod_2)
+
+tab_model(mod_1, mod_2, auto.label = FALSE)
+```
+
+
+
+### Age
+
+#### Outsourcing status
+
+```{r age-by-status}
+age_statistics <- data %>%
   group_by(outsourcing_status) %>%
   summarise(
-    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
   )
 
-knitr::kable(income_statistics, 
+readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
+```
+
+```{r age-inferential,include=FALSE}
+# weighted ttest
+# formula:
+# weighted_ttest(<var_of_interest> ~ <groups_to_compare> + <weights>, <data>)
+
+ttest <-  sjstats::weighted_ttest(Age ~ outsourcing_status + NatRepemployees, data)
+
+```
+
+As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.[^20]
+
+[^20]: Data file: outputs/data/age_stats.csv
+
+However, as the next figure shows, the age distribution is different for the outsourced and high indicator groups compared to the not outsourced and likely agency groups; the outsourced and high indicator groups have higher proportions of younger people (\~21-36 year olds).
+
+A t-test indicates that on average, **outsourced workers are significantly younger than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
+
+```{r age-by-status-plot}
+knitr::kable(age_statistics, 
              digits = 2, 
              col.names = c("Outsourcing group",
                            "Mean",
@@ -157,911 +209,61 @@ knitr::kable(income_statistics,
                            "Standard dev.")) %>%
   kable_styling(full_width = F)
 
-readr::write_csv(income_statistics, file="../outputs/data/income_stats.csv")
-```
-
-```{r income-plot}
-# plot the distribution of income for the two groups
 data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
-  ggplot(., aes(outsourcing_status, income_annual_all)) + 
-  geom_violin() +
-  geom_boxplot(width = 0.3) +
-  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
-  coord_cartesian(xlim=c(1,2.5)) +
+  mutate(
+    Age = as.numeric(as.character(as_factor(Age)))
+  ) %>%
+  ggplot(.,aes(Age, colour = outsourcing_status, fill = outsourcing_status)) +
+  geom_density(alpha = 0.3) +
+  geom_vline(data =age_statistics, aes(xintercept=median, colour = outsourcing_status)) +
+  scale_x_continuous(breaks = seq(min(age_statistics$min), max(age_statistics$max),5)) +
   theme_minimal() +
-  xlab("Outsourcing status") + ylab("Annual income") +
-  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
-  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+  scale_colour_manual(values=colours, name = "Outsourcing status") +
+  scale_fill_manual(values=colours, name = "Outsourcing status")
+  
 ```
 
-The distribution for the different outsourcing groups is shown below. It indicates that income is particularly low for the 'outsourced' and 'likely agency' workers, whilst average income for the 'high indicators' workers is notably higher. This means that, were we not to consider the high indicators group, the difference in income between outsrouced and non-outsourced workers would be larger.
+#### Outsourcing group[^21]
 
-```{r income-plot-outsourcing-group}
-income_statistics <- data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+[^21]: "outputs/data/age_stats_2.csv"
+
+```{r age-by-group}
+age_statistics_2 <- data %>%
   group_by(outsourcing_group) %>%
   summarise(
-    n = n(),
-    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
   )
+
+readr::write_csv(age_statistics_2, file = "../outputs/data/age_stats_2.csv")
+```
+
+Exploring the age distribution for the different outsourced groups, the high density concentration of slightly younger workers identified above appears to be driven primarily by the 'outsourced' and 'high indicator' groups. The 'likely agency' group follows a similar pattern, but has a lower density peak than the other groups, with a higher density of workers of more advanced ages.
+
+```{r age-by-group-plot}
+knitr::kable(age_statistics_2, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
 
 data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
-  ggplot(., aes(outsourcing_group, income_annual_all)) + 
-  geom_violin() +
-  geom_boxplot(width = 0.3) +
-  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", round(income_statistics$median,0),"\n N = ", income_statistics$n), nudge_x = 0.1, hjust=0) +
-  coord_cartesian(xlim=c(1,2.5)) +
+  ggplot(.,aes(Age, colour = outsourcing_group, fill = outsourcing_group)) +
+  geom_density(alpha = 0.2) +
+  geom_vline(data = age_statistics_2, aes(xintercept=median, colour = outsourcing_group)) +
+  scale_x_continuous(breaks = seq(min(age_statistics_2$min), max(age_statistics_2$max),5)) +
   theme_minimal() +
-  xlab("Outsourcing group") + ylab("Annual income") +
-  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
-  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
-```
-
-```{r income-inferential}
-temp_data <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) 
-
-# ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
-#        temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
-# )
-
-ttest <-  sjstats::weighted_ttest(income_annual ~ outsourcing_status + NatRepemployees, temp_data)
-#cohens_d(ttest)
-
-```
-
-Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
-
-```{r bubble-chart, include=FALSE}
-test <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) %>%
-  mutate(
-    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
-                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
-                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
-                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
-                               income_annual > 50000 ~ "More than £50,000",
-                               TRUE ~ NA),
-                            levels = c("£12,500 or less",
-                                       "£12,501-£25,000",
-                                       "£25,001-£35,000",
-                                       "£35,001-£50,000",
-                                       "More than £50,000")
-    ),
-    #haven::as_factor(.)
-  ) %>%
-  group_by(income_bracket,SectorName, outsourcing_status) %>%
-  summarise(
-    n = n()
-  ) %>%
-  group_by(income_bracket) %>%
-  mutate(
-    Percentage = 100 * (n / sum(n))
-  )
-
-test_2 <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) %>%
-  mutate(
-    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
-                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
-                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
-                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
-                               income_annual > 50000 ~ "More than £50,000",
-                               TRUE ~ NA),
-                            levels = c("£12,500 or less",
-                                       "£12,501-£25,000",
-                                       "£25,001-£35,000",
-                                       "£35,001-£50,000",
-                                       "More than £50,000")
-    ),
-    #haven::as_factor(.)
-  ) %>%
-  group_by(SectorName, outsourcing_status) %>%
-  summarise(
-    n = n()
-  ) %>%
-  mutate(
-    Percentage = 100 * (n / sum(n))
-  ) %>%
-  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
-  filter(outsourcing_status == "Outsourced") %>%
-  rename(
-    `Outsourced workforce` = Percentage
-  ) %>%
-  dplyr::select(c(SectorName, `Outsourced workforce`))
-
-combined <- merge(test, test_2, by="SectorName")
-
-ggplot(combined, aes(income_bracket, as.factor(SectorName), size=Percentage, colour = outsourcing_status)) +
-  #facet_wrap(~outsourcing_status) +
-  geom_point()
-```
-
-```{r bubble-2, include=FALSE}
-test <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) %>%
-  mutate(
-    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
-                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
-                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
-                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
-                               income_annual > 50000 ~ "More than £50,000",
-                               TRUE ~ NA),
-                            levels = c("£12,500 or less",
-                                       "£12,501-£25,000",
-                                       "£25,001-£35,000",
-                                       "£35,001-£50,000",
-                                       "More than £50,000")
-    ),
-    #haven::as_factor(.)
-  ) %>%
-  group_by(SectorName, outsourcing_status) %>%
-  summarise(
-    n = n()
-  ) %>%
-  mutate(
-    Percentage = 100 * (n / sum(n))
-  ) %>%
-  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
-  filter(outsourcing_status == "Outsourced")
-```
-
-Below, we run a linear regression testing whether the relationship between outsourcing status and annual income is influenced by income group (not low vs low), controlling for age, gender, ethnicity, and region. We do indeed find a significant interaction effect. The figure below plots this.
-
-```{r income-inferentials}
-test <- lm(income_annual ~ Age + Gender + Ethnicity + Region + outsourcing_status*income_group, data, weights = NatRepemployees)
-# summary(test)
-
-emmeans(test, specs = "outsourcing_status", by = "income_group")
-
-sjPlot::plot_model(test, type = "int")
-```
-
-The results here indicate that among workers that are not paid below our low pay threshold, an outsourced worker can typically be expected to earn considerably more than a non-outsourced worker, whereas among workers that are paid below our low pay threshold, an outsourced worker can typically be expected to be paid the same as a non-outsourced worker (maybe slightly less). Of note is that for both pay groups, the variance in pay is higher for the outsourced groups.
-
-### Major group code
-
-Comparison of Majorgroupcode indicates that a higher proportion of outsourced people work in Elementary Occupations, compared to non-outsourced people. A lower proportion of outsourced people work in administrative and secretarial occupations, associate professional occupations and professional occupations.
-
-```{r MGC}
-mgc_summary <- data %>%
-  group_by(outsourcing_status,Majorgroupcode) %>%
-  summarise(
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum)
-  )
-
-readr::write_csv(mgc_summary, "../outputs/data/majorgroupcode_summary.csv")
-```
-
-```{r MGC-plot}
-mgc_summary %>%
-  ggplot(aes(outsourcing_status, perc, fill = as.factor(Majorgroupcode))) +
-  geom_col() +
-  coord_flip() +
-  scale_fill_manual(values=many_colours)
-
-mgc_key <- data.frame("number" = seq(1,11,1),
-                            "Major group code" = c( levels(haven::as_factor(mgc_summary$Majorgroupcode)),NA))
-
-mgc_key %>%
-  kable() %>%
-  kable_styling(full_width = F)
-```
-
-The table below shows the percentage of outsourced and non-outsourced workers in each majorgroupcode, as well as the difference between them (positive numbers in the difference column indicate occupations that are more common for outsourced work, negative numbers indicate occupations that are less common for outsourced work).[^3]
-
-[^3]: Datafile: "../outputs/data/majorgroupcode_summary.csv"
-
-```{r MGC-table}
-
-mgc_summary %>%
-  select(outsourcing_status, Majorgroupcode, perc) %>%
-  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
-  mutate(
-    Majorgroupcode = haven::as_factor(Majorgroupcode),
-    Difference = `Outsourced` - `Not outsourced`
-    ) %>%
-  kable(digits = 2) %>%
-  kable_styling(full_width = F)
-```
-
-```{r MGC-2}
-mgc_summary_2 <- data %>%
-  group_by(Majorgroupcode,outsourcing_status) %>%
-  summarise(
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum)
-  ) %>% 
-  drop_na()
-
-mgc_summary_2_wider <- mgc_summary_2 %>%
-  select(outsourcing_status, Majorgroupcode, perc) %>%
-  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
-  mutate(
-    Majorgroupcode = haven::as_factor(Majorgroupcode),
-    #Difference = `Outsourced` - `Not outsourced`,
-    Ratio_10 = 10 * (`Outsourced` / `Not outsourced`) # indicates how many outsourced workers there are for every 10 non outsourced
-    )
-
-mgc_summary_2_wider %>%
-  kable(digits = 2) %>%
-  kable_styling(full_width = F)
-
-readr::write_csv(mgc_summary_2, "../outputs/data/majorgroupcode_summary_2_long.csv")
-
-readr::write_csv(mgc_summary_2_wider, "../outputs/data/majorgroupcode_summary_2_wide.csv")
-```
-
-The plot below summarises the average pay (x-axis) in each occupation (y-axis) for outsourced and non-outsourced workers (dot colour), as well as the size of the respective workforce (size of dots). Here the size of the dot represents the percentage of workers *within* the sector who are outsourced (blue) or not outsourced (purple).[^4]
-
-[^4]: Data file: "../outputs/data/majorgroupcode_summary_long.csv" & "../outputs/data/majorgroupcode_summary_wide.csv")
-
-```{r MGC-bubble}
-mgc_summary_2 %>%
-  mutate(
-    Majorgroupcode = haven::as_factor(Majorgroupcode)
-  ) %>%
-  ggplot(., aes(Majorgroupcode, wtd_avg_income, size = perc, colour = outsourcing_status)) +
-    geom_point(position = "dodge") + 
-    coord_flip() +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        legend.title = element_blank())+
-  scale_y_continuous(breaks=seq(0,max(mgc_summary$wtd_avg_income), 25000)) +
-  scale_colour_manual(values=colours) +
-  guides(size=FALSE) # remove size legend as gauging size is difficult
-
-```
-
-It shows, as might be expected, the size of the outsourced workforce for each sector is smaller than the non-outsourced workforce, but the ratio is not the same for all sectors. The sector with the largest non-outsourced:outsourced ratio is Elementary occupations; **for every 10 non-outsourced workers, there are `r round(mgc_summary_2_wider$Ratio_10[which(mgc_summary_2_wider$Majorgroupcode == "ELEMENTARY OCCUPATIONS")],0)` outsourced workers**. This is followed by caring, leisure, and other service occupations, and process, plant and machine operatives, both of which employ **`r round(mgc_summary_2_wider$Ratio_10[which(mgc_summary_2_wider$Majorgroupcode == "PROCESS, PLANT AND MACHINE OPERATIVES")],0)` outsourced workers for every 10 non-outsourced workers**.
-
-Notably, in elementary occupations and sales and customer service occupations, outsourced workers are on average paid more than non-outsourced workers. In contrast, workers in process, plant and machine operations are paid less if they are outsourced than if they are not outsourced.
-
-#### Unit occupations
-
-A deep dive into elementary occupations, process occupations, and caring occupations reveals that there are differences between occupations in the size of the outsourced workforce and pay.
-
-##### Elementary occupations[^5]
-
-[^5]: "../outputs/data/elementary_occs_summary.csv"
-
-```{r bubble-elementary}
-elem_summary <- data %>%
-  filter(Majorgroupcode %in% c(4)) %>%
-  group_by(UnitOccupation,outsourcing_status) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum)
-  ) %>% 
-  drop_na()
-
-elem_summary %>%
-  mutate(
-    UnitOccupation = haven::as_factor(UnitOccupation)
-  ) %>%
-  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
-    geom_point() + 
-    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
-  #coord_flip() +
-
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        legend.title = element_blank()) +
-  # scale_x_continuous(breaks=scales::pretty(10))
-  scale_colour_manual(values=colours) +
-
-    guides(size=FALSE) 
-
-readr::write_csv(elem_summary, "../outputs/data/elementary_occs_summary.csv")
-```
-
-##### Process occupations[^6]
-
-[^6]: "../outputs/data/process_occs_summary.csv"
-
-```{r bubble-process}
-proc_summary <- data %>%
-  filter(Majorgroupcode %in% c(7)) %>%
-  group_by(UnitOccupation,outsourcing_status) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum)
-  ) %>% 
-  drop_na()
-
-proc_summary %>%
-  mutate(
-    UnitOccupation = haven::as_factor(UnitOccupation)
-  ) %>%
-  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
-    geom_point() + 
-    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
-  #coord_flip() +
-
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        legend.title = element_blank()) +
-  # scale_x_continuous(breaks=scales::pretty(10))
-  scale_colour_manual(values=colours) +
-
-    guides(size=FALSE) 
-
-readr::write_csv(proc_summary, "../outputs/data/process_occs_summary.csv")
-```
-
-##### Caring occupations[^7]
-
-[^7]: "../outputs/data/caring_occs_summary.csv"
-
-```{r bubble-caring}
-caring_summary <- data %>%
-  filter(Majorgroupcode %in% c(3)) %>%
-  group_by(UnitOccupation,outsourcing_status) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum)
-  ) %>% 
-  drop_na()
-
-caring_summary %>%
-  mutate(
-    UnitOccupation = haven::as_factor(UnitOccupation)
-  ) %>%
-  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
-    geom_point() + 
-    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
-  #coord_flip() +
-
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        legend.title = element_blank()) +
-  # scale_x_continuous(breaks=scales::pretty(10))
-  scale_colour_manual(values=colours) +
-
-    guides(size=FALSE) 
-
-
-readr::write_csv(caring_summary, "../outputs/data/caring_occs_summary.csv")
-```
-
-### Sector
-
-#### Sector within outsourcing status
-
-This framing shows how outsourced and non-outsourced workers are distributed across sectors.
-
-```{r sector-summary}
-sector_summary <- data %>%
-  group_by(outsourcing_status, SectorName, SectorName_labelled) %>%
-  summarise(
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  ungroup() %>%
-  group_by(outsourcing_status) %>%
-  mutate(
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum),
-    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
-                                    TRUE ~ SectorName_labelled),
-    SectorName_short = SectorName_labelled
-  ) %>%
-  # make the sector names more readable
-  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
-                       too_few = "align_start") %>%
-  mutate(
-    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
-    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
-  )
-
-
-
-readr::write_csv(sector_summary, "../outputs/data/sector_summary.csv")
-
-```
-
-The plot below shows the sector breakdown by outsourcing status. I.e. this is how outsourced and not outsourced workers are distributed across sectors.[^8]
-
-[^8]: "outputs/data/sector_summary.csv"
-
-::: callout-note
-With this framing we could say things like "as an outsourced worker, you are x times more likely to work in <sector> than a non-outsourced worker"
-:::
-
-```{r sector-plot}
-plot_data <- sector_summary %>%
-  drop_na(SectorName_labelled) %>%
-  droplevels()
-
-plot_data %>%
-  ggplot(aes(outsourcing_status, perc, fill = as.factor(SectorName))) +
-  geom_col() +
-  coord_flip() +
-  scale_fill_manual(values=many_colours)
-
-sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName)),1),
-                            "Sector" = levels(plot_data$SectorName_labelled))
-
-sector_key %>%
-  kable() %>%
-  kable_styling(full_width = F)
-```
-
-
-
-
-
-
-The table below shows what percentage of outsourced and non-outsourced workers work in each sector, as well as the difference between them (positive numbers in the difference column indicate sectors that are more common for outsourced work, negative numbers indicate sectors that are less common for outsourced work).[^9]
-
-[^9]: "outputs/data/sector_summary_2.csv"
-
-It indicates that sectors that are *less common* for outsourced workers compared to not outsourced are:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
-
-And sectors that are *more common* for outsourced workers compared to not outsourced are:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
-
-For these sectors that differ most in the concentration of the outsourced workforce, there is a pattern (if three data points can be called that) whereby in sectors with a relatively higher concentration of outsourced workers, outsourced workers are paid less, and in sectors with a relatively lower concentration of outsourced workers, outsourced workers are paid more. This is tenuous, but it is an example of the heterogeneity in income between sectors, and should be explored further.
-
-```{r sector-table}
-sector_summary_2 <- plot_data %>%
-  select(outsourcing_status, SectorName, SectorName_short, perc, wtd_avg_income) %>%
-  pivot_wider(names_from = outsourcing_status, values_from = c(perc, wtd_avg_income)) %>%
-  mutate(
-    perc_difference = `perc_Outsourced` - `perc_Not outsourced`,
-    income_difference = `wtd_avg_income_Outsourced` - `wtd_avg_income_Not outsourced`
-    ) %>%
-  relocate(
-    perc_difference, .after = perc_Outsourced
-  )
-
-sector_summary_2 %>%
-  arrange(desc(abs(perc_difference))) %>%
-  kable(digits = 2) %>%
-  kable_styling(full_width = F)
-
-readr::write_csv(sector_summary_2, file="../outputs/data/sector_summary_2.csv")
-```
-
-The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers. These sectors are:
-
--   `r unique(plot_data$SectorName[plot_data$SectorName==5])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
--   `r unique(plot_data$SectorName[plot_data$SectorName==6])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
--   `r unique(plot_data$SectorName[plot_data$SectorName==9])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
--   `r unique(plot_data$SectorName[plot_data$SectorName==20])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
-
-```{r}
-annotations <- data.frame(
-        xpos = c(-Inf,-Inf,Inf,Inf), # this sets to corners
-        ypos =  c(-Inf, Inf,-Inf,Inf), # this sets to corners
-        annotateText = c("Outsourced concentration smaller, pay lower","Outsourced concentration smaller, pay higher",
-                        "Outsourced concentration larger, pay lower","Outsourced concentration larger, pay higher"),
-        hjustvar = c(0,0,1,1), # higher values = right, lower values = left 
-        vjustvar = c(-0.5,1,-0.5,1) # higher values = up, lower values = down
-        )
-
-sector_summary_2 %>%
-  ggplot(aes(perc_difference, income_difference)) +
-  geom_point() +
-  geom_smooth(method="lm", colour=many_colours[2], se=FALSE) +
-  theme_minimal() +
-  ylab("Income difference in £ (out. - non-out.)") + xlab("Workforce proportion difference (out. - non-out)") +
-  geom_text_repel(aes(label=as.character(SectorName))) +
-  geom_text(inherit.aes = F, data = annotations, aes(xpos, ypos, label=annotateText, hjust=hjustvar, vjust=vjustvar)) +
-  geom_hline(yintercept = 0, colour="red",linetype="dashed")
-```
-
-```{r}
-test <- lm(income_difference ~ perc_difference, sector_summary_2)
-summary(test)
-```
-
-#### Outsourcing status within sector[^10]
-
-[^10]: "outputs/data/sector_summary_3.csv"
-
-This framing shows how sectors are composed, i.e., what proportion of workers in each sector are outsourced vs non-outsourced.
-
-```{r sector-summary-3}
-sector_summary_3 <- data %>%
-  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  ungroup() %>%
-  group_by(SectorName) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum),
-    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
-                                    TRUE ~ SectorName_labelled),
-    SectorName_short = SectorName_labelled
-  ) %>%
-  # make the sector names more readable
-  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
-                       too_few = "align_start") %>%
-  mutate(
-    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
-    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
-  )
-
-write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
-```
-
-The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
-
-::: callout-note
-With this framing we could say things like "sector a is x times more likely to employ outsourced workers than sector b"
-:::
-
-```{r sector-plot-2}
-plot_data <- sector_summary_3 %>%
-  drop_na(SectorName_short) %>%
-  droplevels()
-
-# annotation_df <- plot_data %>%
-#   select(SectorName_short, outsourcing_status, perc, n
-# mutate(
+  scale_colour_manual(values=better_colours, name = "Outsourcing group") +
+  scale_fill_manual(values=better_colours, name = "Outsourcing group")
   
-annotation_df <- plot_data %>%
-  filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
-  mutate(
-    ypos = 80
-  )
-
-
-ggplot(plot_data,aes(SectorName_short, perc, fill = outsourcing_status)) +
-  geom_col() +
-  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
-  coord_flip() +
-  scale_fill_manual(values=many_colours) +
-  scale_y_continuous(breaks=seq(0,100,10))
-
-
-# sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName_labelled)),1),
-#                           "Sector" = levels(plot_data$SectorName_labelled))
-# 
-# sector_key %>%
-#   kable() %>%
-#   kable_styling(full_width = F)
 ```
-
-The table below shows the percentage of outsourced workers in each Sector, ordered descending by percentage. It shows that the top three Sectors with the highest proportion of outsourced workers are:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
-
-Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
-
-```{r}
-plot_data %>%
-  filter(outsourcing_status == "Outsourced") %>%
-  arrange(desc(perc)) %>%
-  select(SectorName_labelled, perc) %>%
-  kable() %>%
-  kable_styling()
-```
-
-Exploring this workforce makeup in the context of income shows that there are some sectors where outsourced workers are paid more and some where they are paid less than non-outsourced workers. The plot below visualises this.
-
-Sectors where outsourced workers are paid less:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32)
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
-
-Sectors where outsourced workers are paid more:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
-
-Note that in 2 or 3 of the Sectors where outsourced workers are paid less are low-paying Sectors. (this needs to be double-checked)
-
-```{r sector-bubble}
-
-annotation_df <- sector_summary_3 %>%
-  filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
-  group_by(SectorName_short) %>%
-  summarise(
-    N = sum(N)
-  ) %>%
-    mutate(
-    ypos = 110000
-  ) 
-
-sector_summary_3 %>%
-  # mutate(
-  #   SectorName = as.factor(SectorName)
-  # ) %>%
-  ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
-    geom_point(position = "dodge") + 
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        legend.title = element_blank())+
-      #coord_flip() +
-  scale_x_continuous(breaks=seq(0,max(sector_summary$wtd_avg_income), 25000)) +
-  scale_colour_manual(values=colours) +
-  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1, nudge_x=20000) +
-  guides(size=FALSE) # remove size legend as gauging size is difficult
-
-```
-
-<!--# Note: Do statistical comparisons for the above chart. Also split by low-pay split --->
-
-##### Apply the paysplit[^11]
-
-[^11]: "outputs/sector_summary_paysplit.csv"
-
-```{r sector-summary-paysplit}
-sector_summary_paysplit <- data %>%
-  group_by(SectorName, SectorName_labelled, income_group, outsourcing_status) %>%
-  drop_na(income_group) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  ungroup() %>%
-  group_by(SectorName, income_group) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum),
-    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
-                                    TRUE ~ SectorName_labelled),
-    SectorName_short = SectorName_labelled
-  ) %>%
-  # make the sector names more readable
-  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
-                       too_few = "align_start") %>%
-  mutate(
-    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
-    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
-  )
-
-write_csv(sector_summary_paysplit, file="../outputs/sector_summary_paysplit.csv")
-
-```
-
-```{r sector-paysplit-composition-plot}
-for(group in unique(sector_summary_paysplit$income_group)){
-
-  plot_data <- sector_summary_paysplit %>%
-    filter(income_group==group) %>%
-    drop_na(SectorName_short) %>%
-    droplevels()
-  
-  # set ypos for labels
-  max_value <- max(plot_data$perc)
-  ypos <- 0.8 * max_value
-  
-  annotation_df <- plot_data %>%
-    filter(outsourcing_status == "Not outsourced") %>%
-    select(SectorName_short, N) %>%
-    group_by(SectorName_short) %>%
-    mutate(
-      ypos = ypos
-    )
-  
-  plot <- ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_status)) +
-    geom_col() +
-    geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
-    coord_flip() +
-    scale_fill_manual(values=many_colours) +
-    scale_y_continuous(breaks=seq(0,100,10)) +
-    ggtitle(paste0(group, " income"))
-  
-  print(plot)
-  
-}
-```
-
-The percentages below show be read as e.g. 20% of low paid workers in accommodation and food services are outsourced, compared to 16% of not low paid workers in accommodation and food services.
-
-```{r test}
-plot_data <- sector_summary_paysplit %>%
-  filter(outsourcing_status=="Outsourced")
-
-max_value <- max(plot_data$perc)
-ypos <- 0.8 * max_value
-
-annotation_df <- plot_data %>%
-  filter(outsourcing_status == "Outsourced") %>%
-  select(SectorName_short, income_group, N) %>%
-  group_by(SectorName_short) %>%
-  mutate(
-    
-    ypos = ypos
-  )
-
-ggplot(plot_data, aes(SectorName_short, perc, fill = income_group)) +
-    geom_col(position = position_dodge2()) +
-    # geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), position = position_dodge(width=2)) +
-    coord_flip() +
-    scale_fill_manual(values=many_colours) +
-    scale_y_continuous(breaks=seq(0,50,10)) +
-    ggtitle("Percentage of outsourced workers within\neach sector by income group")
-```
-
-```{r sector-paysplit-income-plot}
-
-for(group in unique(sector_summary_paysplit$income_group)){
-  # set ypos for labels
-  max_income <- max(sector_summary_paysplit$wtd_avg_income[which(sector_summary_paysplit$income_group==group)])
-  ypos <- 0.8 * max_income
-  
-  annotation_df <- sector_summary_paysplit %>%
-    filter(income_group==group) %>%
-    filter(outsourcing_status == "Not outsourced") %>%
-    select(SectorName_short, N) %>%
-    group_by(SectorName_short) %>%
-    summarise(
-      N = sum(N)
-    ) %>%
-    mutate(
-      ypos = ypos
-    )
-  
-  plot <- sector_summary_paysplit %>%
-    filter(income_group == group) %>%
-    ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
-      geom_point(position = "dodge") + 
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          legend.title = element_blank())+
-        #coord_flip() +
-    scale_x_continuous(breaks=seq(0,max_income, plyr::round_any(max_income/5, 100))) +
-    scale_colour_manual(values=colours) +
-    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1, nudge_x=20000) +
-    guides(size=FALSE) + # remove size legend as gauging size is difficult
-    ggtitle(paste0(group, " income"))
-  
-  print(plot)
-}
-
-
-
-```
-
-### Sector repeat: Outsourcing group
-
-```{r}
-sector_summary <- data %>%
-  group_by(outsourcing_group, SectorName, SectorName_labelled) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees),
-    avg_income = mean(income_annual, na.rm=T),
-    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
-  ) %>% 
-  ungroup() %>%
-  group_by(outsourcing_group) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    perc = 100 * (Frequency/Sum),
-    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
-                                    TRUE ~ SectorName_labelled),
-    SectorName_short = SectorName_labelled
-  ) %>%
-  # make the sector names more readable
-  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
-                       too_few = "align_start") %>%
-  mutate(
-    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
-    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
-  )
-
-```
-
-The plot below shows the distribution of sectors within each outsourcing group. The standout differences are:
-
--   Greater proprotion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])` in the 'likely agency' category, compared to other groups
--   Greater proprotion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])` in the 'likely agency' category, compared to other groups
--   Greater proportion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` in the 'outsourced' category, compared to other groups
--   Greater proportion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])` in the 'high indicators' category, compared to other groups
-
-(Really, this plot is better for showing the makeup of each type of outsroucing group - comparisons aer better made comparing outsroucing group within sectors. Here is a better way of interpeting these plots):
-
-For the high indicator group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
-
-For the likely agency group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
-
-For the outsourced group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
-
-Note that also for the not outsourced group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`.
-
-\[This might say something about the demographics of the people who were sampled in this survey\]
-
-```{r}
-plot_data <- sector_summary %>%
-  drop_na(SectorName_labelled) %>%
-  droplevels()
-
-plot_data %>%
-  ggplot(aes(outsourcing_group, perc, fill = as.factor(SectorName))) +
-  geom_col() +
-  coord_flip() +
-  scale_fill_manual(values=many_colours)
-
-sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName)),1),
-                            "Sector" = unique(plot_data$SectorName_labelled))
-
-sector_key %>%
-  kable() %>%
-  kable_styling(full_width = F)
-
-
-plot_data %>%
-  select(outsourcing_group, SectorName, SectorName_labelled, perc) %>%
-  group_by(outsourcing_group) %>%
-  arrange(desc(perc), .by_group=TRUE) %>%
-  kable() %>%
-  kable_styling(full_width = F)
-
-```
-
-13/05 MORE TO DO HERE FOR SECTOR AS ABOVE
 
 ### Ethnicity
 
@@ -1596,209 +798,6 @@ data %>%
 #   )
 ```
 
-#### Paysplit[^13]
-
-[^13]: "outputs/data/ethnicity_stats_paysplit_1.csv"
-
-```{r ethnicity-summary-paysplit-2}
-ethnicity_summary_paysplit <- data %>%
-  group_by(outsourcing_status, income_group, Ethnicity_labelled) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees)
-  ) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum),
-    Ethnicity_short = Ethnicity_labelled
-  ) %>%
-    separate_wider_delim(Ethnicity_short, 
-                         names = c("Ethnicity_short", "Ethnicity detail"), 
-                         delim = stringr::regex(" / |, "),  # use multiple delims
-                         too_few = "align_start",
-                         too_many = "merge")
-
-readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
-```
-
-```{r ethnicity-paysplit-plot-2}
-
-temp_data <-  ethnicity_summary_paysplit %>%
-  drop_na(income_group)
-  
-for(group in unique(temp_data$income_group)){
-  plot_data <- temp_data %>%
-    filter(income_group==group)
-
-  plot <- plot_data %>%
-    ggplot(., aes(Ethnicity_short, Percentage, fill = outsourcing_status)) +
-      geom_col(colour="black", position = position_dodge()) +
-      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
-      coord_flip() +
-      scale_fill_manual(values = many_colours, name = "Ethnicity") +
-      xlab("Outsourcing group") +
-      theme_minimal() +
-    theme(
-      legend.position = "bottom"
-    ) +
-    ggtitle(paste0(group, " income"))
-  
-  
-  print(plot)
-}
-
-# ethnicity_summary_paysplit %>%
-#   drop_na(income_group) %>%
-#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
-#   facet_grid(rows=~income_group) +
-#   geom_col(colour="black") +
-#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
-#   coord_flip() +
-#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
-#   xlab("Outsourcing group") +
-#   theme_minimal() +
-#   theme(
-#     legend.position = "bottom"
-#   )
-
-```
-
-```{r ethnicity-collapsed-summary-paysplit-2}
-ethnicity_summary_paysplit <- data %>%
-  group_by(outsourcing_status, income_group, Ethnicity_collapsed) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees)
-  ) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  ) 
-
-#readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
-```
-
-```{r ethnicity-collapsed-paysplit-plot-2}
-
-temp_data <-  ethnicity_summary_paysplit %>%
-  drop_na(income_group)
-  
-for(group in unique(temp_data$income_group)){
-  plot_data <- temp_data %>%
-    filter(income_group==group)
-
-  plot <- plot_data %>%
-    ggplot(., aes(Ethnicity_collapsed, Percentage, fill = outsourcing_status)) +
-      geom_col(colour="black", position = position_dodge()) +
-      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
-      coord_flip() +
-      scale_fill_manual(values = many_colours, name = "Ethnicity") +
-      xlab("Outsourcing group") +
-      theme_minimal() +
-    theme(
-      legend.position = "bottom"
-    ) +
-    ggtitle(paste0(group, " income"))
-  
-  
-  print(plot)
-}
-
-# ethnicity_summary_paysplit %>%
-#   drop_na(income_group) %>%
-#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
-#   facet_grid(rows=~income_group) +
-#   geom_col(colour="black") +
-#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
-#   coord_flip() +
-#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
-#   xlab("Outsourcing group") +
-#   theme_minimal() +
-#   theme(
-#     legend.position = "bottom"
-#   )
-
-```
-
-```{r}
-mod <- glm(outsourcing_status ~ income_group*Ethnicity_collapsed, data, family="binomial")
-summary(mod)
-```
-
-```{r test-tangent-2}
-test_data <- data %>%
-  drop_na(income_group) %>%
-  mutate(
-    income_group = factor(income_group, levels = c("Not low", "Low")),
-    Ethnicity_short = Ethnicity_labelled
-  ) %>%
-  separate_wider_delim(Ethnicity_short, 
-                       names = c("Ethnicity_short", "Ethnicity detail"), 
-                       delim = " / ", 
-                       too_few = "align_start",
-                       too_many = "merge") %>%
-  mutate(
-    Ethnicity_short = forcats::fct_relevel(factor(Ethnicity_short), "English")
-  )
-
-
-test <- glm(outsourcing_status ~ Age + Gender + income_group + Ethnicity_short, family = "binomial", data = test_data)
-summary(test)
-```
-
-<!---# We should construct a full model predicting outsourcing status from demographics --->
-
-Another way of looking at this is to calculate, for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.[^14]
-
-[^14]: Data file: outputs/data/ethnicity_stats_2.csv
-
-```{r}
-ethnicity_statistics <- data %>%
-  # get values of labels
-  # mutate_all(haven::as_factor) %>%
-  group_by(Ethnicity, outsourcing_status) %>%
-  summarise(
-    Frequency = n()
-  ) %>%
-  mutate(
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  ) %>%
-  rename(
-    `Outsourcing group` = outsourcing_status
-  )
-
-ethnicity_statistics %>%
-  mutate(
-    Ethnicity = haven::as_factor(Ethnicity)
-    ) %>%
-  knitr::kable(.,digits = 2) %>%
-  kable_styling(full_width = F)
-
-# ordering_df <- ethnicity_statistics %>%
-#   filter(`Outsourcing group` == "Outsourced") %>%
-#   mutate(
-#     Ethnicity = haven::as_factor(Ethnicity),
-#     Ethnicity = factor(Ethnicity),
-#     Ethnicity = forcats::fct_reorder(Ethnicity, Percentage)
-#   )
-
-ethnicity_statistics %>%
-  mutate(
-    Ethnicity = haven::as_factor(Ethnicity)
-    ) %>%
-  ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
-  geom_col(colour="black") +
-  annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
-  coord_flip() +
-  scale_fill_manual(values=many_colours, name = "Ethnicity")
-
-
-write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
-```
-
 
 
 
@@ -2295,6 +1294,7 @@ for(group in unique(temp_data$income_group)){
 ```
 
 
+
 ### Region[^18]
 
 [^18]: Data file: outputs/data/region_statistics.csv
@@ -2436,43 +1436,24 @@ As we can see, London has the highest proportion of outsourced workers (`r round
 2. `r region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 2), "Region"]` (`r round(region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 2), "Percentage"],0)`%)
 3. `r region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 3), "Region"]` (`r round(region_statistics_2_1[which(rank(-region_statistics_2_1$Percentage) == 3), "Percentage"],0)`%)
 
-### Age
+### Pay[^2]
 
-#### Outsourcing status
+[^2]: Data file: outputs/data/income_stats.csv
 
-```{r age-by-status}
-age_statistics <- data %>%
+```{r income}
+# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(outsourcing_status) %>%
   summarise(
-    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
   )
 
-readr::write_csv(age_statistics, file = "../outputs/data/age_stats.csv")
-```
-
-```{r age-inferential,include=FALSE}
-# weighted ttest
-# formula:
-# weighted_ttest(<var_of_interest> ~ <groups_to_compare> + <weights>, <data>)
-
-ttest <-  sjstats::weighted_ttest(Age ~ outsourcing_status + NatRepemployees, data)
-
-```
-
-As shown in the table below, the median age of the outsourced group is `r age_statistics[which(age_statistics$outsourcing_status=="Outsourced"),"median"]` , compared to `r age_statistics[which(age_statistics$outsourcing_status=="Not outsourced"),"median"]` for the not outsourced group.[^20]
-
-[^20]: Data file: outputs/data/age_stats.csv
-
-However, as the next figure shows, the age distribution is different for the outsourced and high indicator groups compared to the not outsourced and likely agency groups; the outsourced and high indicator groups have higher proportions of younger people (\~21-36 year olds).
-
-A t-test indicates that on average, **outsourced workers are significantly younger than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
-
-```{r age-by-status-plot}
-knitr::kable(age_statistics, 
+knitr::kable(income_statistics, 
              digits = 2, 
              col.names = c("Outsourcing group",
                            "Mean",
@@ -2482,58 +1463,1122 @@ knitr::kable(age_statistics,
                            "Standard dev.")) %>%
   kable_styling(full_width = F)
 
-data %>%
-  mutate(
-    Age = as.numeric(as.character(as_factor(Age)))
-  ) %>%
-  ggplot(.,aes(Age, colour = outsourcing_status, fill = outsourcing_status)) +
-  geom_density(alpha = 0.3) +
-  geom_vline(data =age_statistics, aes(xintercept=median, colour = outsourcing_status)) +
-  scale_x_continuous(breaks = seq(min(age_statistics$min), max(age_statistics$max),5)) +
-  theme_minimal() +
-  scale_colour_manual(values=colours, name = "Outsourcing status") +
-  scale_fill_manual(values=colours, name = "Outsourcing status")
-  
+readr::write_csv(income_statistics, file="../outputs/data/income_stats.csv")
 ```
 
-#### Outsourcing group[^21]
+```{r income-plot}
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_status, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+```
 
-[^21]: "outputs/data/age_stats_2.csv"
+The distribution for the different outsourcing groups is shown below. It indicates that income is particularly low for the 'outsourced' and 'likely agency' workers, whilst average income for the 'high indicators' workers is notably higher. This means that, were we not to consider the high indicators group, the difference in income between outsrouced and non-outsourced workers would be larger.
 
-```{r age-by-group}
-age_statistics_2 <- data %>%
+```{r income-plot-outsourcing-group}
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(outsourcing_group) %>%
   summarise(
-    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T))
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
   )
 
-readr::write_csv(age_statistics_2, file = "../outputs/data/age_stats_2.csv")
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_group, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", round(income_statistics$median,0),"\n N = ", income_statistics$n), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing group") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
 
-Exploring the age distribution for the different outsourced groups, the high density concentration of slightly younger workers identified above appears to be driven primarily by the 'outsourced' and 'high indicator' groups. The 'likely agency' group follows a similar pattern, but has a lower density peak than the other groups, with a higher density of workers of more advanced ages.
+```{r income-inferential}
+temp_data <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) 
 
-```{r age-by-group-plot}
-knitr::kable(age_statistics_2, 
-             digits = 2, 
-             col.names = c("Outsourcing group",
-                           "Mean",
-                           "Median",
-                           "Min",
-                           "Max",
-                           "Standard dev.")) %>%
+# ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
+#        temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
+# )
+
+ttest <-  sjstats::weighted_ttest(income_annual ~ outsourcing_status + NatRepemployees, temp_data)
+#cohens_d(ttest)
+
+```
+
+Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
+
+```{r bubble-chart, include=FALSE}
+test <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(income_bracket,SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  group_by(income_bracket) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  )
+
+test_2 <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  ) %>%
+  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
+  filter(outsourcing_status == "Outsourced") %>%
+  rename(
+    `Outsourced workforce` = Percentage
+  ) %>%
+  dplyr::select(c(SectorName, `Outsourced workforce`))
+
+combined <- merge(test, test_2, by="SectorName")
+
+ggplot(combined, aes(income_bracket, as.factor(SectorName), size=Percentage, colour = outsourcing_status)) +
+  #facet_wrap(~outsourcing_status) +
+  geom_point()
+```
+
+```{r bubble-2, include=FALSE}
+test <- data %>%
+  filter(income_drop == 0 & !is.na(income_annual)) %>%
+  mutate(
+    income_bracket = factor(case_when(income_annual <= 12500 ~ "£12,500 or less",
+                               income_annual > 12500 & income_annual <= 25000 ~ "£12,501-£25,000",
+                               income_annual > 25000 & income_annual <= 35000 ~ "£25,001-£35,000",
+                               income_annual > 35000 & income_annual <= 50000 ~ "£35,001-£50,000",
+                               income_annual > 50000 ~ "More than £50,000",
+                               TRUE ~ NA),
+                            levels = c("£12,500 or less",
+                                       "£12,501-£25,000",
+                                       "£25,001-£35,000",
+                                       "£35,001-£50,000",
+                                       "More than £50,000")
+    ),
+    #haven::as_factor(.)
+  ) %>%
+  group_by(SectorName, outsourcing_status) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    Percentage = 100 * (n / sum(n))
+  ) %>%
+  complete(outsourcing_status, fill = list(n=0, Percentage=0)) %>% # make the implicit missing groups explicit 
+  filter(outsourcing_status == "Outsourced")
+```
+
+Below, we run a linear regression testing whether the relationship between outsourcing status and annual income is influenced by income group (not low vs low), controlling for age, gender, ethnicity, and region. We do indeed find a significant interaction effect. The figure below plots this.
+
+```{r income-inferentials}
+test <- lm(income_annual ~ Age + Gender + Ethnicity + Region + outsourcing_status*income_group, data, weights = NatRepemployees)
+# summary(test)
+
+emmeans(test, specs = "outsourcing_status", by = "income_group")
+
+sjPlot::plot_model(test, type = "int")
+```
+
+The results here indicate that among workers that are not paid below our low pay threshold, an outsourced worker can typically be expected to earn considerably more than a non-outsourced worker, whereas among workers that are paid below our low pay threshold, an outsourced worker can typically be expected to be paid the same as a non-outsourced worker (maybe slightly less). Of note is that for both pay groups, the variance in pay is higher for the outsourced groups.
+
+
+### Sector
+
+#### Sector within outsourcing status
+
+This framing shows how outsourced and non-outsourced workers are distributed across sectors.
+
+```{r sector-summary}
+sector_summary <- data %>%
+  group_by(outsourcing_status, SectorName, SectorName_labelled) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(outsourcing_status) %>%
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+
+
+readr::write_csv(sector_summary, "../outputs/data/sector_summary.csv")
+
+```
+
+The plot below shows the sector breakdown by outsourcing status. I.e. this is how outsourced and not outsourced workers are distributed across sectors.[^8]
+
+[^8]: "outputs/data/sector_summary.csv"
+
+::: callout-note
+With this framing we could say things like "as an outsourced worker, you are x times more likely to work in <sector> than a non-outsourced worker"
+:::
+
+```{r sector-plot}
+plot_data <- sector_summary %>%
+  drop_na(SectorName_labelled) %>%
+  droplevels()
+
+plot_data %>%
+  ggplot(aes(outsourcing_status, perc, fill = as.factor(SectorName))) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values=many_colours)
+
+sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName)),1),
+                            "Sector" = levels(plot_data$SectorName_labelled))
+
+sector_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+
+
+
+
+
+The table below shows what percentage of outsourced and non-outsourced workers work in each sector, as well as the difference between them (positive numbers in the difference column indicate sectors that are more common for outsourced work, negative numbers indicate sectors that are less common for outsourced work).[^9]
+
+[^9]: "outputs/data/sector_summary_2.csv"
+
+It indicates that sectors that are *less common* for outsourced workers compared to not outsourced are:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
+
+And sectors that are *more common* for outsourced workers compared to not outsourced are:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
+
+For these sectors that differ most in the concentration of the outsourced workforce, there is a pattern (if three data points can be called that) whereby in sectors with a relatively higher concentration of outsourced workers, outsourced workers are paid less, and in sectors with a relatively lower concentration of outsourced workers, outsourced workers are paid more. This is tenuous, but it is an example of the heterogeneity in income between sectors, and should be explored further.
+
+```{r sector-table}
+sector_summary_2 <- plot_data %>%
+  select(outsourcing_status, SectorName, SectorName_short, perc, wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = c(perc, wtd_avg_income)) %>%
+  mutate(
+    perc_difference = `perc_Outsourced` - `perc_Not outsourced`,
+    income_difference = `wtd_avg_income_Outsourced` - `wtd_avg_income_Not outsourced`
+    ) %>%
+  relocate(
+    perc_difference, .after = perc_Outsourced
+  )
+
+sector_summary_2 %>%
+  arrange(desc(abs(perc_difference))) %>%
+  kable(digits = 2) %>%
   kable_styling(full_width = F)
 
-data %>%
-  ggplot(.,aes(Age, colour = outsourcing_group, fill = outsourcing_group)) +
-  geom_density(alpha = 0.2) +
-  geom_vline(data = age_statistics_2, aes(xintercept=median, colour = outsourcing_group)) +
-  scale_x_continuous(breaks = seq(min(age_statistics_2$min), max(age_statistics_2$max),5)) +
-  theme_minimal() +
-  scale_colour_manual(values=better_colours, name = "Outsourcing group") +
-  scale_fill_manual(values=better_colours, name = "Outsourcing group")
-  
+readr::write_csv(sector_summary_2, file="../outputs/data/sector_summary_2.csv")
 ```
+
+The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers. These sectors are:
+
+-   `r unique(plot_data$SectorName[plot_data$SectorName==5])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==6])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==9])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
+-   `r unique(plot_data$SectorName[plot_data$SectorName==20])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+
+```{r}
+annotations <- data.frame(
+        xpos = c(-Inf,-Inf,Inf,Inf), # this sets to corners
+        ypos =  c(-Inf, Inf,-Inf,Inf), # this sets to corners
+        annotateText = c("Outsourced concentration smaller, pay lower","Outsourced concentration smaller, pay higher",
+                        "Outsourced concentration larger, pay lower","Outsourced concentration larger, pay higher"),
+        hjustvar = c(0,0,1,1), # higher values = right, lower values = left 
+        vjustvar = c(-0.5,1,-0.5,1) # higher values = up, lower values = down
+        )
+
+sector_summary_2 %>%
+  ggplot(aes(perc_difference, income_difference)) +
+  geom_point() +
+  geom_smooth(method="lm", colour=many_colours[2], se=FALSE) +
+  theme_minimal() +
+  ylab("Income difference in £ (out. - non-out.)") + xlab("Workforce proportion difference (out. - non-out)") +
+  geom_text_repel(aes(label=as.character(SectorName))) +
+  geom_text(inherit.aes = F, data = annotations, aes(xpos, ypos, label=annotateText, hjust=hjustvar, vjust=vjustvar)) +
+  geom_hline(yintercept = 0, colour="red",linetype="dashed")
+```
+
+```{r}
+test <- lm(income_difference ~ perc_difference, sector_summary_2)
+summary(test)
+```
+
+#### Outsourcing status within sector[^10]
+
+[^10]: "outputs/data/sector_summary_3.csv"
+
+This framing shows how sectors are composed, i.e., what proportion of workers in each sector are outsourced vs non-outsourced.
+
+```{r sector-summary-3}
+sector_summary_3 <- data %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
+```
+
+The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
+
+::: callout-note
+With this framing we could say things like "sector a is x times more likely to employ outsourced workers than sector b"
+:::
+
+```{r sector-plot-2}
+plot_data <- sector_summary_3 %>%
+  drop_na(SectorName_short) %>%
+  droplevels()
+
+# annotation_df <- plot_data %>%
+#   select(SectorName_short, outsourcing_status, perc, n
+# mutate(
+  
+annotation_df <- plot_data %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, N) %>%
+  mutate(
+    ypos = 80
+  )
+
+
+ggplot(plot_data,aes(SectorName_short, perc, fill = outsourcing_status)) +
+  geom_col() +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  scale_y_continuous(breaks=seq(0,100,10))
+
+
+# sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName_labelled)),1),
+#                           "Sector" = levels(plot_data$SectorName_labelled))
+# 
+# sector_key %>%
+#   kable() %>%
+#   kable_styling(full_width = F)
+```
+
+The table below shows the percentage of outsourced workers in each Sector, ordered descending by percentage. It shows that the top three Sectors with the highest proportion of outsourced workers are:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+
+Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
+
+```{r}
+plot_data %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  arrange(desc(perc)) %>%
+  select(SectorName_labelled, perc) %>%
+  kable() %>%
+  kable_styling()
+```
+
+Exploring this workforce makeup in the context of income shows that there are some sectors where outsourced workers are paid more and some where they are paid less than non-outsourced workers. The plot below visualises this.
+
+Sectors where outsourced workers are paid less:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+
+Sectors where outsourced workers are paid more:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+
+Note that in 2 or 3 of the Sectors where outsourced workers are paid less are low-paying Sectors. (this needs to be double-checked)
+
+```{r sector-bubble}
+
+annotation_df <- sector_summary_3 %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, N) %>%
+  group_by(SectorName_short) %>%
+  summarise(
+    N = sum(N)
+  ) %>%
+    mutate(
+    ypos = 110000
+  ) 
+
+sector_summary_3 %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(sector_summary$wtd_avg_income), 25000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1, nudge_x=20000) +
+  guides(size=FALSE) # remove size legend as gauging size is difficult
+
+```
+
+<!--# Note: Do statistical comparisons for the above chart. Also split by low-pay split --->
+
+##### Apply the paysplit[^11]
+
+[^11]: "outputs/sector_summary_paysplit.csv"
+
+```{r sector-summary-paysplit}
+sector_summary_paysplit <- data %>%
+  group_by(SectorName, SectorName_labelled, income_group, outsourcing_status) %>%
+  drop_na(income_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName, income_group) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write_csv(sector_summary_paysplit, file="../outputs/sector_summary_paysplit.csv")
+
+```
+
+```{r sector-paysplit-composition-plot}
+for(group in unique(sector_summary_paysplit$income_group)){
+
+  plot_data <- sector_summary_paysplit %>%
+    filter(income_group==group) %>%
+    drop_na(SectorName_short) %>%
+    droplevels()
+  
+  # set ypos for labels
+  max_value <- max(plot_data$perc)
+  ypos <- 0.8 * max_value
+  
+  annotation_df <- plot_data %>%
+    filter(outsourcing_status == "Not outsourced") %>%
+    select(SectorName_short, N) %>%
+    group_by(SectorName_short) %>%
+    mutate(
+      ypos = ypos
+    )
+  
+  plot <- ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_status)) +
+    geom_col() +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+    coord_flip() +
+    scale_fill_manual(values=many_colours) +
+    scale_y_continuous(breaks=seq(0,100,10)) +
+    ggtitle(paste0(group, " income"))
+  
+  print(plot)
+  
+}
+```
+
+The percentages below show be read as e.g. 20% of low paid workers in accommodation and food services are outsourced, compared to 16% of not low paid workers in accommodation and food services.
+
+```{r test}
+plot_data <- sector_summary_paysplit %>%
+  filter(outsourcing_status=="Outsourced")
+
+max_value <- max(plot_data$perc)
+ypos <- 0.8 * max_value
+
+annotation_df <- plot_data %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  select(SectorName_short, income_group, N) %>%
+  group_by(SectorName_short) %>%
+  mutate(
+    
+    ypos = ypos
+  )
+
+ggplot(plot_data, aes(SectorName_short, perc, fill = income_group)) +
+    geom_col(position = position_dodge2()) +
+    # geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), position = position_dodge(width=2)) +
+    coord_flip() +
+    scale_fill_manual(values=many_colours) +
+    scale_y_continuous(breaks=seq(0,50,10)) +
+    ggtitle("Percentage of outsourced workers within\neach sector by income group")
+```
+
+```{r sector-paysplit-income-plot}
+
+for(group in unique(sector_summary_paysplit$income_group)){
+  # set ypos for labels
+  max_income <- max(sector_summary_paysplit$wtd_avg_income[which(sector_summary_paysplit$income_group==group)])
+  ypos <- 0.8 * max_income
+  
+  annotation_df <- sector_summary_paysplit %>%
+    filter(income_group==group) %>%
+    filter(outsourcing_status == "Not outsourced") %>%
+    select(SectorName_short, N) %>%
+    group_by(SectorName_short) %>%
+    summarise(
+      N = sum(N)
+    ) %>%
+    mutate(
+      ypos = ypos
+    )
+  
+  plot <- sector_summary_paysplit %>%
+    filter(income_group == group) %>%
+    ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          legend.title = element_blank())+
+        #coord_flip() +
+    scale_x_continuous(breaks=seq(0,max_income, plyr::round_any(max_income/5, 100))) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1, nudge_x=20000) +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult
+    ggtitle(paste0(group, " income"))
+  
+  print(plot)
+}
+
+
+
+```
+
+### Sector repeat: Outsourcing group
+
+```{r}
+sector_summary <- data %>%
+  group_by(outsourcing_group, SectorName, SectorName_labelled) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(outsourcing_group) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+```
+
+The plot below shows the distribution of sectors within each outsourcing group. The standout differences are:
+
+-   Greater proprotion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])` in the 'likely agency' category, compared to other groups
+-   Greater proprotion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])` in the 'likely agency' category, compared to other groups
+-   Greater proportion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` in the 'outsourced' category, compared to other groups
+-   Greater proportion of `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])` in the 'high indicators' category, compared to other groups
+
+(Really, this plot is better for showing the makeup of each type of outsroucing group - comparisons aer better made comparing outsroucing group within sectors. Here is a better way of interpeting these plots):
+
+For the high indicator group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
+
+For the likely agency group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
+
+For the outsourced group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`.
+
+Note that also for the not outsourced group, the sector with the largest proprotion of workers was `r unique(plot_data$SectorName_labelled[plot_data$SectorName==11])`, closely followed by `r unique(plot_data$SectorName_labelled[plot_data$SectorName==23])`.
+
+\[This might say something about the demographics of the people who were sampled in this survey\]
+
+```{r}
+plot_data <- sector_summary %>%
+  drop_na(SectorName_labelled) %>%
+  droplevels()
+
+plot_data %>%
+  ggplot(aes(outsourcing_group, perc, fill = as.factor(SectorName))) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values=many_colours)
+
+sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName)),1),
+                            "Sector" = unique(plot_data$SectorName_labelled))
+
+sector_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+
+plot_data %>%
+  select(outsourcing_group, SectorName, SectorName_labelled, perc) %>%
+  group_by(outsourcing_group) %>%
+  arrange(desc(perc), .by_group=TRUE) %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+```
+
+13/05 MORE TO DO HERE FOR SECTOR AS ABOVE
+
+
+
+#### Paysplit[^13]
+
+[^13]: "outputs/data/ethnicity_stats_paysplit_1.csv"
+
+```{r ethnicity-summary-paysplit-2}
+ethnicity_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+    separate_wider_delim(Ethnicity_short, 
+                         names = c("Ethnicity_short", "Ethnicity detail"), 
+                         delim = stringr::regex(" / |, "),  # use multiple delims
+                         too_few = "align_start",
+                         too_many = "merge")
+
+readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
+```
+
+```{r ethnicity-paysplit-plot-2}
+
+temp_data <-  ethnicity_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(Ethnicity_short, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+
+# ethnicity_summary_paysplit %>%
+#   drop_na(income_group) %>%
+#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
+#   facet_grid(rows=~income_group) +
+#   geom_col(colour="black") +
+#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
+#   xlab("Outsourcing group") +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
+
+```
+
+```{r ethnicity-collapsed-summary-paysplit-2}
+ethnicity_summary_paysplit <- data %>%
+  group_by(outsourcing_status, income_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) 
+
+#readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_paysplit_1.csv")
+```
+
+```{r ethnicity-collapsed-paysplit-plot-2}
+
+temp_data <-  ethnicity_summary_paysplit %>%
+  drop_na(income_group)
+  
+for(group in unique(temp_data$income_group)){
+  plot_data <- temp_data %>%
+    filter(income_group==group)
+
+  plot <- plot_data %>%
+    ggplot(., aes(Ethnicity_collapsed, Percentage, fill = outsourcing_status)) +
+      geom_col(colour="black", position = position_dodge()) +
+      #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+      coord_flip() +
+      scale_fill_manual(values = many_colours, name = "Ethnicity") +
+      xlab("Outsourcing group") +
+      theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    ) +
+    ggtitle(paste0(group, " income"))
+  
+  
+  print(plot)
+}
+
+# ethnicity_summary_paysplit %>%
+#   drop_na(income_group) %>%
+#   ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_short)) +
+#   facet_grid(rows=~income_group) +
+#   geom_col(colour="black") +
+#   #annotate("text", x = ethnicity_statistics$outsourcing_status, y = 75, label = paste0("n=",ethnicity_statistics$Sum)) +
+#   coord_flip() +
+#   scale_fill_manual(values = many_colours, name = "Ethnicity") +
+#   xlab("Outsourcing group") +
+#   theme_minimal() +
+#   theme(
+#     legend.position = "bottom"
+#   )
+
+```
+
+```{r}
+mod <- glm(outsourcing_status ~ income_group*Ethnicity_collapsed, data, family="binomial")
+summary(mod)
+```
+
+```{r test-tangent-2}
+test_data <- data %>%
+  drop_na(income_group) %>%
+  mutate(
+    income_group = factor(income_group, levels = c("Not low", "Low")),
+    Ethnicity_short = Ethnicity_labelled
+  ) %>%
+  separate_wider_delim(Ethnicity_short, 
+                       names = c("Ethnicity_short", "Ethnicity detail"), 
+                       delim = " / ", 
+                       too_few = "align_start",
+                       too_many = "merge") %>%
+  mutate(
+    Ethnicity_short = forcats::fct_relevel(factor(Ethnicity_short), "English")
+  )
+
+
+test <- glm(outsourcing_status ~ Age + Gender + income_group + Ethnicity_short, family = "binomial", data = test_data)
+summary(test)
+```
+
+<!---# We should construct a full model predicting outsourcing status from demographics --->
+
+Another way of looking at this is to calculate, for each ethnicity, the proportion of workers in each outsourcing group. Doing so yields the plot below.[^14]
+
+[^14]: Data file: outputs/data/ethnicity_stats_2.csv
+
+```{r}
+ethnicity_statistics <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Ethnicity, outsourcing_status) %>%
+  summarise(
+    Frequency = n()
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing group` = outsourcing_status
+  )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+
+# ordering_df <- ethnicity_statistics %>%
+#   filter(`Outsourcing group` == "Outsourced") %>%
+#   mutate(
+#     Ethnicity = haven::as_factor(Ethnicity),
+#     Ethnicity = factor(Ethnicity),
+#     Ethnicity = forcats::fct_reorder(Ethnicity, Percentage)
+#   )
+
+ethnicity_statistics %>%
+  mutate(
+    Ethnicity = haven::as_factor(Ethnicity)
+    ) %>%
+  ggplot(., aes(Ethnicity, Percentage, fill = `Outsourcing group`)) +
+  geom_col(colour="black") +
+  annotate("text", x = ethnicity_statistics$Ethnicity, y = 75, label = paste0("n=", ethnicity_statistics$Sum)) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name = "Ethnicity")
+
+
+write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
+```
+
+
+
+
+
+
+
+
+### Major group code
+
+Comparison of Majorgroupcode indicates that a higher proportion of outsourced people work in Elementary Occupations, compared to non-outsourced people. A lower proportion of outsourced people work in administrative and secretarial occupations, associate professional occupations and professional occupations.
+
+```{r MGC}
+mgc_summary <- data %>%
+  group_by(outsourcing_status,Majorgroupcode) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  )
+
+readr::write_csv(mgc_summary, "../outputs/data/majorgroupcode_summary.csv")
+```
+
+```{r MGC-plot}
+mgc_summary %>%
+  ggplot(aes(outsourcing_status, perc, fill = as.factor(Majorgroupcode))) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(values=many_colours)
+
+mgc_key <- data.frame("number" = seq(1,11,1),
+                            "Major group code" = c( levels(haven::as_factor(mgc_summary$Majorgroupcode)),NA))
+
+mgc_key %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+The table below shows the percentage of outsourced and non-outsourced workers in each majorgroupcode, as well as the difference between them (positive numbers in the difference column indicate occupations that are more common for outsourced work, negative numbers indicate occupations that are less common for outsourced work).[^3]
+
+[^3]: Datafile: "../outputs/data/majorgroupcode_summary.csv"
+
+```{r MGC-table}
+
+mgc_summary %>%
+  select(outsourcing_status, Majorgroupcode, perc) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode),
+    Difference = `Outsourced` - `Not outsourced`
+    ) %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+```{r MGC-2}
+mgc_summary_2 <- data %>%
+  group_by(Majorgroupcode,outsourcing_status) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+mgc_summary_2_wider <- mgc_summary_2 %>%
+  select(outsourcing_status, Majorgroupcode, perc) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = perc) %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode),
+    #Difference = `Outsourced` - `Not outsourced`,
+    Ratio_10 = 10 * (`Outsourced` / `Not outsourced`) # indicates how many outsourced workers there are for every 10 non outsourced
+    )
+
+mgc_summary_2_wider %>%
+  kable(digits = 2) %>%
+  kable_styling(full_width = F)
+
+readr::write_csv(mgc_summary_2, "../outputs/data/majorgroupcode_summary_2_long.csv")
+
+readr::write_csv(mgc_summary_2_wider, "../outputs/data/majorgroupcode_summary_2_wide.csv")
+```
+
+The plot below summarises the average pay (x-axis) in each occupation (y-axis) for outsourced and non-outsourced workers (dot colour), as well as the size of the respective workforce (size of dots). Here the size of the dot represents the percentage of workers *within* the sector who are outsourced (blue) or not outsourced (purple).[^4]
+
+[^4]: Data file: "../outputs/data/majorgroupcode_summary_long.csv" & "../outputs/data/majorgroupcode_summary_wide.csv")
+
+```{r MGC-bubble}
+mgc_summary_2 %>%
+  mutate(
+    Majorgroupcode = haven::as_factor(Majorgroupcode)
+  ) %>%
+  ggplot(., aes(Majorgroupcode, wtd_avg_income, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+    coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+  scale_y_continuous(breaks=seq(0,max(mgc_summary$wtd_avg_income), 25000)) +
+  scale_colour_manual(values=colours) +
+  guides(size=FALSE) # remove size legend as gauging size is difficult
+
+```
+
+It shows, as might be expected, the size of the outsourced workforce for each sector is smaller than the non-outsourced workforce, but the ratio is not the same for all sectors. The sector with the largest non-outsourced:outsourced ratio is Elementary occupations; **for every 10 non-outsourced workers, there are `r round(mgc_summary_2_wider$Ratio_10[which(mgc_summary_2_wider$Majorgroupcode == "ELEMENTARY OCCUPATIONS")],0)` outsourced workers**. This is followed by caring, leisure, and other service occupations, and process, plant and machine operatives, both of which employ **`r round(mgc_summary_2_wider$Ratio_10[which(mgc_summary_2_wider$Majorgroupcode == "PROCESS, PLANT AND MACHINE OPERATIVES")],0)` outsourced workers for every 10 non-outsourced workers**.
+
+Notably, in elementary occupations and sales and customer service occupations, outsourced workers are on average paid more than non-outsourced workers. In contrast, workers in process, plant and machine operations are paid less if they are outsourced than if they are not outsourced.
+
+#### Unit occupations
+
+A deep dive into elementary occupations, process occupations, and caring occupations reveals that there are differences between occupations in the size of the outsourced workforce and pay.
+
+##### Elementary occupations[^5]
+
+[^5]: "../outputs/data/elementary_occs_summary.csv"
+
+```{r bubble-elementary}
+elem_summary <- data %>%
+  filter(Majorgroupcode %in% c(4)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+elem_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+
+readr::write_csv(elem_summary, "../outputs/data/elementary_occs_summary.csv")
+```
+
+##### Process occupations[^6]
+
+[^6]: "../outputs/data/process_occs_summary.csv"
+
+```{r bubble-process}
+proc_summary <- data %>%
+  filter(Majorgroupcode %in% c(7)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+proc_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+
+readr::write_csv(proc_summary, "../outputs/data/process_occs_summary.csv")
+```
+
+##### Caring occupations[^7]
+
+[^7]: "../outputs/data/caring_occs_summary.csv"
+
+```{r bubble-caring}
+caring_summary <- data %>%
+  filter(Majorgroupcode %in% c(3)) %>%
+  group_by(UnitOccupation,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  mutate(
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>% 
+  drop_na()
+
+caring_summary %>%
+  mutate(
+    UnitOccupation = haven::as_factor(UnitOccupation)
+  ) %>%
+  ggplot(., aes(wtd_avg_income,UnitOccupation, size = perc, colour = outsourcing_status)) +
+    geom_point() + 
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation, colour = outsourcing_status, label=paste0("n=",n))) +
+  #coord_flip() +
+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  # scale_x_continuous(breaks=scales::pretty(10))
+  scale_colour_manual(values=colours) +
+
+    guides(size=FALSE) 
+
+
+readr::write_csv(caring_summary, "../outputs/data/caring_occs_summary.csv")
+```
+
