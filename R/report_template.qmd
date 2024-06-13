@@ -136,6 +136,7 @@ To start with, we can create a generalised linear model predicting outsourcing s
 create sectorname short - should add this to cleaning script
 
 ```{r}
+library(forcats)
 data <- data %>%
   mutate(
     SectorName_short = SectorName_labelled
@@ -147,10 +148,28 @@ data <- data %>%
     SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
     SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail))
   )
+
+# make region a factor and make the reference London - should be added to cleaning script
+data <- data %>%
+  mutate(
+    Region = forcats::fct_relevel(factor(Region), "London")
+  )
+
 ```
 
+We construct two generalised linear models, both predicting outsourcing status. The first model has the following terms:
 
-```{r}
+- Age
+- Ethnicity
+- Arrival in UK
+- Gender
+- Region
+- Income
+
+The second model additionally includes Sector.
+
+```{r output=FALSE}
+
 # quasibinomial because we're using weights that are non-integers
 mod_1  <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region + income_annual, data, family = "quasibinomial", weights = NatRepemployees)
 summary(mod_1)
@@ -158,10 +177,30 @@ summary(mod_1)
 mod_2 <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region + income_annual + SectorName_short, data, family = "quasibinomial", weights = NatRepemployees)
 summary(mod_2)
 
-tab_model(mod_1, mod_2, auto.label = FALSE)
 ```
 
+```{r}
+sjPlot::tab_model(mod_1, mod_2, auto.label = FALSE)
+```
 
+The results show that a person is more likely to outsourced if they:
+
+- Are younger (compared to older)
+- Are African, South Asian or Arab (compared to White British)
+- Moved to the UK in last year, 10 years, 15 years, 20 years, or more than 30 years (compared to born in UK)
+- Are male (compared to female)
+- Have a (very very slightly) higher income (I don't think this is a meaningful effect - the OR is basically 1!)
+
+Note there are some significant effects of Sector, but without a sensible reference category these coefficients are not really interpretable. We should explore sector separately.
+
+A person is less likely to be outsourced if they:
+
+- Are older
+- Are East Asian 
+- Are female
+- Live in East of England, Scotland, South East, and South West (compared to London)
+
+But maybe we should control for the working population in each area? But wouldn't that just be perfectly correlated with Region anyway?
 
 ### Age
 
