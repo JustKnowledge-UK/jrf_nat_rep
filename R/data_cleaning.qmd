@@ -1,5 +1,5 @@
 ---
-title: "Outsourcing Report template"
+title: "JRF Nat Rep - Data cleaning"
 author: 
   - Jolyon Miles-Wilson
   - Celestin Okoroji
@@ -414,57 +414,57 @@ We have many ethnicity categories, which is great for disaggregation but challen
 
 **White**
 
-- English / Welsh / Scottish / Northern Irish / British,
-- Irish
+-   English / Welsh / Scottish / Northern Irish / British,
+-   Irish
 
 **White other**
 
-- Gypsy or Irish Traveller
-- Roma
-- Any other White background
+-   Gypsy or Irish Traveller
+-   Roma
+-   Any other White background
 
 **Black African**
 
-- African
-- White and Black African
+-   African
+-   White and Black African
 
 **Black Caribbean**
 
-- Caribbean
-- White and Black Caribbean
+-   Caribbean
+-   White and Black Caribbean
 
 **Black other**
 
-- Any other Black, Black British, or Caribbean background
+-   Any other Black, Black British, or Caribbean background
 
-**South Asian** 
+**South Asian**
 
-- Indian
-- Pakistani
-- Bangladeshi
+-   Indian
+-   Pakistani
+-   Bangladeshi
 
 **East Asian**
 
-- Chinese
+-   Chinese
 
-**Arab** 
+**Arab**
 
-- Arab
+-   Arab
 
-**Mixed other** 
+**Mixed other**
 
-- White and Asian
-- Any other Mixed / Multiple ethnic background
+-   White and Asian
+-   Any other Mixed / Multiple ethnic background
 
 **Other**
 
-- Any other ethnic group
-- Any other Asian background
-- Don’t think of myself as any of these
-- Prefer not to say
-- NA
+-   Any other ethnic group
+-   Any other Asian background
+-   Don't think of myself as any of these
+-   Prefer not to say
+-   NA
 
-```{r} 
+```{r}
 data <- data %>%   
   mutate(     
     Ethnicity_collapsed = forcats::fct_collapse(Ethnicity_labelled,
@@ -600,8 +600,8 @@ Outliers are given a marker (`income_drop == 1`) to identify them. In analyses i
 x <- data
 
 # calculate the mean and sd, and 3x sd
-mean = mean(x$income_annual, na.rm=T)
-std = sd(x$income_annual, na.rm = T)
+mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
@@ -634,8 +634,8 @@ while(length(outliers) != 0){
   x <- x[-outliers,] # remove the outliers identified in the previous iteration
   
   # recalculate
-  mean = mean(x$income_annual, na.rm = T)
-  std = sd(x$income_annual, na.rm = T)
+  mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+  std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
   Tmin = mean - (3 * std)
   Tmax = mean + (3 * std)
   outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
@@ -669,8 +669,8 @@ sum(data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
 test <- data %>%
   filter(income_drop == 0)
 
-mean = mean(test$income_annual, na.rm = T)
-std = sd(test$income_annual, na.rm = T)
+mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean - (3 * std)
 Tmax = mean + (3 * std)
 
@@ -787,8 +787,8 @@ Apply the same outliers removal process as done above for the income_all_subset
 x <- data
 
 # calculate the mean and sd, and 3x sd
-mean = mean(x$income_annual_all, na.rm=T)
-std = sd(x$income_annual_all, na.rm = T)
+mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
@@ -821,8 +821,8 @@ while(length(outliers) != 0){
   x <- x[-outliers,] # remove the outliers identified in the previous iteration
   
   # recalculate
-  mean = mean(x$income_annual_all, na.rm = T)
-  std = sd(x$income_annual_all, na.rm = T)
+  mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+  std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
   Tmin = mean - (3 * std)
   Tmax = mean + (3 * std)
   outliers <- which(x$income_annual_all < Tmin | x$income_annual_all > Tmax)
@@ -856,8 +856,8 @@ sum(data$income_drop_all, na.rm = T) # this should be equal to all_outlier_ids
 test <- data %>%
   filter(income_drop_all == 0)
 
-mean = mean(test$income_annual_all, na.rm = T)
-std = sd(test$income_annual_all, na.rm = T)
+mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean - (3 * std)
 Tmax = mean + (3 * std)
 
@@ -1118,6 +1118,36 @@ skim(income_subset)
 ```
 
 Feedback from 8 May was to incorporate the closed responses with the open responses. This has been done in the section above [Converting closed responses to continuous]('#-Converting-closed-responses-to-continuous).
+
+## Sector
+
+Create a variable for shortened sector names to make them nicer to read.
+
+```{r}
+data <- data %>%
+  mutate(
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail))
+  )
+```
+
+## Region
+
+Make region a factor and make the reference London.
+
+```{r}
+
+data <- data %>%
+  mutate(
+    Region = forcats::fct_relevel(factor(Region), "London")
+  )
+```
 
 ## Save
 
