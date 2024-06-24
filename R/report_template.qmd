@@ -37,6 +37,7 @@ library(Hmisc)
 library(sjstats)
 library(readr)
 library(sjPlot)
+library(nnet)
 ```
 
 ```{r palette}
@@ -494,6 +495,15 @@ These findings in combination suggest that the relationship between outsourced w
 
 This framing shows how outsourced and non-outsourced workers are distributed across sectors.
 
+```{r}
+tab <- table(data$SectorName_short, data$outsourcing_status)
+print(tab)
+```
+
+
+
+
+
 ```{r sector-summary}
 sector_summary <- data %>%
   group_by(outsourcing_status, SectorName, SectorName_labelled) %>%
@@ -592,7 +602,7 @@ sector_summary_2 %>%
 readr::write_csv(sector_summary_2, file="../outputs/data/sector_summary_2.csv")
 ```
 
-The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers. These sectors are:
+The plot below plots the percentage difference in the concentration of outsourced vs non-outsourced workers (i.e. the difference between what proportion of workers of each type are in each sector) against the income difference for that sector (i.e., the difference in the average income between groups). Note that a statistical test of this relationship shows it is non-significant. This plot therefore only serves as an illustration of where workers are situated in terms of sector and pay. A key takeaway here is that there is considerable variation in the difference in pay between outsourced and non-outsourced workers. There also appears to be a central area where the concentration of outsourced vs non-outsourced workers is quite similar, but the pay for outsourced workers is lower. This might indicate **sectors where employment of outsourced workers is as common as employment of non-outsourced workers, but where outsourced workers are paid less than non-outsourced workers**. These sectors are:
 
 -   `r unique(plot_data$SectorName[plot_data$SectorName==5])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
 -   `r unique(plot_data$SectorName[plot_data$SectorName==6])`: `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
@@ -717,32 +727,6 @@ plot_data %>%
   kable_styling()
 ```
 
-Exploring this workforce makeup in the context of income shows that there are some sectors where outsourced workers are paid more and some where they are paid less than non-outsourced workers. The plot below visualises this.
-
-Sectors where outsourced workers are paid less:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32)
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
-
-Sectors where outsourced workers are paid more:
-
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
--   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
-
-Note that in 2 or 3 of the Sectors where outsourced workers are paid less are low-paying Sectors. (this needs to be double-checked)
 
 ```{r sector-bubble}
 
@@ -775,6 +759,63 @@ sector_summary_3 %>%
 ```
 
 <!--# Note: Do statistical comparisons for the above chart. Also split by low-pay split --->
+
+Exploring this workforce makeup in the context of income shows that there are some sectors where outsourced workers are paid more and some where they are paid less than non-outsourced workers. The plot below visualises this.
+
+Sectors where outsourced workers are paid less:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])` (note that N = 32)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==5])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==6])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==9])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==19])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+
+Sectors where outsourced workers are paid more:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==1])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==7])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==8])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==12])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==13])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==16])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==17])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==18])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==20])`
+
+Note that in 2 or 3 of the Sectors where outsourced workers are paid less are low-paying Sectors. (this needs to be double-checked)
+
+```{r include=FALSE}
+# a mixed model could help here!
+# Aim here was to quanitfy what the effect of outsroucing is on income, controlling for the fact that the effect will likely vary by sector and region.
+# The result suggests that once you control for sector and region, there is no effect of outsourcing on income
+# The provisional takeaway would be that there is nothing to say universally about outsroucing relating to pay. instead, it's likely it is a sector-specific issue.
+# So maybe you might want to start with this model, then expore differences in pay by sector
+# the problem is you really need to account for the fact that london will have higher pay anyway (Which we do by taking Region as a grouping for random effects)
+
+library(lmerTest)
+library(lme4)
+
+mod_1 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region +  outsourcing_status + (1 + outsourcing_status|SectorName_short), data = data, weights = NatRepemployees)
+summary(mod_1)
+
+mod_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + outsourcing_status + (1|Region) + (1|SectorName_short), data = data, weights = NatRepemployees)
+summary(mod_2)
+
+mod_3 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + outsourcing_status + (1|Region) + (1 + outsourcing_status|SectorName_short), data = data, weights = NatRepemployees)
+summary(mod_2)
+
+mod_4 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + outsourcing_status + (1 + outsourcing_status|Region) + (1 + outsourcing_status|SectorName_short), data = data, weights = NatRepemployees)
+summary(mod_2)
+
+# not sure about this comparison currently
+anova(mod_1, mod_2)
+
+
+```
+
 
 ##### Apply the paysplit[^11]
 
@@ -2438,12 +2479,81 @@ int_summary_3 %>%
 ```
 
 ```{r}
-# mod <- glm(outsourcing_status ~ Ethnicity_collapsed*BORNUK_collapsed, data, family="binomial", weight = NatRepemployees)
-# summary(mod)
-# emmeans(mod, specs = "Ethnicity_collapsed", by ="BORNUK_collapsed")
-# sjPlot::plot_model(mod, type = "int", legend.title = "", terms = c("outsourcing_status","BORNUK_collapsed","Ethnicity_collapsed ['Black African]"))
-#   
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed*BORNUK_collapsed, data, family="quasibinomial", weight = NatRepemployees)
+summary(mod)
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by ="BORNUK_collapsed")
+contrast(ems, "pairwise", adjust="Tukey")
+
+ems_2 <- emmeans(mod, specs ="BORNUK_collapsed", by = "Ethnicity_collapsed")
+
+contrast(ems_2, "pairwise", adjust="Tukey")
+
 ```
+
+Exploring the interaction between ethnicity and arrival time shows some significant effects whereby the likelihood of someone being outsourced is different for some combinations of ethnicity and arrival time, compared to White people born in the UK. These groups are:
+
+
+- White other and came to UK recently
+- Black African and came to UK recently
+- South Asian and came to UK recently
+- East Asian and came to UK recently
+
+- White other and came to UK not recently
+- South Asian and came to UK not recently
+- Other ethnicity and prefer not to say (not very informative)
+
+Breaking these effects down shows some interesting patterns in the interaction (see plot below)
+
+For people born in the UK, a person is more likely to be outsourced if they are Black African or South Asian. For all other arrival times there are no differences by ethnicity.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title = "", terms = c("BORNUK_collapsed","Ethnicity_collapsed"), dodge = 0.6) +
+  coord_flip()
+```
+
+Exploring within each ethnicity (see plot below) shows that arrival time is generally only relevant for three groups:
+
+- White; a White person is more likely to be outsourced if they came to the UK recently, came to the UK not recently, or preferred not to say (compared to those born in the UK)
+- East Asian; an East Asian person is more likely to be outsourced if they came to the UK not recently (compared to born in the UK, and compared to came to the UK recently)
+- Other; people of 'Other' ethnicity are more likely to be outsourced if they came to the UK not recently (compared to born in the UK)
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title = "", terms = c("Ethnicity_collapsed","BORNUK_collapsed"), dodge = 0.6) +
+  coord_flip()
+```
+
+Overall, this pattern of results paints a racialised picture with strong colonial undertones. UK-born Black African and South Asian workers are more likely than UK-born White workers to be outsourced. For these and most other non-White groups, arrival time in the UK is not relevant for predicting outsourcing status; a Black African is just as likely to be outsourced if they arrived in the UK today than if they were born in the UK. 
+
+However, the story is not one only of race. Non-UK-born White people are more likely to be outsourced than UK-born White people. For East Asian and people of 'Other' ethnicity, outsroucing is more prevalent for those having lived here for 15 years or more, compared to the those born in the UK and those who have arrived more recently. For these groups, arrival time is therefore a relevant factor in the likelihood of being outsourced.
+
+#### Repeat: Outsourcing groups
+
+```{r}
+test <- multinom(outsourcing_group ~ Ethnicity_collapsed*BORNUK_collapsed, data, weights = NatRepemployees)
+summary(test)
+summary(test)$coefficients
+# 
+z <- summary(test)$coefficients/summary(test)$standard.errors
+z
+
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+
+# Assuming your dataframe is named 'p'
+p_2 <- apply(p, 2, function(x) ifelse(x < 0.05, 1, NA))
+
+sig_ors <- exp(summary(test)$coefficients * p_2)
+
+# we can take the results of this forward and plot the ors
+```
+this doesn't work - maybe try to use multcomp glht?
+
+```{r}
+ems <- emtrends(test, specs = "Ethnicity_collapsed", by ="BORNUK_collapsed")
+contrast(ems, "pairwise", adjust="Tukey")
+```
+
+
 
 ### Gender[^17]
 
