@@ -633,7 +633,7 @@ sector_summary_2 %>%
 
 ```{r}
 test <- lm(income_difference ~ perc_difference, sector_summary_2)
-summary(test)
+##test)
 ```
 
 #### Outsourcing status within sector[^10]
@@ -1076,7 +1076,7 @@ plot_data %>%
 
 #### Paysplit - sector x outsourcing group
 
-[^'../outputs/sector_summary_paysplit_outsourcing_group.csv']
+^['../outputs/sector_summary_paysplit_outsourcing_group.csv']
 
 ```{r}
 sector_summary_paysplit <- data %>%
@@ -1548,7 +1548,7 @@ region_statistics %>%
 
 ```
 
-To visualise this differently, below we calculate the proportion of workers within each region who are outsourced. The plot can be read e.g., "~25% of workers in London are outsourced."[^outputs/data/region_stats_2.csv]
+To visualise this differently, below we calculate the proportion of workers within each region who are outsourced. The plot can be read e.g., "~25% of workers in London are outsourced."^[outputs/data/region_stats_2.csv]
 
 ```{r}
 region_statistics_2 <- data %>%
@@ -1617,7 +1617,7 @@ readr::write_csv(region_statistics_3, file = "../outputs/data/region_stats_3.csv
 
 ```
 
-We can also explore how the the entire UK workforce is distributed across the country.[^region_stats_3.csv] The table and map below show the percentage of outsourced workers in each region as a proportion of the total UK workforce. They show where the UK's outsourced workforce is concentrated. The regions with the highest share of the UK's outsourced workforce are:
+We can also explore how the the entire UK workforce is distributed across the country.^[region_stats_3.csv] The table and map below show the percentage of outsourced workers in each region as a proportion of the total UK workforce. They show where the UK's outsourced workforce is concentrated. The regions with the highest share of the UK's outsourced workforce are:
 
 1. `r region_statistics_3[which(rank(-region_statistics_3$Percentage) == 1), "Region"]` (`r round(region_statistics_3[which(rank(-region_statistics_3$Percentage) == 1), "Percentage"],0)`%)
 2. `r region_statistics_3[which(rank(-region_statistics_3$Percentage) == 2), "Region"]` (`r round(region_statistics_3[which(rank(-region_statistics_3$Percentage) == 2), "Percentage"],0)`%)
@@ -1656,7 +1656,7 @@ We construct a generalised linear models to predicting outsourcing status. The m
 
 # quasibinomial because we're using weights that are non-integers
 mod_1  <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region, data, family = "quasibinomial", weights = NatRepemployees)
-summary(mod_1)
+#summary(mod_1)
 
 # mod_2 <- glm(outsourcing_status ~ Age + Ethnicity_collapsed + BORNUK_labelled + Gender + Region + income_annual + SectorName_short, data, family = "quasibinomial", weights = NatRepemployees)
 # summary(mod_2)
@@ -1972,9 +1972,9 @@ data %>%
 
 ```
 
-```{r}
-mod <- glm(outsourcing_status ~ Ethnicity_collapsed, data, family="binomial", weights=NatRepemployees)
-summary(mod)
+```{r output=FALSE}
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed, data, family="quasibinomial", weights=NatRepemployees)
+#summary(mod)
 
 coef_table <- data.frame("estimate" = mod[["coefficients"]]) %>%
   mutate(
@@ -2119,9 +2119,9 @@ for(group in unique(temp_data$income_group)){
 
 ```
 
-```{r}
+```{r output=FALSE}
 mod <- glm(outsourcing_status ~ income_group*Ethnicity_collapsed, data, family="binomial")
-summary(mod)
+#summary(mod)
 ```
 
 ```{r test-tangent}
@@ -2142,7 +2142,7 @@ test_data <- data %>%
 
 
 test <- glm(outsourcing_status ~ Age + Gender + income_group + Ethnicity_short, family = "binomial", data = test_data)
-summary(test)
+#summary(test)
 ```
 
 
@@ -2196,7 +2196,7 @@ write_csv(ethnicity_statistics, file="../outputs/data/ethnicity_stats_2.csv")
 ```
 
 
-### Ethnicity repeat: Outsourcing groups[^../outputs/data/ethnicity_stats_outsourcing_groups_1.csv]
+### Ethnicity repeat: Outsourcing groups^[../outputs/data/ethnicity_stats_outsourcing_groups_1.csv]
 
 ```{r ethnicity-summary-2}
 ethnicity_statistics <- data %>%
@@ -2433,9 +2433,9 @@ bornuk_statistics %>%
 
 ```
 
-#### Paysplit[^../outputs/data/bornuk_stats_paysplit_1.csv]
+#### Paysplit^[../outputs/data/bornuk_stats_paysplit_1.csv]
 
-```{r bornuk-summary-paysplit}
+```{r bornuk-summary-paysplit, output=FALSE}
 bornuk_summary_paysplit <- data %>%
   group_by(outsourcing_status, income_group, BORNUK_labelled) %>%
   summarise(
@@ -2452,7 +2452,7 @@ readr::write_csv(bornuk_summary_paysplit, file = "../outputs/data/bornuk_stats_p
 ```
 ```{r}
 mod <- glm(outsourcing_status ~ income_group * BORNUK_labelled, data, weights = NatRepemployees, family="binomial")
-summary(mod)
+#summary(mod)
 
 # To me this indicates that htere is main effect - arrival time pre
 sjPlot::plot_model(mod, type = "int", legend.title = "")
@@ -2700,9 +2700,9 @@ int_summary_3 %>%
   scale_fill_manual(values = many_colours)
 ```
 
-```{r}
+```{r output=FALSE}
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed*BORNUK_collapsed, data, family="quasibinomial", weight = NatRepemployees)
-summary(mod)
+#summary(mod)
 ems <- emmeans(mod, specs = "Ethnicity_collapsed", by ="BORNUK_collapsed")
 contrast(ems, "pairwise", adjust="Tukey")
 
@@ -2750,16 +2750,16 @@ However, the story is not one only of race. Non-UK-born White people are more li
 
 #### Repeat: Outsourcing groups
 
-```{r}
+```{r output=FALSE}
 test <- multinom(outsourcing_group ~ Ethnicity_collapsed*BORNUK_collapsed, data, weights = NatRepemployees)
-summary(test)
-summary(test)$coefficients
+#summary(test)
+#summary(test)$coefficients
 # 
 z <- summary(test)$coefficients/summary(test)$standard.errors
-z
+# z
 
 p <- (1 - pnorm(abs(z), 0, 1)) * 2
-p
+# p
 
 # Assuming your dataframe is named 'p'
 p_2 <- apply(p, 2, function(x) ifelse(x < 0.05, 1, NA))
@@ -2775,7 +2775,6 @@ sig_ors <- exp(summary(test)$coefficients * p_2)
 # ems <- emtrends(test, specs = "Ethnicity_collapsed", by ="BORNUK_collapsed")
 # contrast(ems, "pairwise", adjust="Tukey")
 ```
-
 
 
 ### Gender[^17]
@@ -2854,10 +2853,10 @@ x2 <- gmodels::CrossTable(comp_mat, fisher=TRUE, chisq = TRUE)
 
 In terms of Gender, the outsourced group has a larger proportion of males (`r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`% compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 2)`%). This difference is statistically significant; **outsourced workers are `r round(x2[["fisher.ts"]][["estimate"]][["odds ratio"]],2)` times more likely to have be male than non-outsourced workers.**
 
-#### Paysplit[^../outputs/data/gender_stats_paysplit_1.csv]
+#### Paysplit^[../outputs/data/gender_stats_paysplit_1.csv]
 
 
-```{r gender-summary-paysplit}
+```{r gender-summary-paysplit, output=FALSE}
 gender_summary_paysplit <- data %>%
   group_by(outsourcing_status, income_group, Gender) %>%
   summarise(
@@ -2874,7 +2873,7 @@ readr::write_csv(ethnicity_statistics, file = "../outputs/data/gender_stats_pays
 ```
 ```{r}
 mod <- glm(outsourcing_status ~ Gender * income_group, data, family="binomial", weights = NatRepemployees)
-summary(mod)
+#summary(mod)
 
 sjPlot::plot_model(mod, type = "int")
 ```
