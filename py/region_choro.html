@@ -96,7 +96,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<div id="56984316" class="cell" data-execution_count="1">
+<div id="72d00a23" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> glob</span>
@@ -105,17 +105,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap, LinearSegmentedColormap</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="0b2899ce" class="cell" data-execution_count="2">
+<div id="5aada01d" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> mpl.colormaps[<span class="st">'viridis'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="2a8fd4ea" class="cell" data-execution_count="3">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">file</span> <span class="op">=</span> os.path.join(<span class="st">'..'</span>, <span class="st">'outputs'</span>,<span class="st">'data'</span>,<span class="st">'region_stats_2.csv'</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.read_csv(<span class="bu">file</span>)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> data[data[<span class="st">'Outsourcing status'</span>]<span class="op">==</span><span class="st">"Outsourced"</span>]</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>data.loc[data[<span class="st">'Region'</span>]<span class="op">==</span><span class="st">'Yorkshire and the Humber'</span>,<span class="st">'Region'</span>] <span class="op">=</span> <span class="st">'Yorkshire and The Humber'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="3c85d14c" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># regional data</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">file</span> <span class="op">=</span> os.path.join(<span class="st">'..'</span>, <span class="st">'outputs'</span>,<span class="st">'data'</span>,<span class="st">'region_stats_2.csv'</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.read_csv(<span class="bu">file</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> data[data[<span class="st">'Outsourcing status'</span>]<span class="op">==</span><span class="st">"Outsourced"</span>]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>data.loc[data[<span class="st">'Region'</span>]<span class="op">==</span><span class="st">'Yorkshire and the Humber'</span>,<span class="st">'Region'</span>] <span class="op">=</span> <span class="st">'Yorkshire and The Humber'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="243fc059" class="cell" data-execution_count="4">
+<div id="10c3c0bd" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># regions</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>pattern <span class="op">=</span> os.path.join(<span class="st">'..'</span>,<span class="st">'Data'</span>,<span class="st">'RGN_23_boundaries'</span>, <span class="st">'*.shp'</span>) <span class="co"># use ultra-generalised to make it look nicer zoomed out</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>files <span class="op">=</span> glob.glob(pattern)</span>
@@ -124,15 +125,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># countries</span></span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>pattern <span class="op">=</span> os.path.join(<span class="st">'..'</span>,<span class="st">'Data'</span>,<span class="st">'CTRY_23_boundaries'</span>,<span class="st">'*.shp'</span>)</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>files <span class="op">=</span> glob.glob(pattern)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>country_boundaries <span class="op">=</span> gpd.read_file(files[<span class="dv">0</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>country_boundaries <span class="op">=</span> gpd.read_file(files[<span class="dv">0</span>])</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine regions and countries to incorporate wales</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>country_boundaries_altered <span class="op">=</span> country_boundaries.drop(<span class="st">'CTRY23NMW'</span>,axis<span class="op">=</span><span class="dv">1</span>) <span class="co"># drop welsh name column</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>country_boundaries_altered.rename(columns<span class="op">=</span>{<span class="st">'CTRY23CD'</span>: <span class="st">'RGN23CD'</span>, <span class="st">'CTRY23NM'</span>: <span class="st">'RGN23NM'</span>}, inplace<span class="op">=</span><span class="va">True</span>) <span class="co"># rename columns to make consistent</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>regions_filled <span class="op">=</span> pd.concat([region_boundaries, country_boundaries_altered]) <span class="co"># combine the two dfs</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>regions_filled <span class="op">=</span> regions_filled[regions_filled.RGN23NM <span class="op">!=</span> <span class="st">"England"</span>] <span class="co"># drop England so that we don't double plot it</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="b05ce5ee" class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>data_gpd <span class="op">=</span> region_boundaries.merge(data, how<span class="op">=</span><span class="st">'left'</span>, left_on<span class="op">=</span><span class="st">'RGN23NM'</span>, right_on<span class="op">=</span><span class="st">'Region'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="72bc4863" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merge data</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_gpd <span class="op">=</span> regions_filled.merge(data, how<span class="op">=</span><span class="st">'left'</span>, left_on<span class="op">=</span><span class="st">'RGN23NM'</span>, right_on<span class="op">=</span><span class="st">'Region'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="e58adc68" class="cell" data-execution_count="6">
+<section id="proportion-of-workers-who-are-outsourced-in-each-region" class="level1">
+<h1>Proportion of workers who are outsourced in each region</h1>
+<div id="130d636f" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>[<span class="dv">12</span>,<span class="dv">12</span>])</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>data_gpd.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'Percentage'</span>, legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span>cmap)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>data_gpd.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'Percentage'</span>, legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span>cmap,legend_kwds<span class="op">=</span>{<span class="st">'label'</span>: <span class="st">"Percentage of region's entire workforce"</span>})</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Proportion of outsourced workers by region'</span>)</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>ax.set_axis_off()</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
@@ -141,17 +152,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="region_choro_files/figure-html/cell-7-output-1.png" width="849" height="906" class="figure-img"></p>
+<p><img src="region_choro_files/figure-html/cell-7-output-1.png" width="632" height="926" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="97736eaa" class="cell" data-execution_count="7">
+<div id="49d33813" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>subset_gpd <span class="op">=</span> data_gpd[data_gpd[<span class="st">'Region'</span>] <span class="op">!=</span> <span class="st">'London'</span>]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>[<span class="dv">12</span>,<span class="dv">12</span>])</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>subset_gpd.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'Percentage'</span>, legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span>cmap)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>subset_gpd.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'Percentage'</span>, legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span>cmap,legend_kwds<span class="op">=</span>{<span class="st">'label'</span>: <span class="st">"Percentage of region's entire workforce"</span>})</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Proportion of outsourced workers by region, excl. London'</span>)</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>ax.set_axis_off()</span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
@@ -160,11 +171,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="region_choro_files/figure-html/cell-8-output-1.png" width="849" height="911" class="figure-img"></p>
+<p><img src="region_choro_files/figure-html/cell-8-output-1.png" width="632" height="945" class="figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
+</section>
+<section id="distribution-of-outsourced-workers-across-the-uk" class="level1">
+<h1>Distribution of outsourced workers across the UK</h1>
+<div id="4837a2eb" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># distribution data</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">file</span> <span class="op">=</span> os.path.join(<span class="st">'..'</span>, <span class="st">'outputs'</span>,<span class="st">'data'</span>,<span class="st">'region_stats_3.csv'</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> pd.read_csv(<span class="bu">file</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>data.loc[data[<span class="st">'Region'</span>]<span class="op">==</span><span class="st">'Yorkshire and the Humber'</span>,<span class="st">'Region'</span>] <span class="op">=</span> <span class="st">'Yorkshire and The Humber'</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>data_gpd <span class="op">=</span> regions_filled.merge(data, how<span class="op">=</span><span class="st">'left'</span>, left_on<span class="op">=</span><span class="st">'RGN23NM'</span>, right_on<span class="op">=</span><span class="st">'Region'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="571a2e62" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>[<span class="dv">12</span>,<span class="dv">12</span>])</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>data_gpd.plot(ax<span class="op">=</span>ax, column<span class="op">=</span><span class="st">'Percentage'</span>, legend<span class="op">=</span><span class="va">True</span>, cmap<span class="op">=</span>cmap,legend_kwds<span class="op">=</span>{<span class="st">'label'</span>: <span class="st">"Percentage of UK outsourced workers"</span>})</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Distribution of outsourced workers across the UK'</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>ax.set_axis_off()</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>fig.savefig(<span class="st">'../outputs/figures/outsourcing_distribution_across_regions.svg'</span>, <span class="bu">format</span><span class="op">=</span><span class="st">'svg'</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>fig.savefig(<span class="st">'../outputs/figures/outsourcing_distribution_across_regions.png'</span>, <span class="bu">format</span><span class="op">=</span><span class="st">'png'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="region_choro_files/figure-html/cell-10-output-1.png" width="645" height="926" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 
 </main>
 <!-- /main column -->

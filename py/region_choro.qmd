@@ -18,6 +18,7 @@ cmap = mpl.colormaps['viridis']
 ```
 
 ```{python}
+# regional data
 file = os.path.join('..', 'outputs','data','region_stats_2.csv')
 data = pd.read_csv(file)
 
@@ -47,16 +48,17 @@ regions_filled = regions_filled[regions_filled.RGN23NM != "England"] # drop Engl
 
 ```
 
-
 ```{python}
+# merge data
 data_gpd = regions_filled.merge(data, how='left', left_on='RGN23NM', right_on='Region')
 ```
 
+# Proportion of workers who are outsourced in each region
 
 ```{python}
 fig, ax = plt.subplots(figsize=[12,12])
 
-data_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap)
+data_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap,legend_kwds={'label': "Percentage of region's entire workforce"})
 ax.set_title('Proportion of outsourced workers by region')
 ax.set_axis_off()
 
@@ -70,10 +72,35 @@ subset_gpd = data_gpd[data_gpd['Region'] != 'London']
 
 fig, ax = plt.subplots(figsize=[12,12])
 
-subset_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap)
+subset_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap,legend_kwds={'label': "Percentage of region's entire workforce"})
 ax.set_title('Proportion of outsourced workers by region, excl. London')
 ax.set_axis_off()
 
 fig.savefig('../outputs/figures/outsourcing_by_region_excl_london.svg', format='svg')
 fig.savefig('../outputs/figures/outsourcing_by_region_excl_london.png', format='png')
+```
+
+# Distribution of outsourced workers across the UK
+
+
+```{python}
+# distribution data
+file = os.path.join('..', 'outputs','data','region_stats_3.csv')
+data = pd.read_csv(file)
+
+data.loc[data['Region']=='Yorkshire and the Humber','Region'] = 'Yorkshire and The Humber'
+
+data_gpd = regions_filled.merge(data, how='left', left_on='RGN23NM', right_on='Region')
+```
+
+
+```{python}
+fig, ax = plt.subplots(figsize=[12,12])
+
+data_gpd.plot(ax=ax, column='Percentage', legend=True, cmap=cmap,legend_kwds={'label': "Percentage of UK outsourced workers"})
+ax.set_title('Distribution of outsourced workers across the UK')
+ax.set_axis_off()
+
+fig.savefig('../outputs/figures/outsourcing_distribution_across_regions.svg', format='svg')
+fig.savefig('../outputs/figures/outsourcing_distribution_across_regions.png', format='png')
 ```
