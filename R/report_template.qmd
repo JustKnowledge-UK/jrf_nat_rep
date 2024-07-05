@@ -2140,10 +2140,46 @@ for(group in unique(temp_data$income_group)){
 
 ```
 
-```{r output=FALSE}
-mod <- glm(outsourcing_status ~ income_group*Ethnicity_collapsed, data, family="binomial")
-#summary(mod)
+#### Outsourcing, ethnicity, and income group
+
+TO BE COMPLETED - confirm appropriate method for post-hoc contrasts
+
+```{r}
+# mod <- glm(income_group ~ Age + BORNUK_labelled + Gender + Region + outsourcing_status*Ethnicity_collapsed, data, family="quasibinomial", weights = NatRepemployees)
+# summary(mod)
 ```
+
+```{r}
+# ems <- emmeans(mod, specs = "outsourcing_status", by ="Ethnicity_collapsed")
+# contrast(ems, "pairwise", adjust="Tukey")
+
+```
+
+
+Exploring ethnicity, outsourcing status and income group indicates that the mixed other group is more likely to be 
+
+```{r}
+# sjPlot::plot_model(mod, type = "pred", legend.title = "", terms = c("outsourcing_status","Ethnicity_collapsed"), dodge = 0.6) +
+#   coord_flip()
+```
+
+```{r}
+# mod <- glm(income_group ~ Age + BORNUK_labelled + Gender + Region + outsourcing_group*Ethnicity_collapsed, data, family="quasibinomial", weights = NatRepemployees)
+# summary(mod)
+
+```
+
+```{r}
+# ems <- emmeans(mod, specs = "outsourcing_group", by ="Ethnicity_collapsed")
+# contrast(ems, "pairwise", adjust="Tukey")
+
+```
+
+```{r}
+# sjPlot::plot_model(mod, type = "pred", legend.title = "", terms = c("outsourcing_group","Ethnicity_collapsed"), dodge = 0.6) +
+#   coord_flip()
+```
+
 
 ```{r test-tangent}
 test_data <- data %>%
@@ -2359,6 +2395,90 @@ data %>%
 #     or = round(exp(estimate),2)
 #   )
 ```
+
+#### Statistically speaking
+
+```{r}
+mod <- multinom(outsourcing_group ~ Ethnicity_collapsed, data, family="quasibinomial", weights=NatRepemployees)
+#summary(mod)
+
+z <- summary(mod)$coefficients/summary(mod)$standard.errors
+# z
+
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+# p
+
+# Assuming your dataframe is named 'p'
+p_2 <- apply(p, 2, function(x) ifelse(x < 0.05, 1, NA))
+
+sig_ors <- exp(summary(mod)$coefficients * p_2)
+
+
+```
+
+The result of testing outsourcing group membership by ethnicity indicates the following:
+
+Compared to White workers,
+
+White other workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedWhite other'],2)` times more likely to be outsourced
+- No more or less likely to be likely agency
+- No more or less likely to be high indicators
+
+Black Caribbean workers are:
+
+- No more or less likely to be outsourced
+- No more or less likely to be likely agency
+- No more or less likely to be high indicators
+
+Black African workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedBlack African'],2)` times more likely to be outsourced
+- `r round(sig_ors['Likely agency','Ethnicity_collapsedBlack African'],2)` times more likely to be likely agency
+- `r round(sig_ors['High indicators','Ethnicity_collapsedBlack African'],2)` times more likely to be high indicators
+
+Mixed other workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedMixed other'],2)` times more likely to be outsourced
+- `r round(sig_ors['Likely agency','Ethnicity_collapsedMixed other'],2)` times more likely to be likely agency
+- No more or less likely to be high indicators
+
+South Asian workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedSouth Asian'],2)` times more likely to be outsourced
+- `r round(sig_ors['Likely agency','Ethnicity_collapsedSouth Asian'],2)` times more likely to be likely agency
+- `r round(sig_ors['High indicators','Ethnicity_collapsedSouth Asian'],2)` times more likely to be high indicators
+
+East Asian workers are:
+
+- No more or less likely to be outsourced
+- No more or less likely to be likely agency
+- No more or less likely to be high indicators
+
+Other workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedOther'],2)` times more likely to be outsourced
+- `r round(sig_ors['Likely agency','Ethnicity_collapsedOther'],2)` times more likely to be likely agency
+- No more or less likely to be high indicators
+
+
+Black other workers are:
+
+- `r round(sig_ors['Outsourced','Ethnicity_collapsedBlack other'],2)` times more likely to be outsourced
+- No more or less likely to be likely agency
+- No more or less likely to be high indicators
+
+Arab workers are:
+
+- No more or less likely to be outsourced
+- `r round(sig_ors['Likely agency','Ethnicity_collapsedArab'],2)` times more likely to be likely agency
+- `r round(sig_ors['High indicators','Ethnicity_collapsedArab'],2)` times more likely to be high indicators
+
+
+:::callout-note
+(Note these stats should be double checked for reliability)
+:::
 
 ### Arrival in the UK
 
