@@ -1996,10 +1996,15 @@ coef_table <- data.frame("estimate" = mod[["coefficients"]]) %>%
   mutate(
     or = round(exp(estimate),2)
   )
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
 ```
+
+#### Statistically speaking
 
 Comparison of ethnicities indicates that some groups are statistically more likely to be outsourced than others
 
+-   White other workers are `r coef_table["Ethnicity_collapsedWhite other", "or"]` times more likely than White workers to be outsourced.
 -   Black African workers are `r coef_table["Ethnicity_collapsedBlack African", "or"]` times more likely than White workers to be outsourced.
 -   Mixed other workers are `r coef_table["Ethnicity_collapsedMixed other", "or"]` times more likely than White workers to be outsourced.
 -   South Asian workers are `r coef_table["Ethnicity_collapsedSouth Asian", "or"]` times more likely than White workers to be outsourced.
