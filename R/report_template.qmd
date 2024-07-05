@@ -219,6 +219,19 @@ data %>%
   coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
+```{r}
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(income_annual_all)) + 
+  geom_density(alpha=0.3) +
+  facet_wrap(facets = ~outsourcing_group)
+  # geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", round(income_statistics$median,0),"\n N = ", income_statistics$n), nudge_x = 0.1, hjust=0) +
+  # coord_cartesian(xlim=c(1,2.5)) +
+  # theme_minimal() +
+  # xlab("Outsourcing group") + ylab("Annual income") +
+  # coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  # scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+```
 
 ```{r income-inferential}
 temp_data <- data %>%
@@ -412,10 +425,9 @@ coefs <- extract_glm_coefs(mod)
 
 ```
 
-Applying this threshold to the data reveals that, controlling for age, gender, ethnicity, arrival time in the UK, and region, an outsourced person is `r as.numeric(coefs[which(coefs$variable=='outsourcing_statusOutsourced'),'or'])` times more likely to be in the low paid group than a non-outsourced person (see plot below).
 
 ```{r}
-data %>%
+income_group_summary <- data %>%
   filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(outsourcing_status, income_group) %>%
   summarise(
@@ -423,7 +435,16 @@ data %>%
   ) %>%
   mutate(
     perc = 100 * (n / sum(n))
-  ) %>%
+  ) 
+
+write_csv(income_group_summary, file = "../outputs/data/income_group_summary.csv")
+```
+
+
+Applying this threshold to the data reveals that, controlling for age, gender, ethnicity, arrival time in the UK, and region, an outsourced person is `r as.numeric(coefs[which(coefs$variable=='outsourcing_statusOutsourced'),'or'])` times more likely to be in the low paid group than a non-outsourced person (see plot below). **`r round(income_group_summary %>% filter(outsourcing_status == "Outsourced" & income_group == "Low") %>% summarise(perc) %>% pull(),0)`%** of outsourced workers fall into the low-paid group, compared to **`r round(income_group_summary %>% filter(outsourcing_status == "Not outsourced" & income_group == "Low") %>% summarise(perc) %>% pull(),0)`%** of non-outsourced workers.^[[/outputs/data/income_group_summary.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_group_summary.csv)
+
+```{r}
+income_group_summary %>%
   ggplot(aes(outsourcing_status, perc, fill = income_group)) +
   geom_col() +
   scale_fill_manual(values=colours) +
@@ -449,7 +470,7 @@ Breaking outsourcing status down by outsourcing group reveals that only the 'out
 The plot below illustrates this.
 
 ```{r}
-data %>%
+income_group_summary_2 <- data %>%
   filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(outsourcing_group, income_group) %>%
   summarise(
@@ -457,12 +478,18 @@ data %>%
   ) %>%
   mutate(
     perc = 100 * (n / sum(n))
-  ) %>%
+  )
+
+income_group_summary_2 %>%
   ggplot(aes(outsourcing_group, perc, fill = income_group)) +
   geom_col() +
   scale_fill_manual(values=colours) +
   theme_minimal()
 ```
+Notably, **`r round(income_group_summary_2 %>% filter(outsourcing_group == "Outsourced" & income_group == "Low") %>% summarise(perc) %>% pull(),0)`%** of outsourced workers are low paid, and **`r round(income_group_summary_2 %>% filter(outsourcing_group == "Likely agency" & income_group == "Low") %>% summarise(perc) %>% pull(),0)`%** of likely agency workers are low paid, whilst **`r round(income_group_summary_2 %>% filter(outsourcing_group == "High indicators" & income_group == "Low") %>% summarise(perc) %>% pull(),0)`%** of high indicators workers are low paid. This indicates that over half of outsourced and agency workers are low paid, whilst the high indicator group is overall better paid (even than the not outsourced group, though not significantly so). 
+
+
+
 
 Below, we run a linear regression testing whether the relationship between outsourcing status and annual income is influenced by income group (not low vs low), controlling for age, gender, ethnicity, and region. We do indeed find a significant interaction effect. The figure below plots this.
 
