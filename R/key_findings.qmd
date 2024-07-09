@@ -489,6 +489,75 @@ Breaking down by outsourcing group helps to separate out the *type* of outsource
 ```{r}
 sjPlot::plot_model(mod)
 ```
+## Interaction: Ethnicity and gender
+
+```{r}
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed*Gender, data, weights = NatRepemployees, family = "quasibinomial")
+summary(mod)
+
+coefs <- extract_glm_coefs(mod)
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+```
+
+There does not appear to be any compelling ethnicity by gender interaction. There is a marginally significant effect indicating that East Asian men, but not East Asian women, are less likely to be outsourced than their White British counterparts. 
+
+```{r}
+ethn_gender_summary <- data %>% 
+  group_by(outsourcing_status, Ethnicity_collapsed, Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+# reorder this?
+
+ethn_gender_summary %>%
+  ggplot(aes(outsourcing_status, Percentage, fill = Ethnicity_collapsed)) +
+  geom_col(position="dodge") +
+  facet_wrap(~Gender)
+```
+
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "Gender")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+# write_csv(cons, file = "../outputs/data/gender_ethnicity_contrasts.csv")
+
+```
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Gender","Ethnicity_collapsed"), dodge=0.5) +
+  coord_flip()
+
+```
+
+```{r}
+ems <- emmeans(mod, specs = "Gender", by = "Ethnicity_collapsed")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+# write_csv(cons, file = "../outputs/data/gender_ethnicity_contrasts.csv")
+
+```
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","Gender"), dodge=0.5) +
+  coord_flip()
+```
+
 
 ## Arrival in the UK
 
@@ -657,12 +726,14 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
     or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
   )
 
-write_csv(cons, file = "../outputs/data/bornUK_binary_contrasts.csv")
+write_csv(cons, file = "../outputs/data/ethnicity_bornUK_binary_contrasts.csv")
 
 
 ```
 
-Exploring the intersection of ethnicity and arrival time reveals some patterns whereby the likelihood of a person being outsourced is related to the combinations of ethnicity and whether they were born in the UK.^[[outputs/data/bornUK_binary_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts.csv)] The plot below shows that
+Exploring the intersection of ethnicity and arrival time reveals some patterns whereby the likelihood of a person being outsourced is related to the combinations of ethnicity and whether they were born in the UK.[^13] The plot below shows that
+
+[^13]: [outputs/data/bornUK_binary_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts.csv)
 
 -   Among workers born in the UK, a Black African worker is `r round(sig_cons %>% filter(contrast == "White - Black African") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 -   Among workers born in the UK, a South Asian worker is `r round(sig_cons %>% filter(contrast == "White - South Asian") %>% pull(or),2)` times more likely to be outsourced than a White worker.
@@ -684,7 +755,9 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 write_csv(cons, file = "../outputs/data/bornUK_binary_contrasts_2.csv")
 ```
 
-Similarly, the plot below shows that^[[outputs/data/bornUK_binary_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts_2.csv)] 
+Similarly, the plot below shows that[^14]
+
+[^14]: [outputs/data/bornUK_binary_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts_2.csv)
 
 -   Among White workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
 -   Among Mixed other workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Mixed other") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
@@ -759,7 +832,9 @@ We next explore arrival time by collapsing responses to the arrival time questio
 | Prefer not to say       | -   Prefer not to say        |
 +-------------------------+------------------------------+
 
-Exploring these categories^[[outputs/data/bornUK_collapsed_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts.csv)]  confirms that
+Exploring these categories[^15] confirms that
+
+[^15]: [outputs/data/bornUK_collapsed_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts.csv)
 
 -   Among workers born in the UK, a Black African worker is `r round(sig_cons %>% filter(contrast == "White - Black African") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 
@@ -782,27 +857,249 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 write_csv(cons, file = "../outputs/data/bornUK_collapsed_contrasts_2.csv")
 
 ```
-And^[[outputs/data/bornUK_collapsed_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts_2.csv)] 
 
--   Among White workers, 
-  - Someone who came to the UK recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK recently" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
-  - Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK not recently" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
-  - Someone who preferred to not say when they arrived is `r round(sig_cons %>% filter(contrast == "Born in UK - Prefer not to say" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
-  
-- Among East Asian workers
-  - Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK not recently" & Ethnicity_collapsed == "East Asian") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
-  - Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Came to UK recently - Came to UK not recently" & Ethnicity_collapsed == "East Asian") %>% pull(or),2)` times more likely to be outsourced than someone who came to the UK recently
-  
-- Among Other workers
-  - Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK recently" & Ethnicity_collapsed == "Other") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+And[^16]
+
+[^16]: [outputs/data/bornUK_collapsed_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts_2.csv)
+
+-   Among White workers,
+
+-   Someone who came to the UK recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK recently" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+
+-   Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK not recently" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+
+-   Someone who preferred to not say when they arrived is `r round(sig_cons %>% filter(contrast == "Born in UK - Prefer not to say" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+
+-   Among East Asian workers
+
+    -   Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK not recently" & Ethnicity_collapsed == "East Asian") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+    -   Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Came to UK recently - Came to UK not recently" & Ethnicity_collapsed == "East Asian") %>% pull(or),2)` times more likely to be outsourced than someone who came to the UK recently
+
+-   Among Other workers
+
+    -   Someone who came to the UK not recently is `r round(sig_cons %>% filter(contrast == "Born in UK - Came to UK recently" & Ethnicity_collapsed == "Other") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_collapsed"), dodge=0.5) +
   coord_flip()
 ```
+
 In summary,
 
-- White outsourced workers are more likely to have not been born in the UK
-- East Asian and Other outsourced workers are more likely to have been in the UK a longer time (10 years plus)
-- UK-born Black African and South Asian workers are more likely to be outsourced than White UK-born workers, but no more or less likely to be outsourced than non-UK born Black African and South Asian workers (revise this)
+-   White outsourced workers are more likely to have not been born in the UK
+-   East Asian and Other outsourced workers are more likely to have been in the UK a longer time (10 years plus)
+-   UK-born Black African and South Asian workers are more likely to be outsourced than White UK-born workers, but no more or less likely to be outsourced than non-UK born Black African and South Asian workers (revise this)
+
+## Region
+
+# Characteristics of outsourced work
+
+## Sectors
+
+Here we explore what proportion of workers in each sector are outsourced.[^5]
+
+[^5]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv) 
+
+```{r sector-summary-3}
+sector_summary_3 <- data %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
+```
+
+The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
+
+::: callout-note
+With this framing we could say things like "sector a is x times more likely to employ outsourced workers than sector b"
+:::
+
+```{r sector-plot-2}
+plot_data <- sector_summary_3 %>%
+  drop_na(SectorName_short) %>%
+    droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+
+outsourced <- plot_data %>%
+    filter(outsourcing_status == 'Outsourced') %>%
+  mutate(
+    rank = rank(desc(perc))
+  )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+         )
+
+# annotation_df <- plot_data %>%
+#   select(SectorName_short, outsourcing_status, perc, n
+# mutate(
+  
+annotation_df <- plot_data %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, N) %>%
+  mutate(
+    ypos = 80
+  )
+
+ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_status)) +
+  geom_col() +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  scale_y_continuous(breaks=seq(0,100,10))
+
+# sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName_labelled)),1),
+#                           "Sector" = levels(plot_data$SectorName_labelled))
+# 
+# sector_key %>%
+#   kable() %>%
+#   kable_styling(full_width = F)
+```
+
+The table below shows the percentage of outsourced workers in each Sector, ordered descending by percentage. It shows that the top three Sectors with the highest proportion of outsourced workers are:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+
+Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
+
+A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short'],0)`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
+
+```{r}
+sector_summary <- data %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write_csv(sector_summary, file = '../outputs/data/sector_summary_o-group.csv')
+```
+
+Exploring this by type of outsourced worker shows that for all sectors, the majority of outsourced workers fall into the 'outsourced' group.^[[outputs/data/sector_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_o-group.csv)] 
+
+
+```{r}
+plot_data <- sector_summary %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_group == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+
+outsourced <- plot_data %>%
+    filter(outsourcing_group == 'Outsourced') %>%
+  mutate(
+    rank = rank(desc(perc))
+  )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+         )
+
+# annotation_df <- plot_data %>%
+#   select(SectorName_short, outsourcing_status, perc, n
+# mutate(
+  
+annotation_df <- plot_data %>%
+  filter(outsourcing_group == "Not outsourced") %>%
+  select(SectorName_short, N) %>%
+  mutate(
+    ypos = 80
+  )
+
+ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_group)) +
+  geom_col() +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  scale_y_continuous(breaks=seq(0,100,10))
+```
+
+The next most common group after 'outsourced' varies by sector. Many sectors have an almost even split of likely agency and high indicator groups. Sectors that are notable for having quite large likely agency proportions relative to high indicator propottions are:
+
+- Construction
+- Accommodation and food service activities
+- Activities of households as employers (note N = 32)
+
+In contrast, sectors with high proportion 'high indicators' relative to likely agency are:
+
+- Other service activities
+- Professional, scientific and technical activities
+- Real estate activities
+
+```{r}
+annotation_df <- plot_data %>%
+  filter(outsourcing_group != "Not outsourced") %>%
+  select(SectorName_short, N) %>%
+  mutate(
+    ypos = 20
+  )
+
+plot_data %>%
+  filter(outsourcing_group != "Not outsourced") %>%
+  ggplot(., aes(SectorName_short, perc, fill = outsourcing_group)) +
+  geom_col(position="dodge") +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  labs(caption = "Note: N labels reflect total for sector including not outsourced (not shown here)")
+  # scale_y_continuous(breaks=seq(0,100,10))
+```
+
+now go on to pay
 
