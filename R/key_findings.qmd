@@ -493,7 +493,7 @@ sjPlot::plot_model(mod)
 
 ```{r}
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed*Gender, data, weights = NatRepemployees, family = "quasibinomial")
-summary(mod)
+# summary(mod)
 
 coefs <- extract_glm_coefs(mod)
 sig_coefs <- extract_glm_coefs(mod, only_sig = T)
@@ -512,6 +512,10 @@ ethn_gender_summary <- data %>%
     N = sum(n),
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    Ethnicity_collapsed = forcats::fct_reorder(Ethnicity_collapsed, Percentage, .desc = FALSE, .fun=mean)
   )
 
 # reorder this?
@@ -519,7 +523,8 @@ ethn_gender_summary <- data %>%
 ethn_gender_summary %>%
   ggplot(aes(outsourcing_status, Percentage, fill = Ethnicity_collapsed)) +
   geom_col(position="dodge") +
-  facet_wrap(~Gender)
+  facet_wrap(~Gender) +
+  scale_fill_manual(values = many_colours)
 ```
 
 
@@ -614,11 +619,6 @@ This variable is worded a little strangely, e.g. responses are things like "with
 
 Looking at the figure below, compared to non-outsourced people, there is a larger proportion of outsourced workers for each arrival time apart from 'Within the last 30 years'.
 
-```{=html}
-<!--# 
-Here present the plot with the gourping variable as outsroucing status ??????
--->
-```
 ```{r}
 # bornuk_statistics %>%
 #   ggplot(., aes(outsourcing_status, Percentage, fill = BORNUK_labelled)) +
@@ -712,8 +712,13 @@ bornuk_statistics_2 %>%
 ## Interaction: Ethnicity and arrival time
 
 ```{r}
+base_mod <- mod <- glm(outsourcing_status ~ Ethnicity_collapsed + BORNUK_binary, data, weights = NatRepemployees, family = "quasibinomial")
+
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed*BORNUK_binary, data, weights = NatRepemployees, family = "quasibinomial")
 # summary(mod)
+
+# check that interaction imporves the model over main effects - it does
+anova(base_mod, mod, test = "F")
 
 coefs <- extract_glm_coefs(mod)
 ```
@@ -932,10 +937,6 @@ write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
 
 The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
 
-::: callout-note
-With this framing we could say things like "sector a is x times more likely to employ outsourced workers than sector b"
-:::
-
 ```{r sector-plot-2}
 plot_data <- sector_summary_3 %>%
   drop_na(SectorName_short) %>%
@@ -993,7 +994,7 @@ The table below shows the percentage of outsourced workers in each Sector, order
 
 Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
 
-A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short'],0)`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
+A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short']`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
 
 ```{r}
 sector_summary <- data %>%
@@ -1101,5 +1102,187 @@ plot_data %>%
   # scale_y_continuous(breaks=seq(0,100,10))
 ```
 
-now go on to pay
+## Pay
 
+::: callout-note
+Note, the total sample on which income analysis is based is `r sum(!is.na(data$income_annual_all))`.
+
+The number of income data points for the outsourced group is `r data %>% filter(outsourcing_status=="Outsourced") %>% summarise(sum(!is.na(income_annual_all))) %>% pull()`
+
+The number of income data points for the not outsourced group is `r data %>% filter(outsourcing_status=="Not outsourced") %>% summarise(sum(!is.na(income_annual_all))) %>% pull()`
+:::
+
+```{r income}
+# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+  )
+readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-status.csv")
+
+income_data <- filter(data, income_drop_all==0)
+mod <- lm(income_annual_all ~ outsourcing_status, income_data, weights = NatRepemployees)
+
+# summary(mod)
+
+coef_table <- extract_lm_coefs(mod)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/model_income_by_o-status.csv")
+
+```
+
+The table and plot below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**.^[[outputs/data/income_stats_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)] 
+
+
+```{r income-plot}
+knitr::kable(income_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "n",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_status, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+```
+
+```{r}
+mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status, income_data, weights = NatRepemployees)
+# summary(mod_2)
+
+mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
+# summary(mod_3)
+
+# anova(mod_2, mod_3) # adding BORNUK improves model fit
+
+coef_table <- extract_lm_coefs(mod_3)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/model_2_income_by_o-status.csv")
+```
+
+This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. ^[[outputs/data/model_2_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
+
+- Men earn £`r abs(round(coef_table['GenderMale','Estimate'],0))` more than women.
+- East Asian workers earn £`r abs(round(coef_table['Ethnicity_collapsedEast Asian','Estimate'],0))` more than White British workers.
+- Workers in all non-London regions earn less than workers in London
+  - East Midlands: -£`r abs(round(coef_table['RegionEast Midlands','Estimate'],0))`
+  - East of England: -£`r abs(round(coef_table['RegionEast of England','Estimate'],0))`
+  - North East: -£`r abs(round(coef_table['RegionNorth East','Estimate'],0))`
+  - North West: -£`r abs(round(coef_table['RegionNorth West','Estimate'],0))`
+  - Northern Ireland: -£`r abs(round(coef_table['RegionNorthern Ireland','Estimate'],0))`
+  - Scotland: -£`r abs(round(coef_table['RegionScotland','Estimate'],0))`
+  - South East: -£`r abs(round(coef_table['RegionSouth East','Estimate'],0))`
+  - Wales: -£`r abs(round(coef_table['RegionWales','Estimate'],0))`
+  - West Midlands: -£`r abs(round(coef_table['RegionWest Midlands','Estimate'],0))`
+  - Yorkshire and the Humber: -£`r abs(round(coef_table['RegionYorkshire and the Humber','Estimate'],0))`
+- People who arrived in the UK within the last year earn £`r abs(round(coef_table['BORNUK_labelledWithin the last year','Estimate'],0))` less than people born in the UK
+- People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
+
+Notable takeaways:
+
+- There is a substantial gender pay gap present in the data
+- The South East is the highest-paid region after London. Northern Ireland is the lowest paid region. 
+- People who have very recently arrived in the UK are paid less than people who were born in the UK, whilst people who migrated to the UK a long time ago earn more than people born in the UK.
+
+
+```{r}
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+  )
+
+readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-group.csv")
+
+income_data <- filter(data, income_drop_all==0)
+
+mod <- lm(income_annual_all ~ outsourcing_group, income_data, weights = NatRepemployees)
+
+# summary(mod)
+
+coef_table <- extract_lm_coefs(mod)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/model_income_by_o-group.csv")
+```
+Next we explore differences by outsourcing group. The table and plot below show descriptive statistics on income and its distribution for outsourced groups. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less than non-outsourced workers**, while no differences are evident for the likely agency and high indicators groups.^[[outputs/data/income_stats_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-group.csv) & [outputs/data/model_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group.csv)] 
+
+
+```{r}
+knitr::kable(income_statistics, 
+             digits = 2, 
+             col.names = c("Outsourcing group",
+                           "n",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_group, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", round(income_statistics$median,0),"\n N = ", income_statistics$n), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing group") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+```
+```{r}
+mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_group, income_data, weights = NatRepemployees)
+# summary(mod_2)
+
+mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
+# summary(mod_3)
+
+# anova(mod_2, mod_3) # adding BORNUK improves model fit
+
+coef_table <- extract_lm_coefs(mod_3)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod_3, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/model_2_income_by_o-group.csv")
+```
+
+However, when controlling, as before, for Age, Gender, Ethnicity, Arrival Time, and Region,^[[outputs/data/model_2_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-group.csv)] we find
+
+- the outsourced group on average earns **£`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less** than the non-outsourced group, and 
+- the likely agency group on average earns **£`r abs(round(coef_table['outsourcing_groupLikely agency','Estimate'],0))` less** than the non-outsourced group
+
+In addition to showing that likely agency workers receive lower pay than the non-outsourced workers, this analysis reveals that "pure outsourced" workers' pay is even lower, and that the estimate we obtained in the analysis above considering only status is a diluted effect averaging the outsourced and likely agency pay gaps.
