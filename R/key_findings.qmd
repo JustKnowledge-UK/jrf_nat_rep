@@ -45,14 +45,14 @@ many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#
 ```
 
 ```{r functions}
-extract_glm_coefs <- function(mod, only_sig=F){
+extract_glm_coefs <- function(mod, only_sig=F, decimal_places = 2){
   coefs <- coef(summary(mod)) 
   if(only_sig==T){
     coefs <- coefs[which(coefs[,4] < .05),]
   }
   coefs <- as_tibble(coefs, rownames="variable") %>% # specify new variable to add rownames to 
     mutate(
-    or = round(exp(Estimate),2), .after=Estimate
+    or = round(exp(Estimate), decimal_places), .after=Estimate
     )
 }
 
@@ -996,6 +996,67 @@ Note that for an undefined sector ('Not found') contained one of the largest pro
 
 A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short']`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
 
+To test what sectors are more likely to employ outsourced workers, it is necessary to choose a "reference" sector against which to compare other sectors. A priori there is no theoretical candidate sector that should be the reference. However, we can select a reference based on what we know about the proportion of workers in each sector. One strategy is to choose the sector that has the lowest proportion of outsourced workers. Doing so means that interpretation is something along the lines of 
+
+"compared to the sector that we know has the smallest outsourced workforce, a worker is *x* times more likely to be outsourced if they work in Sector A"
+
+From the figure above we can see that the sectors with the lowest proportion of outsourced workers are "Mining..." and "Activities of extraterritorial...", which both have zero outsourced workers. A problem with using these is that the sample sizes are very small. The next-lowest is "Agriculture...", but here the sample is quite small too. The next-lowest is "Public administration and defence", which has an outsourced workforce of around **`r round(sector_summary_3 %>% filter(SectorName_short == "Public administration and defence" & outsourcing_status == "Outsourced") %>% pull(perc),0)`%** and a sample size of **`r sector_summary_3 %>% filter(SectorName_short == "Public administration and defence" & outsourcing_status == "Outsourced") %>% pull(N)`**. This is probably the best candidate as a reference, because it has a reliable sample size and offers a low outsourcing baseline against which to compare other sectors. It is also quite neat that this sector is basically civil service, which also distinguishes it from other sectors.
+
+```{r}
+# relevel sectorname_short
+data <- data %>%
+  mutate(
+    SectorName_short = forcats::fct_relevel(SectorName_short, "Public administration and defence")
+  )
+```
+
+```{r}
+mod <- glm(outsourcing_status ~ SectorName_short, data, weights = NatRepemployees, family = "quasibinomial")
+
+summary(mod)
+
+coef_table <- extract_glm_coefs(mod)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T) #, decimal_places = 10)#
+```
+
+```{r}
+plot_model <- function(mod){
+  coefs <- extract_glm_coefs(mod)
+  confints <- confint(mod)
+  vars <- rownames(confints)
+  confints <- confints %>%
+    as_tibble() %>%
+    mutate(
+      variable = vars, .before=everything()
+    ) %>%
+    rename(
+      ci_low = `2.5 %`, 
+      ci_upp = `97.5 %`
+    ) %>%
+    mutate(
+      ci_low = exp(ci_low),
+      ci_upp = exp(ci_upp)
+    )
+  
+  coef_table <- coefs %>%
+    left_join(., confints, by = "variable") %>%
+    filter(`Pr(>|t|)` < .05)
+  
+  max <- ceiling(max(coef_table$ci_upp))
+  p <- ggplot(coef_table, aes(variable, or)) +
+    geom_point() +
+    geom_errorbar(aes(ymin=ci_low, ymax=ci_upp)) +
+    coord_flip() +
+    geom_hline(yintercept = 1, colour = "red") +
+    scale_y_continuous(breaks = seq(0, max, 1))
+  
+  return(p)
+}
+
+plot_model(mod)
+```
+
 ```{r}
 sector_summary <- data %>%
   group_by(SectorName, SectorName_labelled, outsourcing_group) %>%
@@ -1286,3 +1347,29 @@ However, when controlling, as before, for Age, Gender, Ethnicity, Arrival Time, 
 - the likely agency group on average earns **£`r abs(round(coef_table['outsourcing_groupLikely agency','Estimate'],0))` less** than the non-outsourced group
 
 In addition to showing that likely agency workers receive lower pay than the non-outsourced workers, this analysis reveals that "pure outsourced" workers' pay is even lower, and that the estimate we obtained in the analysis above considering only status is a diluted effect averaging the outsourced and likely agency pay gaps.
+
+## Pay differences
+
+<!-- ```{r} -->
+<!-- mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + SectorName_short, income_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- mod <- lm(income_annual_all ~ SectorName_short*outsourcing_status, income_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- mod <- lm(income_annual_all ~ SectorName_short*outsourcing_group, income_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+
+<!-- ## work out how to just plot certain levels! ## -->
+<!-- sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("SectorName_short","outsourcing_group"), dodge=1) + -->
+<!--   coord_flip() -->
+
+<!-- sig_coefs <- extract_lm_coefs(mod, only_sig = T) #, decimal_places = 10)# -->
+<!-- ``` -->
+
+
