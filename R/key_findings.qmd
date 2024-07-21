@@ -2665,8 +2665,6 @@ Next, for each of these major group codes, we explore the pay differences within
 
 #### `r mods_sig[1,'majorocc']`
 
-The plot below suggests that the main driver of the effect in this major occupation group is in the 'Functional Managers and Directors' unit occupation; on average, outsourced workers in this group earn £`r round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)` less than non-outsourced workers.
-
 ```{r bubble-managers}
 unitocc_summary <- data %>%
   filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[1,'majorocc']) %>%
@@ -2691,7 +2689,11 @@ plot_data <- unitocc_summary %>%
   drop_na(UnitOccupation_labelled) %>%
   droplevels() %>%
   ungroup()
+```
 
+The plot below suggests that the main driver of the effect in this major occupation group is in the 'Functional Managers and Directors' unit occupation; on average, outsourced workers in this group earn £`r round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)` less than non-outsourced workers.
+
+```{r bubble-managers_2}
 # Filter for 'outsourced' level and reorder SectorName_short
 not_outsourced_levels <- plot_data %>%
   filter(outsourcing_status == 'Not outsourced') %>%
