@@ -244,15 +244,15 @@ data %>%
 
 ```{r income-inferential}
 temp_data <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) 
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) 
 
 # ttest <- t.test(temp_data[which(temp_data$outsourcing_status=="Outsourced"),"income_annual"], 
 #        temp_data[which(temp_data$outsourcing_status=="Not outsourced"),"income_annual"]
 # )
 
-ttest <-  sjstats::weighted_ttest(income_annual ~ outsourcing_status + NatRepemployees, temp_data)
+ttest <-  sjstats::weighted_ttest(income_annual_all ~ outsourcing_status + NatRepemployees, temp_data)
 #cohens_d(ttest)
-# ttest
+ttest
 ```
 
 Although the average pay between non-outsourced and outsourced workers looks similar, a t-test finds that there is a marginally significant difference; **outsourced workers are on average paid less than non-outsourced workers** (*t*(`r round(ttest[["df"]][["df"]],2)`) = `r round(ttest[["statistic"]][["t"]],2)`, *p* = `r round(ttest[["p.value"]],2)`).
