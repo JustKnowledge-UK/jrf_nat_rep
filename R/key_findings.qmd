@@ -35,6 +35,9 @@ library(sjstats)
 library(readr)
 library(sjPlot)
 library(nnet)
+library(lme4)
+library(glmmTMB)
+library(lmerTest)
 ```
 
 ```{r palette}
@@ -1226,6 +1229,23 @@ In addition to showing that likely agency workers receive lower pay than the non
 
 ## Sectors
 
+```{r}
+# sort out nas
+data <- data %>%
+  mutate(
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    SectorName_labelled == "Na" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = case_when(SectorName_short == "NA" ~ NA,
+                                 SectorName_short == "Na" ~ NA,
+                                    TRUE ~ SectorName_short),
+    Majorgroupcode_labelled = case_when(Majorgroupcode_labelled == "NA" ~ NA,
+                                        Majorgroupcode_labelled == "Na" ~ NA,
+                                TRUE ~ Majorgroupcode_labelled)
+  )
+```
+
+
 ### Outsourcing status
 
 Here we explore what proportion of workers in each sector are outsourced.[^5]
@@ -1429,7 +1449,66 @@ plot_data %>%
 
 #### Variations in pay
 
-Exploring pay shows that for the vast majority of sectors, outsourced people tend to be paid less than non-outsourced people. Exceptions to this are 'Professional, scientific and technical activities', 'Financial and insurance activities', 'Wholesale retail and trade', and 'Arts, entertainment and recreation'.
+The plot below shows the average income by sector.
+
+```{r}
+sector_pay_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(SectorName_short) %>%
+  summarise(
+    N = n(),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>%
+  mutate(
+    SectorName_short = forcats::fct_reorder(SectorName_short, wtd_avg_income, .desc=FALSE)
+  )
+
+ypos <- max(sector_pay_summary$wtd_avg_income) * 1.2
+ggplot(sector_pay_summary, aes(SectorName_short, wtd_avg_income)) +
+  geom_col() +
+  geom_text(aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  theme_minimal() +
+  xlab("Sector") + ylab("Weighted average income")
+
+```
+
+
+```{r sector-multimod, output=FALSE}
+test_data <- income_data %>%
+  filter(!is.na(SectorName_short))
+
+# base model - no random effects
+base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees)
+summary(base)
+
+# random intercept
+base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|SectorName_short), test_data, weights = NatRepemployees)
+
+# random intercept + slope
+mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|SectorName_short), test_data, weights = NatRepemployees)
+summary(mod)
+
+# check whether random effects improve fit it - they do, best is with slope
+anova(mod,base_2, base)
+
+# get random effectts
+random_effects <- ranef(mod)
+
+print(random_effects)
+
+VarCorr(mod)
+
+```
+
+A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercetps and random slopes for outsourcing status by sector indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £2774 less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with sector. For people working in 'Wholesale and retail trade' and 'accommodation and food serivce activities', being outsourced is associated with **higher** pay than not being outsourced. Note that both of these sectors fall into the bottom three sectors overall for pay. For people working in 'Information and communication' and 'Education', being outsourced is associated with **lower** pay than not being outsourced.
+
+```{r}
+sjPlot::plot_model(mod, type = "re", show.values = F)
+```
+
+
+Visual comparisons indicate that for the vast majority of sectors, outsourced people tend to be paid less than non-outsourced people. Exceptions to this are 'Professional, scientific and technical activities', 'Financial and insurance activities', 'Wholesale retail and trade', and 'Arts, entertainment and recreation'.
 
 ```{r sector-bubble}
 sector_summary_pay <- data %>%
@@ -1646,7 +1725,7 @@ sjPlot::plot_model(mod, type = "int")
 
 # os group
 mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_group*income_group, income_data, weights = NatRepemployees)
-summary(mod)
+# summary(mod)
 
 sjPlot::plot_model(mod, type = "int")
 ```
@@ -2035,7 +2114,68 @@ plot_data %>%
 
 #### Variations in pay
 
-Looking at differences in pay by major occupation indicates that outsourced workers in most groups are paid less than non-outsourced workers.
+The plot below shows the average income by major occupation group
+
+```{r}
+mgc_pay_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(Majorgroupcode_labelled) %>%
+  summarise(
+    N = n(),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>%
+  mutate(
+    Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, wtd_avg_income, .desc=FALSE)
+  )
+
+ypos <- max(mgc_pay_summary$wtd_avg_income) * 1.2
+
+ggplot(mgc_pay_summary, aes(Majorgroupcode_labelled, wtd_avg_income)) +
+  geom_col() +
+  geom_text(aes(x=Majorgroupcode_labelled, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  theme_minimal() +
+  xlab("Sector") + ylab("Weighted average income")
+
+```
+
+```{r majorgroup-multimod, output=FALSE}
+test_data <- income_data %>%
+  filter(!is.na(SectorName_short))
+
+# base model - no random effects
+base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees)
+summary(base)
+
+# random intercept
+base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
+
+# random intercept + slope
+mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
+summary(mod)
+
+# check whether random effects improve fit it - they do, best is with slope
+anova(mod,base_2, base)
+
+# get random effectts
+random_effects <- ranef(mod)
+
+print(random_effects)
+
+VarCorr(mod)
+
+```
+
+A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by major occupation indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £1675 less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with sector. People who work in 'Sales and customer service', 'elementary occupations' and 'caring, leisure and other serivce occupations' tend to have **higher** pay if they are outsourced vs not outsourced. People who work in 'professional occupations', 'associate professional occupations', and 'managers, directors and senior officials' are paid **less** if they are outsourced vs not outsourced.
+
+```{r}
+sjPlot::plot_model(mod, type = "re", show.values = F)
+```
+
+
+
+Looking at absolute differences in pay by major occupation indicates that outsourced workers in most groups are paid less than non-outsourced workers.
+
 
 ```{r mgc-bubble-status}
 mgc_summary_pay <- data %>%
@@ -3545,4 +3685,159 @@ To summarise this section, we have identified five Major occupation groups where
 - **`r mods_sig[5,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[5,'estimate'],0))` less** than non-outsourced workers.
 
 When we investigate the unit occupations for each of these major group codes, we find that although there is some variation in the pattern, in general outsourced workers tend to be paid less than non-outsourced workers. Because the 'outsourced' group is the most common form of outsourced working, the finding of lower pay is mainly driven by this group. There are some instances of unit occupations where there are divergences between outsourced, likely agency, and high indicator groups, whereby, for example, likely agency workers are sometimes paid *more* than non-outsourced (and outsourced) workers, but due to low frequency counts, these patterns should be considered descriptive rather than inferential.
+
+<!-- # test section -->
+<!-- #  -->
+<!-- # ```{r} -->
+<!-- # library(lme4) -->
+<!-- # library(glmmTMB) -->
+<!-- #  -->
+<!-- # test_data <- income_data %>% -->
+<!-- #   filter(!is.na(SectorName_short)) -->
+<!-- #  -->
+<!-- # mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|SectorName_short), test_data, weights = NatRepemployees) -->
+<!-- #  -->
+<!-- # summary(mod) -->
+<!-- #  -->
+<!-- # base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|SectorName_short), test_data, weights = NatRepemployees) -->
+<!-- #  -->
+<!-- # base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees) -->
+<!-- # summary(base) -->
+<!-- #  -->
+<!-- # # random effects improve it -->
+<!-- # anova(mod,base_2, base) -->
+<!-- #  -->
+<!-- #  -->
+<!-- # random_effects <- ranef(mod) -->
+<!-- #  -->
+<!-- # print(random_effects) -->
+<!-- #  -->
+<!-- # VarCorr(mod) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- sjPlot::plot_model(mod, type = "re", show.values = F) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- test_data <- income_data %>% -->
+<!--   filter(!is.na(Majorgroupcode_labelled)) -->
+
+<!-- base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees) -->
+<!-- summary(base) -->
+
+<!-- base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|Majorgroupcode_labelled), test_data, weights = NatRepemployees) -->
+<!-- summary(base_2) -->
+
+<!-- mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+
+
+<!-- # random effects improve fit -->
+<!-- anova(mod, base_2, base) -->
+
+<!-- random_effects <- ranef(mod) -->
+
+<!-- print(random_effects) -->
+
+<!-- VarCorr(mod) -->
+
+<!-- sjPlot::plot_model(mod, type = "re", show.values = F) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- # SINGULAR - :( -->
+<!-- test_data <- income_data %>% -->
+<!--   filter(!is.na(Majorgroupcode_labelled)) %>% -->
+<!--    mutate( -->
+<!--     UnitOcc_short = UnitOccupation_labelled -->
+<!--   ) %>% -->
+<!--   # make the sector names more readable -->
+<!--   separate_wider_delim(UnitOcc_short, names = c("UnitOcc_short", "UnitOcc_short_detail"), delim=", ", -->
+<!--                        too_few = "align_start", -->
+<!--                        too_many = "merge") -->
+
+<!-- base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees) -->
+<!-- summary(base) -->
+
+<!-- base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|Majorgroupcode_labelled/UnitOccupation_labelled), test_data, weights = NatRepemployees) -->
+<!-- summary(base_2) -->
+
+<!-- mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled/UnitOcc_short), test_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+
+
+<!-- # random effects improve fit -->
+<!-- anova(mod, base_2, base) -->
+
+<!-- random_effects <- ranef(mod) -->
+
+<!-- print(random_effects) -->
+
+<!-- VarCorr(mod) -->
+
+<!-- sjPlot::plot_model(mod, type = "re", show.values = F) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees) -->
+<!-- # summary(mod) -->
+
+<!-- random_effects <- broom.mixed::tidy(mod, effects="ran_vals") -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- # Create a scatterplot of random effects -->
+<!-- ggplot(random_effects, aes(x = term, y = estimate, color = level)) + -->
+<!--     geom_point() + -->
+<!--     facet_wrap(~ group, scales = "free") + -->
+<!--     theme_minimal() + -->
+<!--     labs(title = "Random Effects by Grouping Variable", -->
+<!--          x = "Term", -->
+<!--          y = "Estimate", -->
+<!--          color = "Group Level") -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|SectorName_short), test_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+
+<!-- mod_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees) -->
+<!-- summary(mod_2) -->
+
+<!-- AIC(mod, mod_2) -->
+
+<!-- VarCorr(mod) -->
+<!-- VarCorr(mod_2) -->
+
+<!-- # majorgroupcode looks like the better fit to the data. -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- mod_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|MajorsubgroupOccupation_labelled), test_data, weights = NatRepemployees) -->
+<!-- summary(mod_2) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- sjPlot::plot_model(mod_2, type = "re", show.values = F) -->
+<!-- ``` -->
+
+
+
+<!-- ```{r} -->
+<!-- mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_group + SectorName_short, test_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+
+<!-- ``` -->
+
 
