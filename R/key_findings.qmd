@@ -1228,6 +1228,8 @@ In addition to showing that likely agency workers receive lower pay than the non
 
 ## Sectors
 
+### Outsourcing status
+
 Here we explore what proportion of workers in each sector are outsourced.[^5]
 
 [^5]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv) 
@@ -1325,11 +1327,11 @@ Note that for an undefined sector ('Not found') contained one of the largest pro
 A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short']`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
 
 
-### Variations in pay
+#### Variations in pay
 
 ```{r sector-bubble}
 sector_summary_pay <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
   summarise(
     n = n(),
@@ -1363,15 +1365,15 @@ plot_data <- sector_summary_pay %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_status == 'Not outsourced') %>%
-  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
-
-outsourced <- plot_data %>%
-  filter(outsourcing_status == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
 # Apply the reordered levels back to the original data
 plot_data <- plot_data %>%
@@ -1380,11 +1382,11 @@ plot_data <- plot_data %>%
         )
 
 annotation_df <- plot_data %>%
-  filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
   group_by(SectorName_short) %>%
   summarise(
-    N = sum(N)
+    N = sum(n)
   ) %>%
     mutate(
     ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
@@ -1403,12 +1405,12 @@ plot_data %>%
   scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
   scale_colour_manual(values=colours) +
   geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Sector") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
   
 ```
-
 ```{r}
 sector_summary_paysplit <- data %>%
   filter(income_drop_all == 0) %>%
@@ -1442,7 +1444,6 @@ write_csv(sector_summary_paysplit, file="../outputs/data/sector_summary_paysplit
 
 
 ```
-
 ```{r}
 plot_data <- sector_summary_paysplit %>%
   drop_na(SectorName_short) %>%
@@ -1450,32 +1451,33 @@ plot_data <- sector_summary_paysplit %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_status == 'Not outsourced') %>%
-  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-  filter(outsourcing_status == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - uses original orders for ease of comparison
 plot_data <- plot_data %>%
   mutate(
     SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
          )
 
 annotation_df <- plot_data %>%
-  filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
   group_by(SectorName_short) %>%
   summarise(
-    N = sum(N)
+    N = sum(n)
   ) %>%
     mutate(
     ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
   ) 
+
 
 plot_data %>%
   # mutate(
@@ -1490,6 +1492,7 @@ plot_data %>%
   scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income), 10000)) +
   scale_colour_manual(values=colours) +
   geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=2) +
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Sector") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
@@ -1590,6 +1593,7 @@ sector_summary <- data %>%
 
 write_csv(sector_summary, file = '../outputs/data/sector_summary_o-group.csv')
 ```
+### Outsourcing group
 
 Exploring this by type of outsourced worker shows that for all sectors, the majority of outsourced workers fall into the 'outsourced' group.^[[outputs/data/sector_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_o-group.csv)] 
 
@@ -1601,17 +1605,17 @@ plot_data <- sector_summary %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_group == 'Not outsourced') %>%
-  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_group == 'Not outsourced') %>%
+#   mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#     filter(outsourcing_group == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-    filter(outsourcing_group == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - use original for ease of comparison with first plot
 plot_data <- plot_data %>%
   mutate(
     SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
@@ -1667,11 +1671,11 @@ plot_data %>%
   # scale_y_continuous(breaks=seq(0,100,10))
 ```
 
-### Variations in pay
+#### Variations in pay
 
 ```{r}
 sector_summary <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(SectorName, SectorName_labelled, outsourcing_group) %>%
   summarise(
     n = n(),
@@ -1705,32 +1709,33 @@ plot_data <- sector_summary %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_group == 'Not outsourced') %>%
-  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_group == 'Not outsourced') %>%
+#   mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_group == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-  filter(outsourcing_group == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - use older ones for ease of comparison
 plot_data <- plot_data %>%
   mutate(
     SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
          )
 
 annotation_df <- plot_data %>%
-  filter(outsourcing_group == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
   group_by(SectorName_short) %>%
   summarise(
-    N = sum(N)
+    N = sum(n)
   ) %>%
     mutate(
     ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
   ) 
+
 
 plot_data %>%
   # mutate(
@@ -1747,6 +1752,8 @@ plot_data %>%
   scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
   scale_colour_manual(values=colours) +
   geom_text(inherit.aes=F, data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_group, label=paste0("n=",n)), size=2) +
+
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Sector") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
@@ -1820,28 +1827,28 @@ plot_data <- sector_summary_paysplit %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_group == 'Not outsourced') %>%
-  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_group == 'Not outsourced') %>%
+#   mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_group == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-  filter(outsourcing_group == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - use original for ease of comparison
 plot_data <- plot_data %>%
   mutate(
     SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
          )
 
 annotation_df <- plot_data %>%
-  filter(outsourcing_group == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
+  #filter(outsourcing_group == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
   group_by(SectorName_short) %>%
   summarise(
-    N = sum(N)
+    N = sum(n)
   ) %>%
     mutate(
     ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
@@ -1863,12 +1870,15 @@ plot_data %>%
   scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
   scale_colour_manual(values=colours) +
   geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  #geom_text_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_group, label=paste0("n=",n)), size=2) +
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Sector") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
 ```
 
 ## Major occupations
+
+### Outsourcing Status
 
 ```{r MGC}
 data <- data %>%
@@ -1898,6 +1908,7 @@ readr::write_csv(mgc_summary, "../outputs/data/majorgroupcode_summary_o-status.c
 
 ```{r}
 plot_data <- mgc_summary
+
 # Filter for 'outsourced' level and reorder SectorName_short
 not_outsourced_levels <- plot_data %>%
   ungroup() %>%
@@ -1945,11 +1956,11 @@ mgc_summary <- data %>%
 
 readr::write_csv(mgc_summary, "../outputs/data/majorgroupcode_summary_o-group.csv")
 ```
-### Variations in pay
+#### Variations in pay
 
 ```{r mgc-bubble-status}
 mgc_summary_pay <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(Majorgroupcode_labelled, outsourcing_status) %>%
   summarise(
     n = n(),
@@ -1973,17 +1984,17 @@ plot_data <- mgc_summary_pay %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_status == 'Not outsourced') %>%
-  mutate(Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-  filter(outsourcing_status == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
 plot_data <- plot_data %>%
   mutate(
     Majorgroupcode_labelled = factor(Majorgroupcode_labelled, levels = levels(not_outsourced_levels$Majorgroupcode_labelled)),
@@ -2013,7 +2024,7 @@ plot_data %>%
   scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
   scale_colour_manual(values=colours) +
   geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=Majorgroupcode_labelled, label = paste0("N = ", N)), hjust=1) +
-    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, Majorgroupcode_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, Majorgroupcode_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Major group code") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
@@ -2021,7 +2032,7 @@ plot_data %>%
 ```
 ```{r mgc-bubble-status-2}
 mgc_summary_paysplit <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(Majorgroupcode_labelled, income_group, outsourcing_status) %>%
   summarise(
     n = n(),
@@ -2098,6 +2109,8 @@ plot_data %>%
 
 For Elementary occupations, there is a clear divergence evident in the pattern; for high income workers, **being outsourced increases average income**, whereas for low income workers, **being outsourced decreases average income**. For most other groups, being outsourced is associated with a lower income, regardless of income group.
 
+### Outsourcing Group
+
 ```{r mgc-o-group}
 plot_data <- mgc_summary
 # Filter for 'outsourced' level and reorder SectorName_short
@@ -2131,11 +2144,11 @@ plot_data %>%
   theme_minimal()
 ```
 
-### Variations in pay
+#### Variations in pay
 
 ```{r mgc-bubble-group}
 mgc_summary_pay <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(Majorgroupcode_labelled, outsourcing_group) %>%
   summarise(
     n = n(),
@@ -2159,17 +2172,17 @@ plot_data <- mgc_summary_pay %>%
   ungroup()
 
 # Filter for 'outsourced' level and reorder SectorName_short
-not_outsourced_levels <- plot_data %>%
-  filter(outsourcing_group == 'Not outsourced') %>%
-  mutate(Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, perc, .desc = TRUE))
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_group == 'Not outsourced') %>%
+#   mutate(Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, perc, .desc = TRUE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_group == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
 
-outsourced <- plot_data %>%
-  filter(outsourcing_group == 'Outsourced') %>%
-  mutate(
-    rank = rank(desc(perc))
-  )
-
-# Apply the reordered levels back to the original data
+# Apply the reordered levels back to the original data - use original for ease of comparison with first plot
 plot_data <- plot_data %>%
   mutate(
     Majorgroupcode_labelled = factor(Majorgroupcode_labelled, levels = levels(not_outsourced_levels$Majorgroupcode_labelled)),
@@ -2207,7 +2220,7 @@ plot_data %>%
 ```
 ```{r mgc-bubble-group-2}
 mgc_summary_paysplit <- data %>%
-  filter(income_drop_all == 0) %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(Majorgroupcode_labelled, income_group, outsourcing_group) %>%
   summarise(
     n = n(),
@@ -2240,8 +2253,8 @@ plot_data <- mgc_summary_paysplit %>%
 #   mutate(
 #     rank = rank(desc(perc))
 #   )
-
-# Apply the reordered levels back to the original data
+ 
+# Apply the reordered levels back to the original data - use original for ease of comparison with first plot
 plot_data <- plot_data %>%
   mutate(
     Majorgroupcode_labelled = factor(Majorgroupcode_labelled, levels = levels(not_outsourced_levels$Majorgroupcode_labelled)),
@@ -2574,4 +2587,495 @@ unit_occ_summary %>%
   scale_x_continuous(breaks = seq(0,max(unit_occ_summary$cum_perc),10))
   
 ```
+
+## Unit occupations - by major occupation
+
+```{r}
+# collate NAs into one var
+data <- data %>%
+  mutate(
+    UnitOccupation_labelled = na_if(UnitOccupation_labelled, "NA")
+  )
+```
+
+
+```{r}
+# here we test for each major group code, whether there is a significant difference in income between outsourced and non-outsourced.
+test_data <- data %>%
+  filter(!is.na(Majorgroupcode_labelled) & income_drop_all == 0)
+
+mods <- data.frame()
+mod_list <- list()
+sig_mod_list <- list()
+
+for(i in seq_along(unique(test_data$Majorgroupcode_labelled))){
+  majorocc <- as.character(unique(test_data$Majorgroupcode_labelled)[i])
+  this_data <- test_data %>% filter(Majorgroupcode_labelled == majorocc)
+  mod <- lm(income_annual_all ~ outsourcing_status + Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region, this_data, weights = NatRepemployees)
+  
+  # get coefs and check whether the outsourcing status var is significant (coefs[2,4])
+  coefs <- coef(summary(mod))
+  sig <- ifelse(coefs[2,4] < .05, TRUE, FALSE)
+  estimate <- coefs[2,1]
+  
+  # record significant mods
+  if(sig){
+    sig_mod_list <- append(sig_mod_list, list(list(
+      major_occ = as.character(majorocc),
+      model = mod)
+    )
+    )
+    names(sig_mod_list)[length(sig_mod_list)] <- majorocc
+  }
+  
+
+  
+  # record all mods
+  mod_list[[i]] <- list(
+    major_occ = majorocc,
+    model = mod
+  )
+  
+  names(mod_list)[i] <- majorocc
+  
+  # print(majorocc)
+  # print(summary(mod))
+  
+  # summary table indicating which mods significant
+  mods[i, "index"] <- i 
+  mods[i, "majorocc"] <- majorocc
+  mods[i, "estimate"] <- estimate
+  mods[i, "sig"] <- sig
+  
+}
+
+mods_sig <- mods %>% subset(sig==TRUE)
+
+```
+
+Statistical analysis indicates that the pay differences are significant for the following major group codes:
+
+- **`r mods_sig[1,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[1,'estimate'],0))` less** than non-outsourced workers.
+- **`r mods_sig[2,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[2,'estimate'],0))` less** than non-outsourced workers.
+- **`r mods_sig[3,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[3,'estimate'],0))` less** than non-outsourced workers.
+- **`r mods_sig[4,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[4,'estimate'],0))` less** than non-outsourced workers.
+- **`r mods_sig[5,'majorocc']`**: Outsourced workers earn on average **£`r abs(round(mods_sig[5,'estimate'],0))` less** than non-outsourced workers.
+
+Next, for each of these major group codes, we explore the pay differences within each Unit Occupation.
+
+#### `r mods_sig[1,'majorocc']`
+
+The plot below suggests that the main driver of the effect in this major occupation group is in the 'Functional Managers and Directors' unit occupation; on average, outsourced workers in this group earn £`r round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)` less than non-outsourced workers.
+
+```{r bubble-managers}
+unitocc_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[1,'majorocc']) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  )
+
+write_csv(unitocc_summary, file="../outputs/data/managers_unitoccs_summary_pay.csv")
+
+plot_data <- unitocc_summary %>%
+  drop_na(UnitOccupation_labelled) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average income") + ylab("Unit Occupation") +
+  labs(caption = "Size of bubble represents the size of the respective workforce")
+
+
+# round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)
+  
+```
+
+
+
+#### `r mods_sig[2,'majorocc']`
+
+The plot below indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Information and Technology Technicians', 'Business Associate Professionals', and 'Sales, Marketing and Related Associate Professionals'.
+
+```{r bubble-assoc-prof}
+unitocc_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[2,'majorocc']) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  )
+
+write_csv(unitocc_summary, file="../outputs/data/assoc-prof_unitoccs_summary_pay.csv")
+
+plot_data <- unitocc_summary %>%
+  drop_na(UnitOccupation_labelled) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average income") + ylab("Unit Occupation") +
+  labs(caption = "Size of bubble represents the size of the respective workforce")
+
+
+# round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)
+```
+
+
+#### `r mods_sig[3,'majorocc']`
+
+The plot above indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Teaching professionals', 'Information Technology Professionals', 'Nursing Professionals', 'Finance Professionals', 'Business, Research and Admin Professionals', and 'Other Health Professionals'. An exception to the pattern is 'Engineering Professionals', where outsourced workers are paid more than non-outsourced workers. 
+
+```{r bubble-prof}
+unitocc_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[3,'majorocc']) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>%
+  mutate(
+    UnitOccupation_labelled = case_when(
+      stringr::str_detect(UnitOccupation_labelled, "Architect") ~ "Architects etc.",
+      TRUE ~ UnitOccupation_labelled
+    )
+  )
+
+write_csv(unitocc_summary, file="../outputs/data/prof_unitoccs_summary_pay.csv")
+
+plot_data <- unitocc_summary %>%
+  drop_na(UnitOccupation_labelled) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average income") + ylab("Unit Occupation") +
+  labs(caption = "Size of bubble represents the size of the respective workforce")
+
+
+# round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)
+```
+
+
+
+#### `r mods_sig[4,'majorocc']`
+
+For this major occupation group, the notable differences in pay are in 'Caring Personal services and 'Teaching and Childcare Support Occupations'.
+
+```{r bubble-caring}
+unitocc_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[4,'majorocc']) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  )
+
+write_csv(unitocc_summary, file="../outputs/data/caring_unitoccs_summary_pay.csv")
+
+plot_data <- unitocc_summary %>%
+  drop_na(UnitOccupation_labelled) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average income") + ylab("Unit Occupation") +
+  labs(caption = "Size of bubble represents the size of the respective workforce")
+
+
+# round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)
+```
+
+
+#### `r mods_sig[5,'majorocc']`
+
+In this major occupation group, outsourced workers in most unit occupations are paid less than non-outsourced workers. The most notable here are 'Road Transport Drivers', 'Assemblers and Routine Operatives', and 'Other Drivers and Transport Operatives'. 
+
+```{r bubble-process}
+unitocc_summary <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all) & Majorgroupcode_labelled == mods_sig[5,'majorocc']) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+  ) %>%
+  mutate(
+    UnitOccupation_labelled = case_when(
+      stringr::str_detect(UnitOccupation_labelled, "Architect") ~ "Architects etc.",
+      TRUE ~ UnitOccupation_labelled
+    )
+  )
+
+write_csv(unitocc_summary, file="../outputs/data/process_unitoccs_summary_pay.csv")
+
+plot_data <- unitocc_summary %>%
+  drop_na(UnitOccupation_labelled) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# 
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data - - use original for ease of comparison with first plot
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average income") + ylab("Unit Occupation") +
+  labs(caption = "Size of bubble represents the size of the respective workforce")
+
+
+# round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)
+```
+
+
 
