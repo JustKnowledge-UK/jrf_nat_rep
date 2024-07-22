@@ -1,0 +1,66 @@
+UnitOccupation_labelled,n,UnitOcc_short,UnitOcc_short_detail,perc,cum_perc,rank
+Caring Personal Services,20,Caring Personal Services,NA,7.434944237918216,0,1
+Functional Managers and Directors,19,Functional Managers and Directors,NA,7.063197026022305,14.498141263940525,3
+Other Administrative Occupations,19,Other Administrative Occupations,NA,7.063197026022305,7.4349442379182165,2
+Sales Assistants and Retail Cashiers,16,Sales Assistants and Retail Cashiers,NA,5.947955390334572,21.561338289962833,4
+Information Technology Professionals,13,Information Technology Professionals,NA,4.83271375464684,27.509293680297404,5
+Nursing Professionals,12,Nursing Professionals,NA,4.4609665427509295,36.80297397769517,7
+Road Transport Drivers,12,Road Transport Drivers,NA,4.4609665427509295,32.342007434944236,6
+Other Elementary Services Occupations,10,Other Elementary Services Occupations,NA,3.717472118959108,41.2639405204461,8
+Teaching Professionals,9,Teaching Professionals,NA,3.3457249070631967,44.98141263940521,9
+Administrative Occupations: Finance,8,Administrative Occupations: Finance,NA,2.973977695167286,48.3271375464684,10
+Administrative Occupations: Records,6,Administrative Occupations: Records,NA,2.2304832713754648,53.531598513011154,12
+Food Preparation and Hospitality Trades,6,Food Preparation and Hospitality Trades,NA,2.2304832713754648,51.30111524163569,11
+Elementary Storage Occupations,5,Elementary Storage Occupations,NA,1.858736059479554,59.479553903345725,15
+Finance Professionals,5,Finance Professionals,NA,1.858736059479554,57.62081784386617,14
+Managers and Proprietors in Other Services,5,Managers and Proprietors in Other Services,NA,1.858736059479554,55.762081784386616,13
+Assemblers and Routine Operatives,4,Assemblers and Routine Operatives,NA,1.486988847583643,67.28624535315984,20
+Customer Service Occupations,4,Customer Service Occupations,NA,1.486988847583643,65.79925650557621,19
+Engineering Professionals,4,Engineering Professionals,NA,1.486988847583643,64.31226765799256,18
+Housekeeping and Related Services,4,Housekeeping and Related Services,NA,1.486988847583643,62.825278810408925,17
+"HR, Training and Other Vocational Associate Guidance Professionals",4,HR,Training and Other Vocational Associate Guidance Professionals,1.486988847583643,61.33828996282528,16
+Administrative Occupations: Office Managers and Supervisors,3,Administrative Occupations: Office Managers and Supervisors,NA,1.1152416356877324,82.15613382899627,33
+"Architects, Chartered Architectural Technologists, Planning Officers, Surveyors and Construction Professionals",3,Architects,"Chartered Architectural Technologists, Planning Officers, Surveyors and Construction Professionals",1.1152416356877324,81.04089219330855,32
+Business Associate Professionals,3,Business Associate Professionals,NA,1.1152416356877324,79.92565055762083,31
+Elementary Cleaning Occupations,3,Elementary Cleaning Occupations,NA,1.1152416356877324,78.81040892193309,30
+Information Technology Technicians,3,Information Technology Technicians,NA,1.1152416356877324,77.69516728624535,29
+Legal Professionals,3,Legal Professionals,NA,1.1152416356877324,76.57992565055763,28
+Managers and Directors in Retail and Wholesale,3,Managers and Directors in Retail and Wholesale,NA,1.1152416356877324,75.46468401486989,27
+Managers and Proprietors in Hospitality and Leisure Services,3,Managers and Proprietors in Hospitality and Leisure Services,NA,1.1152416356877324,74.34944237918216,26
+Production Managers and Directors,3,Production Managers and Directors,NA,1.1152416356877324,73.23420074349443,25
+"Sales, Marketing and Related Associate Professionals",3,Sales,Marketing and Related Associate Professionals,1.1152416356877324,72.11895910780669,24
+Secretarial and Related Occupations,3,Secretarial and Related Occupations,NA,1.1152416356877324,71.00371747211896,23
+Teaching and Childcare Support Occupations,3,Teaching and Childcare Support Occupations,NA,1.1152416356877324,69.88847583643123,22
+Welfare and Housing Associate Professionals,3,Welfare and Housing Associate Professionals,NA,1.1152416356877324,68.7732342007435,21
+Administrative Occupations: Government and Related Organisations,2,Administrative Occupations: Government and Related Organisations,NA,0.7434944237918215,92.19330855018588,46
+"Business, Research and Administrative Professionals",2,Business,Research and Administrative Professionals,0.7434944237918215,91.44981412639405,45
+Conservation and Environment Professionals,2,Conservation and Environment Professionals,NA,0.7434944237918215,90.70631970260223,44
+Construction and Building Trades,2,Construction and Building Trades,NA,0.7434944237918215,89.96282527881041,43
+Elementary Process Plant Occupations,2,Elementary Process Plant Occupations,NA,0.7434944237918215,89.21933085501858,42
+Elementary Security Occupations,2,Elementary Security Occupations,NA,0.7434944237918215,88.47583643122677,41
+Leisure and Travel Services,2,Leisure and Travel Services,NA,0.7434944237918215,87.73234200743494,40
+Managers and Proprietors in Health and Care Services,2,Managers and Proprietors in Health and Care Services,NA,0.7434944237918215,86.98884758364312,39
+Other Drivers and Transport Operatives,2,Other Drivers and Transport Operatives,NA,0.7434944237918215,86.2453531598513,38
+Other Health Professionals,2,Other Health Professionals,NA,0.7434944237918215,85.50185873605948,37
+Process Operatives,2,Process Operatives,NA,0.7434944237918215,84.75836431226766,36
+Research and Development (R&D) and Other Research Professionals,2,Research and Development (R&D) and Other Research Professionals,NA,0.7434944237918215,84.01486988847584,35
+Shopkeepers and Sales Supervisors,2,Shopkeepers and Sales Supervisors,NA,0.7434944237918215,83.27137546468401,34
+"Artistic, Literary and Media Occupations",1,Artistic,Literary and Media Occupations,0.37174721189591076,99.62825278810409,65
+Business and Financial Project Management Professionals,1,Business and Financial Project Management Professionals,NA,0.37174721189591076,99.25650557620818,64
+Chief Executives and Senior Officials,1,Chief Executives and Senior Officials,NA,0.37174721189591076,98.88475836431226,63
+Customer Service Supervisors,1,Customer Service Supervisors,NA,0.37174721189591076,98.51301115241635,62
+"Directors in Logistics, Warehousing and Transport",1,Directors in Logistics,Warehousing and Transport,0.37174721189591076,98.14126394052045,61
+Electrical and Electronic Trades,1,Electrical and Electronic Trades,NA,0.37174721189591076,97.76951672862454,60
+Elementary Administration Occupations,1,Elementary Administration Occupations,NA,0.37174721189591076,97.39776951672863,59
+Elementary Construction Occupations,1,Elementary Construction Occupations,NA,0.37174721189591076,97.02602230483271,58
+Finance Associate Professionals,1,Finance Associate Professionals,NA,0.37174721189591076,96.6542750929368,57
+Hairdressers and Related Services,1,Hairdressers and Related Services,NA,0.37174721189591076,96.28252788104089,56
+Health Associate Professionals,1,Health Associate Professionals,NA,0.37174721189591076,95.91078066914498,55
+"Managers in Logistics, Warehousing and Transport",1,Managers in Logistics,Warehousing and Transport,0.37174721189591076,95.53903345724908,54
+Plant and Machine Operatives,1,Plant and Machine Operatives,NA,0.37174721189591076,95.16728624535315,53
+"Production, Factory and Assembly Supervisors",1,Production,Factory and Assembly Supervisors,0.37174721189591076,94.79553903345725,52
+Protective Service Occupations,1,Protective Service Occupations,NA,0.37174721189591076,94.42379182156134,51
+Regulatory Associate Professionals,1,Regulatory Associate Professionals,NA,0.37174721189591076,94.05204460966543,50
+Sales Related Occupations,1,Sales Related Occupations,NA,0.37174721189591076,93.68029739776952,49
+"Science, Engineering and Production Technicians",1,Science,Engineering and Production Technicians,0.37174721189591076,93.3085501858736,48
+Teaching and Childcare Associate Professionals,1,Teaching and Childcare Associate Professionals,NA,0.37174721189591076,92.93680297397769,47
