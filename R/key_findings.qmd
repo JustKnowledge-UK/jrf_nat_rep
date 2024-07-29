@@ -1241,6 +1241,55 @@ A generalised linear model indicates that a worker is more likely to be in the l
 - Work in any region apart from London
 - Outsourced
 
+And less likely to be in the low income group if they are:
+
+- Male
+- Arrived within the last 20 or 30 years
+
+```{r include=FALSE}
+subset <- income_data %>%
+  filter(outsourcing_status == "Outsourced") 
+
+mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Region, subset, weights = NatRepemployees, family = "quasibinomial")
+summary(mod)
+
+mod <- lm(income_annual_all ~ Age + Gender * Ethnicity_collapsed*outsourcing_status + BORNUK_labelled + Region, income_data, weights = NatRepemployees)
+summary(mod)
+```
+
+```{r include=FALSE}
+sjPlot::plot_model(mod, type="pred", terms = c("Ethnicity_collapsed","Gender"), dodge=0.5) +
+  coord_flip()
+
+sjPlot::plot_model(mod, type="int", terms = c("Gender","Ethnicity_collapsed"), dodge=0.5) +
+  coord_flip()
+```
+
+```{r include=FALSE}
+ems <- emmeans(mod, specs = "Gender", by = "Ethnicity_collapsed")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "Gender")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+```{r include=FALSE}
+subset <- income_data %>%
+  filter(outsourcing_status == "Outsourced") 
+
+mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Region, subset, weights = NatRepemployees, family = "quasibinomial")
+summary(mod)
+```
+
+
 ## Sectors
 
 ```{r}
@@ -1258,7 +1307,6 @@ data <- data %>%
                                 TRUE ~ Majorgroupcode_labelled)
   )
 ```
-
 
 ### Outsourcing status
 
@@ -3859,4 +3907,14 @@ When we investigate the unit occupations for each of these major group codes, we
 
 <!-- ``` -->
 
+```{r include=FALSE}
+ggplot(income_data, aes(outsourcing_status, income_annual_all, colour = SectorName_short, group = SectorName_short)) +
+  geom_point() +
+  geom_line() +
+  guides(color="none")
+```
+
+```{r}
+#gender
+```
 
