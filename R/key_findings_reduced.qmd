@@ -75,6 +75,25 @@ extract_lm_coefs <- function(mod, only_sig = F){
 data <- readRDS("../Data/2024-06-22 - Cleaned_Data.rds") 
 ```
 
+```{r}
+# invesitgate Has_Degree. This can go in cleaning script
+
+data %>% 
+  group_by(Has_Degree) %>%
+  summarise(
+    n = n()
+  )
+
+# make "no" the reference category for Has_Degree
+data <- data %>%
+  mutate(
+    Has_Degree = forcats::fct_relevel(Has_Degree, "No")
+  )
+
+
+```
+
+
 # How many people are outsourced?
 
 ```{r sum-outsourced}
@@ -239,6 +258,7 @@ readr::write_csv(gender_statistics, file="../outputs/data/gender_statistics.csv"
 ```
 
 ```{r gender-outsourcing-status}
+#| output: false
 mod <- multinom(Gender ~ outsourcing_status, data, weights=NatRepemployees)
 #summary(mod)
 
@@ -302,6 +322,7 @@ readr::write_csv(gender_statistics_2, file="../outputs/data/gender_statistics_2.
 ```
 
 ```{r gender-outsourcing-group}
+#| output: false
 mod <- multinom(Gender ~ outsourcing_group, data, weights=NatRepemployees)
 #summary(mod)
 
@@ -451,6 +472,7 @@ Comparison of ethnicities indicates that some groups are statistically more like
 White other, Black Caribbean, and East Asian workers are no more or less likely than White workers to be outsourced.
 
 ```{r ethnicity-group}
+#| output: false
 mod <- multinom(outsourcing_group ~ Ethnicity_collapsed, data, weights=NatRepemployees)
 #summary(mod)
 
@@ -493,6 +515,7 @@ Breaking down by outsourcing group helps to separate out the *type* of outsource
 ```{r}
 sjPlot::plot_model(mod)
 ```
+
 ## Interaction: Ethnicity and gender
 
 ```{r}
@@ -645,6 +668,7 @@ bornuk_statistics %>%
 ```
 
 ```{r}
+#| output: false
 mod <- multinom(outsourcing_group ~ BORNUK_binary, data, weights=NatRepemployees)
 #summary(mod)
 
@@ -1086,11 +1110,11 @@ data %>%
 ```
 
 ```{r}
-mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status, income_data, weights = NatRepemployees)
+mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + Has_Degree + outsourcing_status, income_data, weights = NatRepemployees)
 # summary(mod_2)
 
 mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
-# summary(mod_3)
+summary(mod_3)
 
 # anova(mod_2, mod_3) # adding BORNUK improves model fit
 
@@ -1118,6 +1142,7 @@ This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsou
   - Yorkshire and the Humber: -£`r abs(round(coef_table['RegionYorkshire and the Humber','Estimate'],0))`
 - People who arrived in the UK within the last year earn £`r abs(round(coef_table['BORNUK_labelledWithin the last year','Estimate'],0))` less than people born in the UK
 - People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
+- People who have a degree earn £`r abs(round(coef_table['Has_DegreeYes','Estimate'],0))` more than people without a degree.
 
 Notable takeaways:
 
@@ -1181,11 +1206,11 @@ data %>%
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
 ```{r}
-mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_group, income_data, weights = NatRepemployees)
+mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Has_Degree + Region + outsourcing_group, income_data, weights = NatRepemployees)
 # summary(mod_2)
 
 mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
-# summary(mod_3)
+ summary(mod_3)
 
 # anova(mod_2, mod_3) # adding BORNUK improves model fit
 
@@ -1230,7 +1255,7 @@ In addition to showing that likely agency workers receive lower pay than the non
 ## Income group
 
 ```{r}
-mod <- glm(income_group ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, data, weights = NatRepemployees, family = "quasibinomial")
+mod <- glm(income_group ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + Has_Degree + outsourcing_status, data, weights = NatRepemployees, family = "quasibinomial")
 summary(mod)
 ```
 
@@ -1245,49 +1270,50 @@ And less likely to be in the low income group if they are:
 
 - Male
 - Arrived within the last 20 or 30 years
+- Have a degree.
 
-```{r include=FALSE}
-subset <- income_data %>%
-  filter(outsourcing_status == "Outsourced") 
+<!-- ```{r include=FALSE} -->
+<!-- subset <- income_data %>% -->
+<!--   filter(outsourcing_status == "Outsourced")  -->
 
-mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Region, subset, weights = NatRepemployees, family = "quasibinomial")
-summary(mod)
+<!-- mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Has_Degree +  Region, subset, weights = NatRepemployees, family = "quasibinomial") -->
+<!-- summary(mod) -->
 
-mod <- lm(income_annual_all ~ Age + Gender * Ethnicity_collapsed*outsourcing_status + BORNUK_labelled + Region, income_data, weights = NatRepemployees)
-summary(mod)
-```
+<!-- mod <- lm(income_annual_all ~ Age + Gender * Ethnicity_collapsed*outsourcing_status + Has_Degree + BORNUK_labelled + Region, income_data, weights = NatRepemployees) -->
+<!-- summary(mod) -->
+<!-- ``` -->
 
-```{r include=FALSE}
-sjPlot::plot_model(mod, type="pred", terms = c("Ethnicity_collapsed","Gender"), dodge=0.5) +
-  coord_flip()
+<!-- ```{r include=FALSE} -->
+<!-- sjPlot::plot_model(mod, type="pred", terms = c("Ethnicity_collapsed","Gender"), dodge=0.5) + -->
+<!--   coord_flip() -->
 
-sjPlot::plot_model(mod, type="int", terms = c("Gender","Ethnicity_collapsed"), dodge=0.5) +
-  coord_flip()
-```
+<!-- sjPlot::plot_model(mod, type="int", terms = c("Gender","Ethnicity_collapsed"), dodge=0.5) + -->
+<!--   coord_flip() -->
+<!-- ``` -->
 
-```{r include=FALSE}
-ems <- emmeans(mod, specs = "Gender", by = "Ethnicity_collapsed")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
-  mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
-  )
+<!-- ```{r include=FALSE} -->
+<!-- ems <- emmeans(mod, specs = "Gender", by = "Ethnicity_collapsed") -->
+<!-- cons <- summary(contrast(ems, "pairwise",adjust="tukey")) -->
+<!-- sig_cons <- cons %>% filter(p.value < .05) %>% -->
+<!--   mutate( -->
+<!--     or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison) -->
+<!--   ) -->
 
-ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "Gender")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
-  mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
-  )
-```
+<!-- ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "Gender") -->
+<!-- cons <- summary(contrast(ems, "pairwise",adjust="tukey")) -->
+<!-- sig_cons <- cons %>% filter(p.value < .05) %>% -->
+<!--   mutate( -->
+<!--     or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison) -->
+<!--   ) -->
+<!-- ``` -->
 
-```{r include=FALSE}
-subset <- income_data %>%
-  filter(outsourcing_status == "Outsourced") 
+<!-- ```{r include=FALSE} -->
+<!-- subset <- income_data %>% -->
+<!--   filter(outsourcing_status == "Outsourced")  -->
 
-mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Region, subset, weights = NatRepemployees, family = "quasibinomial")
-summary(mod)
-```
+<!-- mod <- glm(income_group ~ Age + Gender * Ethnicity_collapsed + BORNUK_labelled + Region, subset, weights = NatRepemployees, family = "quasibinomial") -->
+<!-- summary(mod) -->
+<!-- ``` -->
 
 
 ## Sectors
@@ -1543,7 +1569,7 @@ test_data <- income_data %>%
   filter(!is.na(SectorName_short))
 
 # base model - no random effects
-base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees)
+base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree + Region + outsourcing_status, test_data, weights = NatRepemployees)
 summary(base)
 
 # random intercept
@@ -1565,12 +1591,54 @@ VarCorr(mod)
 
 ```
 
-A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercetps and random slopes for outsourcing status by sector indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £2774 less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with sector. For people working in 'Wholesale and retail trade' and 'accommodation and food serivce activities', being outsourced is associated with **higher** pay than not being outsourced. Note that both of these sectors fall into the bottom three sectors overall for pay. For people working in 'Information and communication' and 'Education', being outsourced is associated with **lower** pay than not being outsourced.
+A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by sector indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £2774 less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with sector. For example, for people working in 'Wholesale and retail trade', the pay for outsourced workers os being outsourced  and 'accommodation and food service activities', the effect of being outsourced on pay is **higher** than the average effect across sectors. Note that both of these sectors fall into the bottom three sectors overall for pay. For people working in 'Information and communication' and 'Education', the effect of being outsourced on pay is **lower** than the average across sectors. This shows that penalty to pay associated with outsourcing is less severe in some sectors and more severe in others.
+
+:::callout-note
+The plots below cannot be interpreted inferentially to determine "significance". They simply represent the variation in the estimate of outsourcing by sector. The thing to take away from them is that impact on pay of being outsourced is less severe in some sectors and more severe in others, but we cannot say from them that e.g., "sector A has significantly worse pay than sector B."
+:::
 
 ```{r}
-sjPlot::plot_model(mod, type = "re", show.values = F)
+fixed_effects <- fixef(mod)
+random_effects <- ranef(mod)$SectorName_short
+
+total_effects <- fixed_effects["outsourcing_statusOutsourced"] + random_effects["outsourcing_statusOutsourced"]
 ```
 
+```{r}
+test <- broom.mixed::tidy(mod, effects="ran_vals",conf.int=TRUE)
+
+test %>%
+  filter(term!="(Intercept)") %>%
+  mutate(
+    positive = factor(ifelse(estimate>0, 1,0)),
+    level = forcats::fct_reorder(level, estimate)
+  ) %>%
+  ggplot(aes(level,estimate, colour=positive)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "None") +
+  ggtitle("Random effects") +
+  labs(caption = "Note: Values indicate the influence of outsourcing within the sector relative to the average influence across sectors") +
+  xlab("Sector")
+
+```
+
+Consideration of the total effect indicates that when controlling for other factors, outsourced workers in all sectors apart from 'Wholesale and retail trade' have lower pay than non-outsourced workers.
+
+```{r}
+total_effects %>%
+  mutate(
+    Sector = forcats::fct_reorder(rownames(total_effects), outsourcing_statusOutsourced, .desc=F)
+  ) %>%
+  ggplot(aes(Sector, outsourcing_statusOutsourced)) +
+  geom_point() +
+  coord_flip() +
+  theme_minimal() +
+  ylab("Total effect") +
+  labs(caption = "Values represent the total effect (i.e., fixed + random effect)")
+```
 
 Visual comparisons indicate that for the vast majority of sectors, outsourced people tend to be paid less than non-outsourced people. Exceptions to this are 'Professional, scientific and technical activities', 'Financial and insurance activities', 'Wholesale retail and trade', and 'Arts, entertainment and recreation'.^[[outputs/data/sector_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay.csv)]
 
@@ -1782,13 +1850,13 @@ write_csv(sector_summary_paysplit, file="../outputs/data/sector_summary_paysplit
 
 ```{r output=FALSE}
 # os status
-mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status*income_group, income_data, weights = NatRepemployees)
+mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree + Region + outsourcing_status*income_group, income_data, weights = NatRepemployees)
 # summary(mod)
 
 sjPlot::plot_model(mod, type = "int")
 
 # os group
-mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_group*income_group, income_data, weights = NatRepemployees)
+mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree +  Region + outsourcing_group*income_group, income_data, weights = NatRepemployees)
 # summary(mod)
 
 sjPlot::plot_model(mod, type = "int")
@@ -2210,14 +2278,15 @@ test_data <- income_data %>%
   filter(!is.na(SectorName_short))
 
 # base model - no random effects
-base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees)
+base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed +  Has_Degree + BORNUK_labelled + Region + outsourcing_status, test_data, weights = NatRepemployees)
 summary(base)
 
 # random intercept
-base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (1|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
+base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Has_Degree + BORNUK_labelled + Region + outsourcing_status + (1|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
+summary(base_2)
 
 # random intercept + slope
-mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
+mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Has_Degree + BORNUK_labelled + Region + outsourcing_status + (outsourcing_status|Majorgroupcode_labelled), test_data, weights = NatRepemployees)
 summary(mod)
 
 # check whether random effects improve fit it - they do, best is with slope
@@ -2230,9 +2299,54 @@ print(random_effects)
 
 VarCorr(mod)
 
+coefs <- coef(summary(mod))
 ```
 
-A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by major occupation indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £1675 less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with sector. People who work in 'Sales and customer service', 'elementary occupations' and 'caring, leisure and other serivce occupations' tend to have **higher** pay if they are outsourced vs not outsourced. People who work in 'professional occupations', 'associate professional occupations', and 'managers, directors and senior officials' are paid **less** if they are outsourced vs not outsourced.
+A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by major occupation indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £`r abs(round(coefs[outsourcing_statusOutsourced, Estimate],2))` less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with major group. For example, for people who work in 'Sales and customer service', 'elementary occupations' and 'caring, leisure and other service occupations' the effect of being outsourced on pay is **higher** than the average effect across sectors. For people who work in 'professional occupations', 'associate professional occupations', and 'managers, directors and senior officials' the effect of being outsourced on pay is **lower** than the average across sectors.
+
+As for the sector breakdown, this shows that the penalty to pay associated with outsourcing is less severe in some sectors and more severe in others.
+
+```{r}
+fixed_effects <- fixef(mod)
+random_effects <- ranef(mod)$Majorgroupcode_labelled
+
+total_effects <- fixed_effects["outsourcing_statusOutsourced"] + random_effects["outsourcing_statusOutsourced"]
+```
+
+```{r}
+test <- broom.mixed::tidy(mod, effects="ran_vals",conf.int=TRUE)
+
+test %>%
+  filter(term!="(Intercept)") %>%
+  mutate(
+    positive = factor(ifelse(estimate>0, 1,0)),
+    level = forcats::fct_reorder(level, estimate)
+  ) %>%
+  ggplot(aes(level,estimate, colour=positive)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "None") +
+  ggtitle("Random effects") +
+  labs(caption = "Note: Values indicate the influence of outsourcing within the sector relative to the average influence across sectors") +
+  xlab("Major group code")
+
+```
+Consideration of the total effect indicates that when controlling for other factors, outsourced workers in all major groups apart from 'Sales and customer service occupations' have lower pay than non-outsourced workers.
+
+```{r}
+total_effects %>%
+  mutate(
+    `Major group` = forcats::fct_reorder(rownames(total_effects), outsourcing_statusOutsourced, .desc=F)
+  ) %>%
+  ggplot(aes(`Major group`, outsourcing_statusOutsourced)) +
+  geom_point() +
+  coord_flip() +
+  theme_minimal() +
+  ylab("Total effect") +
+  labs(caption = "Values represent the total effect (i.e., fixed + random effect)")
+```
 
 ```{r}
 sjPlot::plot_model(mod, type = "re", show.values = F)
