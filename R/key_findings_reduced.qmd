@@ -76,13 +76,13 @@ data <- readRDS("../Data/2024-06-22 - Cleaned_Data.rds")
 ```
 
 ```{r}
-# invesitgate Has_Degree. This can go in cleaning script
+# investigate Has_Degree. This can go in cleaning script
 
-data %>% 
-  group_by(Has_Degree) %>%
-  summarise(
-    n = n()
-  )
+# data %>% 
+#   group_by(Has_Degree) %>%
+#   summarise(
+#     n = n()
+#   )
 
 # make "no" the reference category for Has_Degree
 data <- data %>%
@@ -1698,6 +1698,8 @@ ggplot(sector_pay_summary, aes(SectorName_short, wtd_avg_income)) +
 write_csv(sector_pay_summary, file="../outputs/data/sector_summary_pay_overall.csv")
 
 ```
+
+##### Mixed model
 
 ```{r sector-multimod, output=FALSE}
 test_data <- income_data %>%
