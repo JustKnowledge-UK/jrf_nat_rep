@@ -1113,7 +1113,7 @@ data %>%
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
 
-```{r}
+```{r output=FALSE}
 mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + Has_Degree + outsourcing_status + SectorName_short, income_data, weights = NatRepemployees)
 # summary(mod_2)
 
@@ -1129,7 +1129,7 @@ sig_coefs <- extract_lm_coefs(mod_3, only_sig = T)
 write_csv(coef_table, file="../outputs/data/model_2_income_by_o-status.csv")
 ```
 
-This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. [^21] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
+This difference increases to **£`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))`** when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. [^21] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
 
 [^21]: [outputs/data/model_2_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)
 
@@ -1158,7 +1158,7 @@ Notable takeaways:
 -   The South East is the highest-paid region after London. Northern Ireland is the lowest paid region.
 -   People who have very recently arrived in the UK are paid less than people who were born in the UK, whilst people who migrated to the UK a long time ago earn more than people born in the UK.
 
-```{r}
+```{r output=FALSE}
 income_statistics <- data %>%
   filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
   group_by(outsourcing_group) %>%
@@ -1215,7 +1215,7 @@ data %>%
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
 ```
 
-```{r}
+```{r output=FALSE}
 mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Has_Degree + Region + outsourcing_group + SectorName_short, income_data, weights = NatRepemployees)
 # summary(mod_2)
 
@@ -1241,6 +1241,91 @@ However, when controlling, as before, for Age, Gender, Ethnicity, Arrival Time, 
 In addition to showing that likely agency workers receive lower pay than the non-outsourced workers, this analysis reveals that "pure outsourced" workers' pay is even lower, and that the estimate we obtained in the analysis above considering only status is a diluted effect averaging the outsourced and likely agency pay gaps.
 
 Other effects in this model are largely the same as in the status model, however note that the 'Within the last 3 years effect' is not present in this model. Given this effect was only just significant previously, the fact that it disappears when we separate outsourced from likely agency suggests that the variance this level explained is now explained by the distinction between outsourced and likely agency. That is, in the previous model, it was likely that 'last 3 years' level of the arrival time factor was capturing variance explained by being an agency worker specifically. When we consider agency workers explicitly, the within 3 year time frame is less relevant in explaining income (i,e, it is the fact of being an agency worker that results in less pay, not when they arrived). The fact that the 'within the last year' timeframe is significant suggests that people arriving recently suffer a pay penalty, even after accounting for what outsourcing group they fall into.
+
+### Gender pay gap
+
+Use a mixed model to explore how the effect of gender varies by sector. Note due to small sample sizes we can only consider Male and Female genders.
+
+```{r output=FALSE}
+# explore how the effect of gender varies by sector using a mixed model
+test_data <- income_data %>%
+  filter(!is.na(SectorName_short))  %>%
+  filter(Gender %in% c("Male","Female"))
+
+# base model - no random effects
+base <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree + Region + outsourcing_status, test_data, weights = NatRepemployees)
+summary(base)
+
+# random intercept
+base_2 <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree + Region + outsourcing_status + (1|SectorName_short), test_data, weights = NatRepemployees)
+
+# random intercept + slope
+mod <- lmerTest::lmer(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Has_Degree + Region + outsourcing_status + (Gender|SectorName_short), test_data, weights = NatRepemployees)
+summary(mod)
+
+# check whether random effects improve fit it - they do, best is with slope
+anova(mod,base_2, base)
+
+# get random effectts
+random_effects <- ranef(mod)
+
+print(random_effects)
+
+VarCorr(mod)
+
+```
+
+```{r}
+fixed_effects <- fixef(mod)
+random_effects <- ranef(mod)$SectorName_short
+
+total_effects <- fixed_effects["GenderMale"] + random_effects["GenderMale"]
+```
+
+A mixed model allowing the effect of Gender to vary by sector is a better fit to the data than a model with just a random intercept and a regular linear model. This suggests that the differences between sectors in the effect of Gender is important.
+
+The fixed effect shows that on average, across sectors, men earn £`r round(fixed_effects["GenderMale"],0)` more than women.
+
+The plot below shows the random effects. This is the relative influence of gender in sectors compared to the average effect of gender across sectors. It shows the sectors where the effect on pay of being male is greater than the average across sectors (red) and the sectors where the effect of being male is less than average (blue). It shows that some of the most unfair sectors are 'Other service activities', 'Wholesale and retail trade', and 'pressional, scientific and technical activities', amongst others, and some of the least unfair sectors are Accommodation and food service activities, transportation and storage, and human health and social work activities (note however, as shown in the second chart below, that in all **all** sectors being male is associated with being paid more). 
+
+
+```{r}
+# get confidence intervals to effects
+test <- broom.mixed::tidy(mod, effects="ran_vals",conf.int=TRUE)
+
+# plot them
+test %>%
+  filter(term!="(Intercept)") %>%
+  mutate(
+    positive = factor(ifelse(estimate>0, 0,1)),
+    level = forcats::fct_reorder(level, estimate)
+  ) %>%
+  ggplot(aes(level,estimate, colour=positive)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=conf.low, ymax=conf.high)) +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "None") +
+  ggtitle("Random effects") +
+  labs(caption = "Note: Values indicate the influence of outsourcing within the sector relative to the average influence across sectors") +
+  xlab("Sector")
+
+```
+
+Consideration of the total effect indicates that when controlling for other factors, being Male is assocaited with higher pay in all sectors.
+
+```{r}
+total_effects %>%
+  mutate(
+    Sector = forcats::fct_reorder(rownames(total_effects), GenderMale, .desc=F)
+  ) %>%
+  ggplot(aes(Sector, GenderMale)) +
+  geom_point() +
+  coord_flip() +
+  theme_minimal() +
+  ylab("Total effect") +
+  labs(caption = "Values represent the total effect (i.e., fixed + random effect)")
+```
 
 <!-- ## Pay differences -->
 
@@ -1278,7 +1363,7 @@ Other effects in this model are largely the same as in the status model, however
 
 ## Income group
 
-```{r}
+```{r output=FALSE}
 mod <- glm(income_group ~ Age + Gender + Ethnicity_collapsed + BORNUK_labelled + Region + Has_Degree + outsourcing_status, data, weights = NatRepemployees, family = "quasibinomial")
 summary(mod)
 ```
@@ -1382,7 +1467,7 @@ data <- data %>%
   )
 ```
 
-### Outsourcing status
+
 
 Here we explore what proportion of workers in each sector are outsourced.[^24]
 
@@ -1584,7 +1669,7 @@ plot_data %>%
   # scale_y_continuous(breaks=seq(0,100,10))
 ```
 
-#### Variations in pay
+#### Variations in pay - outsourcing status
 
 The plot below shows the average income by sector.[^26]
 
@@ -1777,6 +1862,112 @@ plot_data %>%
   
 ```
 
+##### Pay as function of non-outsourced^[[outputs/data/sector_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff.csv)]
+
+Below we plot, for each sector, outsourced workers' pay as proportion of non-outsourced workers' pay. The plot shows that on average, outsourced workers are paid more in Agriculture..., Arts..., and Wholesale trade... They're paid the same in Financial... and Professional..., and less in all other sectors. **Note that these averages do not take into account any other variables that are relevant to income.**
+
+
+```{r}
+# here we explore pay as function of the non-outsourced pay
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T),
+    # sd = weighted_sd(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  ) 
+
+wider <- sector_summary_pay %>%
+  select(SectorName_short, n, outsourcing_status, wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  mutate(
+    # Outsourced = ifelse(is.na(Outsourced), 0, Outsourced),
+    Pay_diff = 100 * (wtd_avg_income_Outsourced/`wtd_avg_income_Not outsourced`),
+    alt_pay_diff = ((`wtd_avg_income_Not outsourced` -wtd_avg_income_Outsourced)/`wtd_avg_income_Not outsourced`)
+  )
+
+write_csv(wider, file="../outputs/data/sector_summary_pay_diff.csv")
+
+
+plot_data <- wider %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  ungroup() %>%
+  mutate(
+    SectorName_short = forcats::fct_reorder(SectorName_short, Pay_diff, .desc = FALSE)
+  )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n_Outsourced) %>%
+  group_by(SectorName_short) %>%
+    mutate(
+    ypos = max(plot_data$Pay_diff, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(Pay_diff,SectorName_short)) + #, size = N, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+  # geom_errorbar(aes(xmin = min, xmax = max)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  # scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("n = ", n_Outsourced)), hjust=1) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Outsourced pay as percentage of non-outsourced pay") + ylab("Sector") +
+  labs(caption = "Note: n in indicates the size of the outsourced workforce in the sector")
+
+# alternative way of presenting it
+# could also think about expressing it, e.g. in terms of percentage less...
+# ultimately it's all the same thing
+
+# plot_data %>%
+#   # mutate(
+#   #   SectorName = as.factor(SectorName)
+#   # ) %>%
+#   ggplot(., aes(alt_pay_diff,SectorName_short)) + #, size = N, colour = outsourcing_status)) +
+#   geom_point(position = "dodge") + 
+#   # geom_errorbar(aes(xmin = min, xmax = max)) +
+#   theme_minimal() +
+#   theme(legend.position = "bottom",
+#         legend.title = element_blank())+
+#       #coord_flip() +
+#   # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+#   # scale_colour_manual(values=colours) +
+#   # geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("n = ", n_Outsourced)), hjust=1) +
+#   guides(size=FALSE) + # remove size legend as gauging size is difficult 
+#   xlab("Outsourced pay as percentage of non-outsourced pay") + ylab("Sector") +
+#   labs(caption = "Note: n in indicates the size of the outsourced workforce in the sector")
+```
+
+#### Variations in pay - outsourcing group
+
 Exploring variations in pay by outsourcing group shows that the 'outsourced' group is commonly paid less than the non-outsourced group, whilst the 'high indicators' group and, to a less extent, the 'likely agency' group, vary in terms of how they are paid relative to the non-outsourced group. For example, in 'Human health and social work' and 'wholesale retail and trade', the high indicators group is paid more, whilst the outsourced group is paid less, relative to the non-outsourced group.[^28]
 
 [^28]: [outputs/data/sector_summary_o-group_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_o-group_pay.csv)
@@ -1867,6 +2058,96 @@ plot_data %>%
   guides(size=FALSE) + # remove size legend as gauging size is difficult 
   xlab("Weighted average income") + ylab("Sector") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
+```
+
+##### Pay as function of non-outsourced
+
+Exploring this as a proportion of the non-outsourced pay.^[[outputs/data/sector_summary_pay_diff_ogroup.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff_ogroup.csv)]
+
+Below we plot, for each sector, outsourced workers' pay as proportion of non-outsourced workers' pay. **Note that these averages do not take into account any other variables that are relevant to income.**
+
+```{r}
+# here we explore pay as function of the non-outsourced pay
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T),
+    # sd = weighted_sd(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  ) %>%
+  # Compute the 'not outsourced' reference value
+  group_by(SectorName) %>%
+  mutate(
+    not_outsourced_wtd_avg_income = wtd_avg_income[outsourcing_group == "Not outsourced"]
+  ) %>%
+  # Calculate the proportion relative to the 'not outsourced' value
+  mutate(
+    wtd_avg_income_proportion = ifelse(outsourcing_group == "Not outsourced", 100, 100 * wtd_avg_income / not_outsourced_wtd_avg_income)
+  ) %>%
+  select(-not_outsourced_wtd_avg_income) #
+
+write_csv(sector_summary_pay, file="../outputs/data/sector_summary_pay_diff_ogroup.csv")
+
+
+levels <- sector_summary_pay %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  filter(outsourcing_group == 'Outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, wtd_avg_income_proportion, .desc = FALSE))
+
+plot_data <- sector_summary_pay %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(levels$SectorName_short)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
+  group_by(SectorName_short) %>%
+    mutate(
+      N = sum(n),
+    ypos = max(plot_data$wtd_avg_income_proportion, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  filter(outsourcing_group != "Not outsourced") %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income_proportion, SectorName_short, color = outsourcing_group)) + #, size = N, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+  # geom_errorbar(aes(xmin = min, xmax = max)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  # scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Percentage of non-outsourced pay") + ylab("Sector") +
+  labs(caption = "Note: n in indicates the size of the outsourced workforce in the sector") +
+  scale_colour_manual(values=better_colours)
 ```
 
 ```{r}
@@ -2305,7 +2586,7 @@ plot_data %>%
   theme_minimal()
 ```
 
-#### Variations in pay
+#### Variations in pay - outsourcing status
 
 The plot below shows the average income by major occupation group.[^32]
 
@@ -2363,9 +2644,10 @@ print(random_effects)
 VarCorr(mod)
 
 coefs <- coef(summary(mod))
+
 ```
 
-A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by major occupation indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £`r abs(round(coefs[outsourcing_statusOutsourced, Estimate],2))` less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with major group. For example, for people who work in 'Sales and customer service', 'elementary occupations' and 'caring, leisure and other service occupations' the effect of being outsourced on pay is **higher** than the average effect across sectors. For people who work in 'professional occupations', 'associate professional occupations', and 'managers, directors and senior officials' the effect of being outsourced on pay is **lower** than the average across sectors.
+A multilevel model predicting income from outsourcing status (accounting for other variables), with random intercepts and random slopes for outsourcing status by major occupation indicates overall a significant negative effect of outsourcing status; by this estimation people who are outsourced earn approximately £`r abs(round(coefs["outsourcing_statusOutsourced", "Estimate"],2))` less than people who are not outsourced. The random effects indicate that influence of being outsourced varies with major group. For example, for people who work in 'Sales and customer service', 'elementary occupations' and 'caring, leisure and other service occupations' the effect of being outsourced on pay is **higher** than the average effect across sectors. For people who work in 'professional occupations', 'associate professional occupations', and 'managers, directors and senior officials' the effect of being outsourced on pay is **lower** than the average across sectors.
 
 As for the sector breakdown, this shows that the penalty to pay associated with outsourcing is less severe in some sectors and more severe in others.
 
@@ -2412,7 +2694,7 @@ total_effects %>%
   labs(caption = "Values represent the total effect (i.e., fixed + random effect)")
 ```
 
-```{r}
+```{r include=FALSE}
 sjPlot::plot_model(mod, type = "re", show.values = F)
 ```
 
@@ -2493,6 +2775,60 @@ plot_data %>%
 
 ```
 
+##### Pay as function of non-outsourced^[[outputs/data/mgc_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff.csv)]
+
+Below we plot, for each major group code, outsourced workers' pay as proportion of non-outsourced workers' pay. The plot shows that on average, outsourced workers are paid more in Sales..., Skilled trades..., and Administrative... and less in all other major group codes. **Note that these averages do not take into account any other variables that are relevant to income.**
+
+
+```{r}
+# here we explore pay as function of the non-outsourced pay
+wider <- mgc_summary_pay %>%
+  select(Majorgroupcode_labelled, n, outsourcing_status, wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  mutate(
+    # Outsourced = ifelse(is.na(Outsourced), 0, Outsourced),
+    Pay_diff = 100 * (wtd_avg_income_Outsourced/`wtd_avg_income_Not outsourced`)
+  )
+
+plot_data <- wider %>%
+  drop_na(Majorgroupcode_labelled) %>%
+  droplevels() %>%
+  ungroup() %>%
+  mutate(
+    Majorgroupcode_labelled = forcats::fct_reorder(Majorgroupcode_labelled, Pay_diff, .desc = FALSE)
+  )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(Majorgroupcode_labelled, n_Outsourced) %>%
+  group_by(Majorgroupcode_labelled) %>%
+    mutate(
+    ypos = max(plot_data$Pay_diff, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(Pay_diff,Majorgroupcode_labelled)) + #, size = N, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+  # geom_errorbar(aes(xmin = min, xmax = max)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  # scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=Majorgroupcode_labelled, label = paste0("n = ", n_Outsourced)), hjust=1) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Outsourced pay as percentage of non-outsourced pay") + ylab("Major occupation") +
+  labs(caption = "Note: n in indicates the size of the outsourced workforce in the major occ group")
+
+write_csv(wider, file="../outputs/data/mgc_summary_pay_diff.csv")
+```
+
+#### Variations in pay - outsourcing group
+
 Breaking this down by group indicates that there is variation between types of outsourcing in terms of pay. The 'outsourced' group is often (though not always) the least well-paid out of the outsourcing groups.[^34]
 
 [^34]: [outputs/data/mgc_summary_pay_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_group.csv)
@@ -2569,6 +2905,122 @@ plot_data %>%
   labs(caption = "Size of bubble represents the size of the respective workforce")
 
 ```
+
+##### Pay as function of non-outsourced pay^[[outputs/data/mgc_summary_pay_diff_o-group.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff_o-group.csv)]
+
+Below we plot, for each major group code, outsourced workers' pay as proportion of non-outsourced workers' pay. **Note that these averages do not take into account any other variables that are relevant to income.** 
+
+```{r}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(Majorgroupcode_labelled, outsourcing_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_annual_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T),
+    # sd = weighted_sd(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(Majorgroupcode_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum)
+    ) %>%
+  mutate(
+    Majorgroupcode_labelled = factor(stringr::str_to_sentence(Majorgroupcode_labelled))
+  ) %>%
+  # Compute the 'not outsourced' reference value
+  group_by(Majorgroupcode_labelled) %>%
+  mutate(
+    not_outsourced_wtd_avg_income = wtd_avg_income[outsourcing_group == "Not outsourced"]
+  ) %>%
+  # Calculate the proportion relative to the 'not outsourced' value
+  mutate(
+    wtd_avg_income_proportion = ifelse(outsourcing_group == "Not outsourced", 100, 100 * wtd_avg_income / not_outsourced_wtd_avg_income)
+  ) %>%
+  select(-not_outsourced_wtd_avg_income) #
+
+levels <- sector_summary_pay %>%
+  drop_na(Majorgroupcode_labelled) %>%
+  droplevels() %>%
+  filter(outsourcing_group == 'Outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(Majorgroupcode_labelled, wtd_avg_income_proportion, .desc = FALSE))
+
+plot_data <- sector_summary_pay %>%
+  mutate(
+    Majorgroupcode_labelled = factor(Majorgroupcode_labelled, levels = levels(levels$Majorgroupcode_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(Majorgroupcode_labelled, n) %>%
+  group_by(Majorgroupcode_labelled) %>%
+    mutate(
+      N = sum(n),
+    ypos = max(plot_data$wtd_avg_income_proportion, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  filter(outsourcing_group != "Not outsourced") %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income_proportion, Majorgroupcode_labelled, color = outsourcing_group)) + #, size = N, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+  # geom_errorbar(aes(xmin = min, xmax = max)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 10000)) +
+  # scale_colour_manual(values=colours) +
+  # geom_text_repel(aes(wtd_avg_income_proportion, Majorgroupcode_labelled, color = outsourcing_group, label=paste0("n=",n)), size=3, force=.5, box.padding=0.5) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=Majorgroupcode_labelled, label = paste0("N = ", N)), hjust=1) +
+  # guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Percentage of non-outsourced pay") + ylab("Major occupation") +
+  labs(caption = "Note: n in indicates the size of the outsourced workforce in the sector") +
+  scale_colour_manual(values=better_colours) 
+
+
+
+
+
+write_csv(sector_summary_pay, file="../outputs/data/mgc_summary_pay_diff_o-group.csv")
+```
+
+Note that the high pay in high indicators group for skilled trades occupations is driven by only 4 data points:
+
+```{r}
+test <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  filter(Majorgroupcode_labelled == "Skilled trades occupations") %>%
+  group_by(UnitOccupation_labelled, outsourcing_group) %>%
+  summarise(
+    wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T),
+    n = n()
+  ) %>%
+  mutate(
+    N = sum(n)
+  )
+
+annotation_df <- test %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(UnitOccupation_labelled, N) %>%
+  # group_by(UnitOccupation_labelled) %>%
+    mutate(
+      # N = sum(n),
+    ypos = max(test$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+ggplot(test, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_group)) +
+  geom_point() +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1) +
+  geom_text_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_group, label=paste0("n=",n)), size=3)
+
+```
+
 
 Again, although we find no evidence overall of a significant interaction between income group and outsourcing status on income, we can still visually explore the distinction between low vs not low income.[^35] The plot below shows that whilst the pattern of outsourced workers being paid less in general holds, in the higher income group there are more instances of outsourced workers being paid more than non-outsourced workers, compared to the low income group. This suggests that at the higher end of the pay distribution, being outsourced can be more lucrative than not being outsourced. Indeed, for Elementary occupations, there is a clear divergence evident in the pattern; for high income workers, being outsourced increases average income, whereas for low income workers, being outsourced decreases average income.
 
