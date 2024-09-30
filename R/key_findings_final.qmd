@@ -21,6 +21,7 @@ execute:
 ```{r packages}
 library(haven)
 library(poLCA)
+library(Hmisc)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -31,7 +32,6 @@ library(wesanderson)
 library(ggrepel)
 library(here)
 library(emmeans)
-library(Hmisc)
 #library(devtools)
 #install_version("sjstats", version = "0.18.2")
 library(sjstats)
@@ -72,7 +72,7 @@ extract_lm_coefs <- function(mod, only_sig = F){
 
 ```{r data, output=FALSE}
 #data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
-data <- readRDS("../Data/2024-06-22 - Cleaned_Data.rds") 
+data <- readRDS("../Data/2024-09-30 - Cleaned_Data.rds") 
 ```
 
 # How many people are outsourced?
@@ -238,11 +238,12 @@ region_statistics_3 %>%
 ```{r}
 knitr::include_graphics('../outputs/figures/outsourcing_distribution_across_regions.svg')
 ```
+
 ## Sectors
 
-Here we explore what proportion of workers in each sector are outsourced.[^21]
+Here we explore what proportion of workers in each sector are outsourced.[^5]
 
-[^21]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
+[^5]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
 
 ```{r sector-summary-3}
 sector_summary_3 <- data %>%
@@ -379,11 +380,11 @@ coefs <- cbind(coefs, ors, p) %>%
 write_csv(coefs, file = "../outputs/data/gender_inferential_tab.csv")
 ```
 
-The outsourced workforce consists of a greater proportion of males than the non-outsourced workforce.[^5] Men make up `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the outsourced workforce compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the non-outsourced workforce. This difference is statistically significant; outsourced workers, compared to non-outsourced workers, are `r round(sig_ors['Male', 'outsourcing_statusOutsourced'], 2)` times more likely to be male than female.[^6]
+The outsourced workforce consists of a greater proportion of males than the non-outsourced workforce.[^6] Men make up `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the outsourced workforce compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the non-outsourced workforce. This difference is statistically significant; outsourced workers, compared to non-outsourced workers, are `r round(sig_ors['Male', 'outsourcing_statusOutsourced'], 2)` times more likely to be male than female.[^7]
 
-[^5]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
+[^6]: [outputs/data/sector_summary_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
 
-[^6]: [../outputs/data/gender_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/gender_inferential_tab.csv)
+[^7]: [../outputs/data/gender_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/gender_inferential_tab.csv)
 
 ```{r}
 # gender_statistics %>%
@@ -466,6 +467,7 @@ gender_statistics_2 %>%
   xlab("Outsourcing group") +
   annotate("text", x = gender_statistics_2$outsourcing_group, y = 99, label = paste0("N = ", gender_statistics_2$N), hjust=1) 
 ```
+
 ## Pay
 
 ::: callout-note
@@ -504,9 +506,9 @@ write_csv(coef_table, file="../outputs/data/model_income_by_o-status.csv")
 
 ```
 
-The table and plot below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**.[^17]
+The table and plot below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**.[^8]
 
-[^17]: [outputs/data/income_stats_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
+[^8]: [outputs/data/income_stats_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
 
 ```{r income-plot}
 knitr::kable(income_statistics, 
@@ -539,7 +541,7 @@ mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + ou
 # summary(mod_2)
 
 mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
-# summary(mod_3)
+ summary(mod_3)
 
 # anova(mod_2, mod_3) # adding BORNUK improves model fit
 
@@ -550,9 +552,9 @@ sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 write_csv(coef_table, file="../outputs/data/model_2_income_by_o-status.csv")
 ```
 
-This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. [^18] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
+This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. [^9] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
 
-[^18]: [outputs/data/model_2_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)
+[^9]: [outputs/data/model_2_income_by_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)
 
 -   Men earn £`r abs(round(coef_table['GenderMale','Estimate'],0))` more than women.
 -   East Asian workers earn £`r abs(round(coef_table['Ethnicity_collapsedEast Asian','Estimate'],0))` more than White British workers.
@@ -570,9 +572,135 @@ This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsou
 -   People who arrived in the UK within the last year earn £`r abs(round(coef_table['BORNUK_labelledWithin the last year','Estimate'],0))` less than people born in the UK
 -   People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
 
+### Income group^[[../outputs/data/income_group_outsourcing.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_group_outsourcing.csv)]
+
+```{r}
+# test significance
+mod <- glm(income_group ~ outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
+# summary(mod)
+
+test <- summary(mod)
+
+or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
+p <- test[["coefficients"]][2,4]
+
+mod_2 <- glm(income_group ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_2)
+
+# test <- summary(mod_2)
+
+or <- exp(mod_2[["coefficients"]][["outsourcing_statusOutsourced"]])
+p <- test[["coefficients"]][2,4]
+
+coef_table <- extract_lm_coefs(mod_2)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod_2, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/income_group_outsourcing.csv")
+
+```
+
+A person is more likely to be in the low income group if they are:
+
+- Older
+- Female
+- Prefer not to say when they arrived
+
+And less likely if they are:
+
+- East Asian
+- Live in North West or Wales
+- Arrived in the UK in last 30 years
+
+### Gender pay gap
+
+[outputs/data/gender_outsourced_gap.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/gender_outsourced_gap.csv)
+
+[outputs/data/mod_gender_outsourcing.csv](outputs/data/mod_gender_outsourcing.csv)
+
+```{r gender-pay-gap-1}
+gender_outsourced_gap <- income_data %>%
+  group_by(outsourcing_status, Gender) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+  )
+
+not_outsourced_gap <- gender_outsourced_gap %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  select(c(outsourcing_status, Gender, median)) %>%
+  pivot_wider(names_from = "Gender", values_from = "median") %>%
+  mutate(
+    diff = Male - Female
+  ) %>%
+  pull(diff)
+
+outsourced_gap <- gender_outsourced_gap %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  select(c(outsourcing_status, Gender, median)) %>%
+  pivot_wider(names_from = "Gender", values_from = "median") %>%
+  mutate(
+    diff = Male - Female
+  ) %>%
+  pull(diff)
+
+write_csv(gender_outsourced_gap, "../outputs/data/gender_outsourced_gap.csv")
+```
+
+Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r not_outsourced_gap` less than males. For outsourced workers, females are paid £`r outsourced_gap` less than males. The difference between non-outsourced and outsourced workers is not significant.
+
+```{r gender-outsourcing-int}
+ggplot(gender_outsourced_gap, aes(outsourcing_status, median, fill = Gender)) +
+  geom_col(position="dodge") +
+  geom_label(aes(label=round(median,0)), position=position_dodge(width=0.9)) +
+  theme_minimal() + 
+  ylab("Median income") + xlab("Outsourcing status")
+
+simp_mod <- lm(income_annual_all ~Gender*outsourcing_status, income_data, weights = NatRepemployees)
+# summary(simp_mod)
+
+mod_2 <- lm(income_annual_all ~ Age + Ethnicity_collapsed + Region + Gender*outsourcing_status, income_data, weights = NatRepemployees)
+# summary(mod_2)
+
+mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
+# summary(mod_3)
+
+# anova(mod_2, mod_3) # adding BORNUK improves model fit
+
+coef_table <- extract_lm_coefs(mod_3)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, "../outputs/data/mod_gender_outsourcing.csv")
+
+```
+
+Also see if the outsourcing * gender interaction is relevant for whether someone is low paid or not. It isn't
+
+```{r}
+mod <- glm(income_group ~ Age +  Ethnicity_collapsed + Region + Gender*outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod)
+
+# test <- summary(mod)
+
+or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
+p <- test[["coefficients"]][2,4]
+
+coef_table <- extract_lm_coefs(mod_3)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, "../outputs/data/mod_gender_outsourcing_income_group.csv")
+```
+
+
 Notable takeaways:
 
--   There is a substantial gender pay gap present in the data
+-   There is a substantial gender pay gap present in the data. The pay gap is the same whether or not people are outsourced.
 -   The South East is the highest-paid region after London. Northern Ireland is the lowest paid region.
 -   People who have very recently arrived in the UK are paid less than people who were born in the UK, whilst people who migrated to the UK a long time ago earn more than people born in the UK.
 
@@ -604,9 +732,9 @@ sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 write_csv(coef_table, file="../outputs/data/model_income_by_o-group.csv")
 ```
 
-Next we explore differences by outsourcing group. The table and plot below show descriptive statistics on income and its distribution for outsourced groups. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less than non-outsourced workers**, while no differences are evident for the likely agency and high indicators groups.[^19]
+Next we explore differences by outsourcing group. The table and plot below show descriptive statistics on income and its distribution for outsourced groups. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less than non-outsourced workers**, while no differences are evident for the likely agency and high indicators groups.[^10]
 
-[^19]: [outputs/data/income_stats_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-group.csv) & [outputs/data/model_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group.csv)
+[^10]: [outputs/data/income_stats_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-group.csv) & [outputs/data/model_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group.csv)
 
 ```{r}
 knitr::kable(income_statistics, 
@@ -649,9 +777,9 @@ sig_coefs <- extract_glm_coefs(mod_3, only_sig = T)
 write_csv(coef_table, file="../outputs/data/model_2_income_by_o-group.csv")
 ```
 
-However, when controlling, as before, for Age, Gender, Ethnicity, Arrival Time, and Region,[^20] we find
+However, when controlling, as before, for Age, Gender, Ethnicity, Arrival Time, and Region,[^11] we find
 
-[^20]: [outputs/data/model_2_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-group.csv)
+[^11]: [outputs/data/model_2_income_by_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-group.csv)
 
 -   the outsourced group on average earns **£`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less** than the non-outsourced group, and
 -   the likely agency group on average earns **£`r abs(round(coef_table['outsourcing_groupLikely agency','Estimate'],0))` less** than the non-outsourced group
@@ -954,9 +1082,9 @@ sector_summary <- data %>%
 write_csv(sector_summary, file = '../outputs/data/sector_summary_o-group.csv')
 ```
 
-Exploring this by type of outsourced worker shows that for all sectors, the majority of outsourced workers fall into the 'outsourced' group.[^22]
+Exploring this by type of outsourced worker shows that for all sectors, the majority of outsourced workers fall into the 'outsourced' group.[^12]
 
-[^22]: [outputs/data/sector_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_o-group.csv)
+[^12]: [outputs/data/sector_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_o-group.csv)
 
 ```{r}
 plot_data <- sector_summary %>%
@@ -1233,7 +1361,6 @@ plot_data %>%
   labs(caption = "Size of bubble represents the size of the respective workforce")
 ```
 
-
 ## Ethnicity
 
 ```{r}
@@ -1281,9 +1408,9 @@ coefs <- extract_glm_coefs(mod)
 write_csv(coefs, file = "../outputs/data/ethnicity_binary_o-status_inferential_tab.csv")
 ```
 
-People from an ethnic minority are `r coefs[2, 'or']` times more likely to be outsourced than people from a White British background; `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% of outsourced workers are from an ethnic minority, compared to `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% of non-outsourced workers.[^7]
+People from an ethnic minority are `r coefs[2, 'or']` times more likely to be outsourced than people from a White British background; `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% of outsourced workers are from an ethnic minority, compared to `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British"), "Percentage"],2)`% of non-outsourced workers.[^13]
 
-[^7]: [outputs/data/ethnicity_stats_1.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_stats_1.csv) & [outputs/data/ethnicity_binary_o-status_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_binary_o-status_inferential_tab.csv)
+[^13]: [outputs/data/ethnicity_stats_1.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_stats_1.csv) & [outputs/data/ethnicity_binary_o-status_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_binary_o-status_inferential_tab.csv)
 
 ```{r}
 data %>%
@@ -1319,9 +1446,9 @@ sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 write_csv(coef_table, file="../outputs/data/ethnicity_model_inferential.csv")
 ```
 
-Comparison of ethnicities indicates that some groups are statistically more likely to be outsourced than others[^8]:
+Comparison of ethnicities indicates that some groups are statistically more likely to be outsourced than others[^14]:
 
-[^8]: [outputs/data/ethnicity_model_inferential.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_model_inferential.csv)
+[^14]: [outputs/data/ethnicity_model_inferential.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_model_inferential.csv)
 
 -   White other workers are `r coef_table["Ethnicity_collapsedWhite other", "or"]` times more likely than White workers to be outsourced.
 -   Black African workers are `r coef_table["Ethnicity_collapsedBlack African", "or"]` times more likely than White workers to be outsourced.
@@ -1361,9 +1488,9 @@ write_csv(coefs, file = "../outputs/data/ethnicity_ogroup_inferential_tab.csv")
 # sig_ors
 ```
 
-Breaking down by outsourcing group helps to separate out the *type* of outsourced work people from the ethnicities identified above engage in.[^9] Compared to White British workers,
+Breaking down by outsourcing group helps to separate out the *type* of outsourced work people from the ethnicities identified above engage in.[^15] Compared to White British workers,
 
-[^9]: [outputs/data/ethnicity_ogroup_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_ogroup_inferential_tab.csv)
+[^15]: [outputs/data/ethnicity_ogroup_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_ogroup_inferential_tab.csv)
 
 -   White other workers are more likely to be outsourced than not outsourced
 -   Black African workers are more likely to be outsourced, likely agency, or high indicators than not outsourced
@@ -1420,11 +1547,11 @@ write_csv(coefs, file = "../outputs/data/bornuk_ostatus_inferential_tab.csv")
 
 ```
 
-As for non-outsourced workers, the vast majority of outsourced workers are born in the UK. However, people not born in the UK are more likely to be outsourced than people born in the UK. `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of outsourced workers are not born in the UK, compared to `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of non-outsourced workers.[^10] This difference is statistically significant; **outsourced workers are `r round(coefs %>% filter(variable == "BORNUK_binaryNot born in UK") %>% pull(or),2)` times more likely to have been born outside the UK than non-outsourced workers.**[^11]
+As for non-outsourced workers, the vast majority of outsourced workers are born in the UK. However, people not born in the UK are more likely to be outsourced than people born in the UK. `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of outsourced workers are not born in the UK, compared to `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of non-outsourced workers.[^16] This difference is statistically significant; **outsourced workers are `r round(coefs %>% filter(variable == "BORNUK_binaryNot born in UK") %>% pull(or),2)` times more likely to have been born outside the UK than non-outsourced workers.**[^17]
 
-[^10]: [outputs/data/arrival_in_UK_stats.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_stats.csv)
+[^16]: [outputs/data/arrival_in_UK_stats.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_stats.csv)
 
-[^11]: [outputs/data/bornuk_ostatus_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornuk_ostatus_inferential_tab.csv)
+[^17]: [outputs/data/bornuk_ostatus_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornuk_ostatus_inferential_tab.csv)
 
 ::: callout-note
 This variable is worded a little strangely, e.g. responses are things like "within the last 10 years", "within the last 15 years". Given that respondents only give one answer to this question, I think we can assume that the responses are basically brackets. That is, someone responding "within the last 15 years" is basically saying "I came to the UK between 11 and 15 years ago".
@@ -1499,9 +1626,9 @@ bornuk_statistics_2 <- data %>%
 readr::write_csv(bornuk_statistics, file="../outputs/data/arrival_in_UK_stats_2.csv")
 ```
 
-Exploring *types* of outsourced work indicates that the pattern observed above applies evenly to the different outsourcing groups.[^12] Compared to people born in the UK, people not born in the UK are:
+Exploring *types* of outsourced work indicates that the pattern observed above applies evenly to the different outsourcing groups.[^18] Compared to people born in the UK, people not born in the UK are:
 
-[^12]: [outputs/data/bornuk_ogroup_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornuk_ogroup_inferential_tab.csv) & [/outputs/data/arrival_in_UK_stats_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_stats_2.csv)
+[^18]: [outputs/data/bornuk_ogroup_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornuk_ogroup_inferential_tab.csv) & [/outputs/data/arrival_in_UK_stats_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_stats_2.csv)
 
 -   `r round(sig_ors['Outsourced', 2],2)` times more likely to be outsourced than non-outsourced
 -   `r round(sig_ors['Likely agency', 2],2)` times more likely to be likely agency than non-outsourced
@@ -1549,9 +1676,9 @@ write_csv(cons, file = "../outputs/data/ethnicity_bornUK_binary_contrasts.csv")
 
 ```
 
-Exploring the intersection of ethnicity and arrival time reveals some patterns whereby the likelihood of a person being outsourced is related to the combinations of ethnicity and whether they were born in the UK.[^13] The plot below shows that
+Exploring the intersection of ethnicity and arrival time reveals some patterns whereby the likelihood of a person being outsourced is related to the combinations of ethnicity and whether they were born in the UK.[^19] The plot below shows that
 
-[^13]: [outputs/data/bornUK_binary_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts.csv)
+[^19]: [outputs/data/bornUK_binary_contrasts.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts.csv)
 
 -   Among workers born in the UK, a Black African worker is `r round(sig_cons %>% filter(contrast == "White - Black African") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 -   Among workers born in the UK, a South Asian worker is `r round(sig_cons %>% filter(contrast == "White - South Asian") %>% pull(or),2)` times more likely to be outsourced than a White worker.
@@ -1573,9 +1700,9 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 write_csv(cons, file = "../outputs/data/bornUK_binary_contrasts_2.csv")
 ```
 
-Similarly, the plot below shows that[^14]
+Similarly, the plot below shows that[^20]
 
-[^14]: [outputs/data/region_stats_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_2.csv)
+[^20]: [outputs/data/region_stats_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_2.csv)
 
 -   Among White workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "White") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
 -   Among Mixed other workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Mixed other") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
@@ -1650,9 +1777,9 @@ We next explore arrival time by collapsing responses to the arrival time questio
 | Prefer not to say       | -   Prefer not to say        |
 +-------------------------+------------------------------+
 
-Exploring these categories[^15] confirms that
+Exploring these categories[^21] confirms that
 
-[^15]: [outputs/data/region_stats_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_3.csv)
+[^21]: [outputs/data/region_stats_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_3.csv)
 
 -   Among workers born in the UK, a Black African worker is `r round(sig_cons %>% filter(contrast == "White - Black African") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 
@@ -1676,9 +1803,9 @@ write_csv(cons, file = "../outputs/data/bornUK_collapsed_contrasts_2.csv")
 
 ```
 
-And[^16]
+And[^22]
 
-[^16]: [outputs/data/bornUK_collapsed_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts_2.csv)
+[^22]: [outputs/data/bornUK_collapsed_contrasts_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_collapsed_contrasts_2.csv)
 
 -   Among White workers,
 
@@ -2124,5 +2251,160 @@ plot_data %>%
   xlab("Weighted average income") + ylab("Major group code") +
   labs(caption = "Size of bubble represents the size of the respective workforce")
 
+```
+
+## Unit occupations
+
+```{r}
+unit_occ_summary <- data %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    n = n()
+  ) %>%
+  mutate(
+    UnitOcc_short = UnitOccupation_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(UnitOcc_short, names = c("UnitOcc_short", "UnitOcc_short_detail"), delim=", ",
+                       too_few = "align_start",
+                       too_many = "merge") %>%
+  mutate(
+    UnitOcc_short = forcats::fct_reorder(UnitOcc_short, n, .desc=FALSE),
+    perc = 100 * (n / sum(n))
+  ) %>%
+  arrange(perc) %>%
+  mutate(
+    cum_perc = 100 - cumsum(perc),
+    rank = rank(-perc, ties.method = "first")
+  ) %>%
+  arrange(desc(perc))
+
+
+write_csv(unit_occ_summary, file="../outputs/data/unit_occ_summary.csv")
+```
+
+Examining what unit occupations outsourced workers can be found in reveals that outsourced workers tend to be concentrated in a specific cluster of occupations.[^41] `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of outsourced workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture over 50% of the outsourced workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the outsourced workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`). These thresholds are shown in the plot below where the blue lines intersect the red curve.
+
+[^41]: [outputs/data/unit_occ_summary.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary.csv)
+
+The top 10 unit occupations for outsourced workers are:
+
+-   `r unit_occ_summary %>% filter(rank == 1) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 2) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 3) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 4) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 5) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 6) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 7) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 8) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 9) %>% pull(UnitOccupation_labelled)`
+-   `r unit_occ_summary %>% filter(rank == 10) %>% pull(UnitOccupation_labelled)`
+
+```{r}
+#| fig-height: 10
+r10 <- unit_occ_summary %>%
+  filter(rank == 10) %>%
+  pull(UnitOcc_short)
+
+r15 <- unit_occ_summary %>%
+  filter(rank == 15) %>%
+  pull(UnitOcc_short)
+
+r30 <- unit_occ_summary %>%
+  filter(rank == 30) %>%
+  pull(UnitOcc_short)
+
+unit_occ_summary %>%
+  ggplot(aes(n, UnitOcc_short)) +
+  geom_col() +
+  geom_line(aes(cum_perc, UnitOcc_short, group=1), colour="red") +
+  labs(caption = "Bars represent number of outsourced workers.\nRed line indicates cumulative percentage of all outsourced workers") +
+  geom_hline(yintercept = r10, colour = "blue") +
+  geom_hline(yintercept = r15, colour = "blue") + 
+  geom_hline(yintercept = r30, colour = "blue") +
+  theme_minimal() + 
+  xlab("Number / Cumulative percentage") + ylab("Unit Occupation") + 
+  scale_x_continuous(breaks = seq(0,max(unit_occ_summary$n),10)) +
+  theme(
+    # axis.text.y =element_text(size = 4)
+  )
+```
+
+```{r income-group-1}
+# get the list of occupations
+occs <- unit_occ_summary %>%
+  slice_head(n=10) %>%
+  mutate(UnitOccupation_labelled = as.character(UnitOccupation_labelled)
+         ) %>%
+  pull(UnitOccupation_labelled)
+
+income_group_summary <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  filter(UnitOccupation_labelled %in% occs) %>%
+  group_by(UnitOccupation_labelled, income_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    UnitOccupation_labelled = factor(as.character(UnitOccupation_labelled))
+  ) %>%
+  ungroup()
+
+write_csv(income_group_summary, "../outputs/data/unit_occ_income_group.csv")
+
+most_low_paid <- income_group_summary %>%
+  filter(income_group=="Low") %>%
+  arrange(desc(Percentage)) %>%
+  slice_head(n=5) %>%
+  mutate(
+    UnitOccupation_labelled = as.character(UnitOccupation_labelled),
+    Percentage = round(Percentage, 2)
+  )
+```
+
+These occupations differ in the extent to which outsourced workers are low paid.^[[outputs/data/unit_occ_income_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_income_group.csv)] The 5 occupations with the highest proportion of low paid outsourced workers are: 
+
+1. `r most_low_paid[1,1] %>% pull()`: `r most_low_paid[1, "Percentage"] %>% pull()`%
+2. `r most_low_paid[2,1] %>% pull()`: `r most_low_paid[2, "Percentage"] %>% pull()`%
+3. `r most_low_paid[3,1] %>% pull()`: `r most_low_paid[3, "Percentage"] %>% pull()`%
+4. `r most_low_paid[4,1] %>% pull()`: `r most_low_paid[4, "Percentage"] %>% pull()`%
+5. `r most_low_paid[5,1] %>% pull()`: `r most_low_paid[5, "Percentage"] %>% pull()`%
+
+
+The plot below visualises this.
+
+```{r income-group-2}
+
+levels <- income_group_summary %>%
+  filter(income_group == "Low") %>%
+  arrange(Percentage) %>%
+  pull(UnitOccupation_labelled)
+
+annotation_df <- income_group_summary %>%
+  filter(income_group == "Low") %>%
+  select(UnitOccupation_labelled, N) %>%
+  mutate(
+    ypos = 110
+  )
+
+income_group_summary %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels=levels)
+  ) %>%
+  ggplot(aes(Percentage,UnitOccupation_labelled,  fill = income_group)) +
+  geom_col(position="dodge") +
+  geom_text(inherit.aes=F, data = annotation_df, aes(y=UnitOccupation_labelled, x=ypos, label = paste0("N=",N)), hjust=1, nudge_x = 2) +
+  scale_x_continuous(breaks=seq(0,100,10)) +
+  theme_minimal() +
+  scale_fill_manual(name = "Income group", values = better_colours) +
+  ylab("Unit occupation") +
+  ggtitle("Top 10 occupations by income group") +
+  labs(caption="Includes outsourced workers only")
 ```
 
