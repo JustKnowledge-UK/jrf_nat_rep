@@ -1286,8 +1286,7 @@ A mixed model allowing the effect of Gender to vary by sector is a better fit to
 
 The fixed effect shows that on average, across sectors, men earn £`r round(fixed_effects["GenderMale"],0)` more than women.
 
-The plot below shows the random effects. This is the relative influence of gender in sectors compared to the average effect of gender across sectors. It shows the sectors where the effect on pay of being male is greater than the average across sectors (red) and the sectors where the effect of being male is less than average (blue). It shows that some of the most unfair sectors are 'Other service activities', 'Wholesale and retail trade', and 'pressional, scientific and technical activities', amongst others, and some of the least unfair sectors are Accommodation and food service activities, transportation and storage, and human health and social work activities (note however, as shown in the second chart below, that in all **all** sectors being male is associated with being paid more). 
-
+The plot below shows the random effects. This is the relative influence of gender in sectors compared to the average effect of gender across sectors. It shows the sectors where the effect on pay of being male is greater than the average across sectors (red) and the sectors where the effect of being male is less than average (blue). It shows that some of the most unfair sectors are 'Other service activities', 'Wholesale and retail trade', and 'pressional, scientific and technical activities', amongst others, and some of the least unfair sectors are Accommodation and food service activities, transportation and storage, and human health and social work activities (note however, as shown in the second chart below, that in all **all** sectors being male is associated with being paid more).
 
 ```{r}
 # get confidence intervals to effects
@@ -1466,8 +1465,6 @@ data <- data %>%
                                 TRUE ~ Majorgroupcode_labelled)
   )
 ```
-
-
 
 Here we explore what proportion of workers in each sector are outsourced.[^24]
 
@@ -1864,10 +1861,11 @@ plot_data %>%
   
 ```
 
-##### Pay as function of non-outsourced^[[outputs/data/sector_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff.csv)]
+##### Pay as function of non-outsourced[^28]
+
+[^28]: [outputs/data/sector_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff.csv)
 
 Below we plot, for each sector, outsourced workers' pay as proportion of non-outsourced workers' pay. The plot shows that on average, outsourced workers are paid more in Agriculture..., Arts..., and Wholesale trade... They're paid the same in Financial... and Professional..., and less in all other sectors. **Note that these averages do not take into account any other variables that are relevant to income.**
-
 
 ```{r}
 # here we explore pay as function of the non-outsourced pay
@@ -1970,9 +1968,9 @@ plot_data %>%
 
 #### Variations in pay - outsourcing group
 
-Exploring variations in pay by outsourcing group shows that the 'outsourced' group is commonly paid less than the non-outsourced group, whilst the 'high indicators' group and, to a less extent, the 'likely agency' group, vary in terms of how they are paid relative to the non-outsourced group. For example, in 'Human health and social work' and 'wholesale retail and trade', the high indicators group is paid more, whilst the outsourced group is paid less, relative to the non-outsourced group.[^28]
+Exploring variations in pay by outsourcing group shows that the 'outsourced' group is commonly paid less than the non-outsourced group, whilst the 'high indicators' group and, to a less extent, the 'likely agency' group, vary in terms of how they are paid relative to the non-outsourced group. For example, in 'Human health and social work' and 'wholesale retail and trade', the high indicators group is paid more, whilst the outsourced group is paid less, relative to the non-outsourced group.[^29]
 
-[^28]: [outputs/data/sector_summary_o-group_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_o-group_pay.csv)
+[^29]: [outputs/data/sector_summary_o-group_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_o-group_pay.csv)
 
 ```{r}
 #| fig-width: 7
@@ -2064,7 +2062,9 @@ plot_data %>%
 
 ##### Pay as function of non-outsourced
 
-Exploring this as a proportion of the non-outsourced pay.^[[outputs/data/sector_summary_pay_diff_ogroup.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff_ogroup.csv)]
+Exploring this as a proportion of the non-outsourced pay.[^30]
+
+[^30]: [outputs/data/sector_summary_pay_diff_ogroup.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_pay_diff_ogroup.csv)
 
 Below we plot, for each sector, outsourced workers' pay as proportion of non-outsourced workers' pay. **Note that these averages do not take into account any other variables that are relevant to income.**
 
@@ -2200,9 +2200,9 @@ mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + BORNUK_labell
 sjPlot::plot_model(mod, type = "int")
 ```
 
-Although a model predicting income from outsourcing status and income group (controlling for other variables) indicates that pay does not depend on an interaction between a person's outsourcing status and income group, the plots below are informative in displaying variation by sector.[^29]
+Although a model predicting income from outsourcing status and income group (controlling for other variables) indicates that pay does not depend on an interaction between a person's outsourcing status and income group, the plots below are informative in displaying variation by sector.[^31]
 
-[^29]: [outputs/data/sector_summary_paysplit_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_paysplit_o-status.csv) & [outputs/data/sector_summary_paysplit_o-group_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_paysplit_o-group_pay.csv)
+[^31]: [outputs/data/sector_summary_paysplit_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_paysplit_o-status.csv) & [outputs/data/sector_summary_paysplit_o-group_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/sector_summary_paysplit_o-group_pay.csv)
 
 ```{r}
 plot_data <- sector_summary_paysplit %>%
@@ -2472,9 +2472,9 @@ write_csv(sector_summary, file = '../outputs/data/sector_summary_o-group.csv')
 
 ## Major occupations
 
-The plot below shows the proportion of each major occupation group that is outsourced.[^30]
+The plot below shows the proportion of each major occupation group that is outsourced.[^32]
 
-[^30]: [outputs/data/majorgroupcode_summary_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_o-status.csv)
+[^32]: [outputs/data/majorgroupcode_summary_o-status.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_o-status.csv)
 
 ```{r MGC}
 data <- data %>%
@@ -2535,9 +2535,9 @@ plot_data %>%
   ylab("Percentage") + xlab("Major group") 
 ```
 
-Below these proportions are further broken down by outsourcing group.[^31]
+Below these proportions are further broken down by outsourcing group.[^33]
 
-[^31]: [outputs/data/majorgroupcode_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_o-group.csv)
+[^33]: [outputs/data/majorgroupcode_summary_o-group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_o-group.csv)
 
 ```{r}
 mgc_summary <- data %>%
@@ -2590,9 +2590,9 @@ plot_data %>%
 
 #### Variations in pay - outsourcing status
 
-The plot below shows the average income by major occupation group.[^32]
+The plot below shows the average income by major occupation group.[^34]
 
-[^32]: [outputs/data/majorgroupcode_summary_pay_overall.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_pay_overall.csv)
+[^34]: [outputs/data/majorgroupcode_summary_pay_overall.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/majorgroupcode_summary_pay_overall.csv)
 
 ```{r}
 mgc_pay_summary <- data %>%
@@ -2700,9 +2700,9 @@ total_effects %>%
 sjPlot::plot_model(mod, type = "re", show.values = F)
 ```
 
-Looking at absolute differences in pay by major occupation indicates that outsourced workers in most groups are paid less than non-outsourced workers.[^33]
+Looking at absolute differences in pay by major occupation indicates that outsourced workers in most groups are paid less than non-outsourced workers.[^35]
 
-[^33]: [outputs/data/mgc_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay.csv)
+[^35]: [outputs/data/mgc_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay.csv)
 
 ```{r mgc-bubble-status}
 mgc_summary_pay <- data %>%
@@ -2777,10 +2777,11 @@ plot_data %>%
 
 ```
 
-##### Pay as function of non-outsourced^[[outputs/data/mgc_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff.csv)]
+##### Pay as function of non-outsourced[^36]
+
+[^36]: [outputs/data/mgc_summary_pay_diff.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff.csv)
 
 Below we plot, for each major group code, outsourced workers' pay as proportion of non-outsourced workers' pay. The plot shows that on average, outsourced workers are paid more in Sales..., Skilled trades..., and Administrative... and less in all other major group codes. **Note that these averages do not take into account any other variables that are relevant to income.**
-
 
 ```{r}
 # here we explore pay as function of the non-outsourced pay
@@ -2831,9 +2832,9 @@ write_csv(wider, file="../outputs/data/mgc_summary_pay_diff.csv")
 
 #### Variations in pay - outsourcing group
 
-Breaking this down by group indicates that there is variation between types of outsourcing in terms of pay. The 'outsourced' group is often (though not always) the least well-paid out of the outsourcing groups.[^34]
+Breaking this down by group indicates that there is variation between types of outsourcing in terms of pay. The 'outsourced' group is often (though not always) the least well-paid out of the outsourcing groups.[^37]
 
-[^34]: [outputs/data/mgc_summary_pay_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_group.csv)
+[^37]: [outputs/data/mgc_summary_pay_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_group.csv)
 
 ```{r mgc-bubble-group}
 mgc_summary_pay <- data %>%
@@ -2908,9 +2909,11 @@ plot_data %>%
 
 ```
 
-##### Pay as function of non-outsourced pay^[[outputs/data/mgc_summary_pay_diff_o-group.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff_o-group.csv)]
+##### Pay as function of non-outsourced pay[^38]
 
-Below we plot, for each major group code, outsourced workers' pay as proportion of non-outsourced workers' pay. **Note that these averages do not take into account any other variables that are relevant to income.** 
+[^38]: [outputs/data/mgc_summary_pay_diff_o-group.csv)](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_pay_diff_o-group.csv)
+
+Below we plot, for each major group code, outsourced workers' pay as proportion of non-outsourced workers' pay. **Note that these averages do not take into account any other variables that are relevant to income.**
 
 ```{r}
 sector_summary_pay <- data %>%
@@ -3023,10 +3026,9 @@ ggplot(test, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_g
 
 ```
 
+Again, although we find no evidence overall of a significant interaction between income group and outsourcing status on income, we can still visually explore the distinction between low vs not low income.[^39] The plot below shows that whilst the pattern of outsourced workers being paid less in general holds, in the higher income group there are more instances of outsourced workers being paid more than non-outsourced workers, compared to the low income group. This suggests that at the higher end of the pay distribution, being outsourced can be more lucrative than not being outsourced. Indeed, for Elementary occupations, there is a clear divergence evident in the pattern; for high income workers, being outsourced increases average income, whereas for low income workers, being outsourced decreases average income.
 
-Again, although we find no evidence overall of a significant interaction between income group and outsourcing status on income, we can still visually explore the distinction between low vs not low income.[^35] The plot below shows that whilst the pattern of outsourced workers being paid less in general holds, in the higher income group there are more instances of outsourced workers being paid more than non-outsourced workers, compared to the low income group. This suggests that at the higher end of the pay distribution, being outsourced can be more lucrative than not being outsourced. Indeed, for Elementary occupations, there is a clear divergence evident in the pattern; for high income workers, being outsourced increases average income, whereas for low income workers, being outsourced decreases average income.
-
-[^35]: [outputs/data/mgc_summary_paysplit.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_paysplit.csv)
+[^39]: [outputs/data/mgc_summary_paysplit.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_paysplit.csv)
 
 ```{r mgc-bubble-status-2}
 mgc_summary_paysplit <- data %>%
@@ -3105,9 +3107,9 @@ plot_data %>%
 
 ```
 
-Breaking down the above by outsourcing group (below) shows that in some cases this pattern holds for all types of outsourced workers, whereas for other major occupations the finanical benefit depends on the type of outsourcing.[^36] For example, in 'Sales and customer services', only high income outsourced workers are better paid than non-outsourced workers. Similarly, only low income outsourced workers in elementary occupations are paid less than non-outsourced workers, while high indicator, low income workers are paid more.
+Breaking down the above by outsourcing group (below) shows that in some cases this pattern holds for all types of outsourced workers, whereas for other major occupations the finanical benefit depends on the type of outsourcing.[^40] For example, in 'Sales and customer services', only high income outsourced workers are better paid than non-outsourced workers. Similarly, only low income outsourced workers in elementary occupations are paid less than non-outsourced workers, while high indicator, low income workers are paid more.
 
-[^36]: [outputs/data/mgc_summary_paysplit_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_paysplit_group.csv)
+[^40]: [outputs/data/mgc_summary_paysplit_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/tree/main/outputs/data/mgc_summary_paysplit_group.csv)
 
 ```{r mgc-bubble-group-2}
 mgc_summary_paysplit <- data %>%
@@ -3216,9 +3218,9 @@ unit_occ_summary <- data %>%
 write_csv(unit_occ_summary, file="../outputs/data/unit_occ_summary.csv")
 ```
 
-Examining what unit occupations outsourced workers can be found in reveals that outsourced workers tend to be concentrated in a specific cluster of occupations.[^37] `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of outsourced workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture over 50% of the outsourced workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the outsourced workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`). These thresholds are shown in the plot below where the blue lines intersect the red curve.
+Examining what unit occupations outsourced workers can be found in reveals that outsourced workers tend to be concentrated in a specific cluster of occupations.[^41] `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of outsourced workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture over 50% of the outsourced workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the outsourced workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`). These thresholds are shown in the plot below where the blue lines intersect the red curve.
 
-[^37]: [outputs/data/unit_occ_summary.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary.csv)
+[^41]: [outputs/data/unit_occ_summary.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary.csv)
 
 The top 10 unit occupations for outsourced workers are:
 
@@ -3291,9 +3293,9 @@ unit_occ_summary <- data %>%
 write_csv(unit_occ_summary, file="../outputs/data/unit_occ_summary_outsourced_group.csv")
 ```
 
-For the outsourced subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the outsourced workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the outsourced workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^38]
+For the outsourced subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the outsourced workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the outsourced workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^42]
 
-[^38]: [outputs/data/unit_occ_summary_outsourced_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_outsourced_group.csv)
+[^42]: [outputs/data/unit_occ_summary_outsourced_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_outsourced_group.csv)
 
 For the outsourced subgroup, the top 10 occupations are almost identical to those of outsourcing as a whole:
 
@@ -3371,9 +3373,9 @@ unit_occ_summary <- data %>%
 write_csv(unit_occ_summary, file="../outputs/data/unit_occ_summary_agency_group.csv")
 ```
 
-For the 'likely agency' subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^39]
+For the 'likely agency' subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^43]
 
-[^39]: [outputs/data/unit_occ_summary_agency_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_agency_group.csv)
+[^43]: [outputs/data/unit_occ_summary_agency_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_agency_group.csv)
 
 For the likely agency subgroup, the top 10 occupations are:
 
@@ -3445,9 +3447,9 @@ unit_occ_summary <- data %>%
 write_csv(unit_occ_summary, file="../outputs/data/unit_occ_summary_indicators_group.csv")
 ```
 
-For the 'high indicators' subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^40]
+For the 'high indicators' subgroup, `r round(unit_occ_summary %>% filter(rank == 10) %>%   pull(cum_perc),0)`% of workers are located in the top 10 most common unit occupations. The top 15 unit occupations capture `r round(unit_occ_summary %>% filter(rank == 15) %>%pull(cum_perc),0)`% of the workforce, and `r round(unit_occ_summary %>% filter(rank == 30) %>%pull(cum_perc),0)`% of the workforce are captured in 30 unit occupations (out of a total of `r unit_occ_summary %>%  summarise(max(rank)) %>%  pull()`).[^44]
 
-[^40]: [outputs/data/unit_occ_summary_indicators_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_indicators_group.csv)
+[^44]: [outputs/data/unit_occ_summary_indicators_group.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/unit_occ_summary_indicators_group.csv)
 
 For the high indicators subgroup, the top 10 occupations are:
 
@@ -3592,9 +3594,9 @@ plot_data <- unitocc_summary %>%
   ungroup()
 ```
 
-The plot below suggests that the main driver of the effect in this major occupation group is in the 'Functional Managers and Directors' unit occupation; on average, outsourced workers in this group earn £`r round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)` less than non-outsourced workers.[^41]
+The plot below suggests that the main driver of the effect in this major occupation group is in the 'Functional Managers and Directors' unit occupation; on average, outsourced workers in this group earn £`r round(plot_data %>% filter(UnitOccupation_labelled == "Functional Managers and Directors") %>% summarise(max(wtd_avg_income) - min(wtd_avg_income)) %>% pull(),0)` less than non-outsourced workers.[^45]
 
-[^41]: [outputs/data/managers_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/managers_unitoccs_summary_pay.csv)
+[^45]: [outputs/data/managers_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/managers_unitoccs_summary_pay.csv)
 
 ```{r bubble-managers_2}
 # Filter for 'outsourced' level and reorder SectorName_short
@@ -3650,9 +3652,9 @@ plot_data %>%
 
 ##### By outsourcing group
 
-Breaking down by outsourcing group shows that most workers are outsourced in the 'Functional managers and directors' group, although a small number are likely agency.[^42]
+Breaking down by outsourcing group shows that most workers are outsourced in the 'Functional managers and directors' group, although a small number are likely agency.[^46]
 
-[^42]: [outputs/data/o-group_managers_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_managers_unitoccs_summary_pay.csv)
+[^46]: [outputs/data/o-group_managers_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_managers_unitoccs_summary_pay.csv)
 
 ```{r}
 #| fig-width: 8
@@ -3735,9 +3737,9 @@ plot_data %>%
 
 #### `r mods_sig[2,'majorocc']`
 
-The plot below indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Information and Technology Technicians', 'Business Associate Professionals', and 'Sales, Marketing and Related Associate Professionals'.[^43]
+The plot below indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Information and Technology Technicians', 'Business Associate Professionals', and 'Sales, Marketing and Related Associate Professionals'.[^47]
 
-[^43]: [outputs/data/assoc-prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/assoc-prof_unitoccs_summary_pay.csv)
+[^47]: [outputs/data/assoc-prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/assoc-prof_unitoccs_summary_pay.csv)
 
 ```{r bubble-assoc-prof}
 unitocc_summary <- data %>%
@@ -3816,9 +3818,9 @@ plot_data %>%
 
 ##### By outsourcing group
 
-The plot below shows that the pattern above is mainly driven by people in the 'outsourced' group.[^44]
+The plot below shows that the pattern above is mainly driven by people in the 'outsourced' group.[^48]
 
-[^44]: [outputs/data/o-group_assoc-prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_assoc-prof_unitoccs_summary_pay.csv)
+[^48]: [outputs/data/o-group_assoc-prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_assoc-prof_unitoccs_summary_pay.csv)
 
 ```{r}
 #| fig-width: 8
@@ -3901,9 +3903,9 @@ plot_data %>%
 
 #### `r mods_sig[3,'majorocc']`
 
-The plot above indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Teaching professionals', 'Information Technology Professionals', 'Nursing Professionals', 'Finance Professionals', 'Business, Research and Admin Professionals', and 'Other Health Professionals'. An exception to the pattern is 'Engineering Professionals', where outsourced workers are paid more than non-outsourced workers.[^45]
+The plot above indicates there are many unit occupations in this major occupation group where outsourced workers are paid less. The most notable of these are 'Teaching professionals', 'Information Technology Professionals', 'Nursing Professionals', 'Finance Professionals', 'Business, Research and Admin Professionals', and 'Other Health Professionals'. An exception to the pattern is 'Engineering Professionals', where outsourced workers are paid more than non-outsourced workers.[^49]
 
-[^45]: [outputs/data/prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/prof_unitoccs_summary_pay.csv)
+[^49]: [outputs/data/prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/prof_unitoccs_summary_pay.csv)
 
 ```{r bubble-prof}
 unitocc_summary <- data %>%
@@ -3988,9 +3990,9 @@ plot_data %>%
 
 ##### By outsourcing group
 
-Examining by outsourcing group indicates that the outsourced group is the main driver of lower pay in the identified unit occupations.[^46]
+Examining by outsourcing group indicates that the outsourced group is the main driver of lower pay in the identified unit occupations.[^50]
 
-[^46]: [outputs/data/o-group_prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_prof_unitoccs_summary_pay.csv)
+[^50]: [outputs/data/o-group_prof_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_prof_unitoccs_summary_pay.csv)
 
 ```{r}
 #| fig-width: 8
@@ -4079,9 +4081,9 @@ plot_data %>%
 
 #### `r mods_sig[4,'majorocc']`
 
-For this major occupation group, the notable differences in pay are in 'Caring Personal services and 'Teaching and Childcare Support Occupations'.[^47]
+For this major occupation group, the notable differences in pay are in 'Caring Personal services and 'Teaching and Childcare Support Occupations'.[^51]
 
-[^47]: [outputs/data/caring_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/caring_unitoccs_summary_pay.csv)
+[^51]: [outputs/data/caring_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/caring_unitoccs_summary_pay.csv)
 
 ```{r bubble-caring}
 unitocc_summary <- data %>%
@@ -4160,9 +4162,9 @@ plot_data %>%
 
 ##### By outsourcing group
 
-Breaking down by outsourcing group shows that the outsourced and likely agency groups are paid less than non-outsourced workers. In contrast, for 'Caring Personal Services', workers in the 'high indicators' group tend to be paid more than non-outrsourced people (though note n = 13).[^48]
+Breaking down by outsourcing group shows that the outsourced and likely agency groups are paid less than non-outsourced workers. In contrast, for 'Caring Personal Services', workers in the 'high indicators' group tend to be paid more than non-outrsourced people (though note n = 13).[^52]
 
-[^48]: [outputs/data/o-group_caring_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_caring_unitoccs_summary_pay.csv)
+[^52]: [outputs/data/o-group_caring_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_caring_unitoccs_summary_pay.csv)
 
 ```{r}
 unitocc_summary <- data %>%
@@ -4243,9 +4245,9 @@ plot_data %>%
 
 #### `r mods_sig[5,'majorocc']`
 
-In this major occupation group, outsourced workers in most unit occupations are paid less than non-outsourced workers. The most notable here are 'Road Transport Drivers', 'Assemblers and Routine Operatives', and 'Other Drivers and Transport Operatives'. In contrast, 'Process Operatives' tend to be paid more if they are outsourced. **Note low Ns here**.[^49]
+In this major occupation group, outsourced workers in most unit occupations are paid less than non-outsourced workers. The most notable here are 'Road Transport Drivers', 'Assemblers and Routine Operatives', and 'Other Drivers and Transport Operatives'. In contrast, 'Process Operatives' tend to be paid more if they are outsourced. **Note low Ns here**.[^53]
 
-[^49]: [outputs/data/process_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/process_unitoccs_summary_pay.csv)
+[^53]: [outputs/data/process_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/process_unitoccs_summary_pay.csv)
 
 ```{r bubble-process}
 unitocc_summary <- data %>%
@@ -4323,9 +4325,9 @@ plot_data %>%
 
 ##### By outsourcing group
 
-Again, the outsourced group is the main driver of lower pay.[^50]
+Again, the outsourced group is the main driver of lower pay.[^54]
 
-[^50]: [outputs/data/o-group_process_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_process_unitoccs_summary_pay.csv)
+[^54]: [outputs/data/o-group_process_unitoccs_summary_pay.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/o-group_process_unitoccs_summary_pay.csv)
 
 ```{r}
 unitocc_summary <- data %>%
