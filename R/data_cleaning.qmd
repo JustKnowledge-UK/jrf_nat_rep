@@ -557,17 +557,30 @@ closed_answered <- number_closed - pref_not_say$total_not_answered
 For the open question, the participant is asked how they want to report their income. To get this to a consistent income period for all participants, we need to create a single income variable that computes the income based on period. This is done by multiplying monthly income by 12, weekly income by 52, and hourly income by hours by 52. The assumption of a 52 working week year is obviously a problem that probably presents inaccuracies for those people reporting on a weekly or hourly basis, whose employment may be more likely to be ad hoc than those reporting annual salaries.
 
 ```{r}
+
+# work out min holiday entitlement and use this to calculate working weeks
+weeks_in_year <- 365 / 7 # if we're being pedantic (this is 52.14 weeks)
+min_holiday_entitlement <- 28
+non_working_weeks <- min_holiday_entitlement/5
+working_weeks <- weeks_in_year - non_working_weeks
+
 data <- data %>%
   # get values of labels
   # mutate_all(haven::as_factor) %>%
   mutate(
     # make all annual incomes. Note this assumes 52 working weeks!
-    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1,
-                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12,
-                              INCOME_FREQ == 3 ~ INCOME_OPEN_1*52,
-                              INCOME_FREQ == 4 ~ INCOME_OPEN_1*HOURS*52,
+    income_annual = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1, # annual
+                              INCOME_FREQ == 2 ~ INCOME_OPEN_1*12, # monthly
+                              INCOME_FREQ == 3 ~ INCOME_OPEN_1 * working_weeks, # weekly
+                              INCOME_FREQ == 4 ~ INCOME_OPEN_1 * HOURS * working_weeks, # hourly
                               TRUE ~ NA),
-    income_percentile = ntile(income_annual, 100)
+    income_weekly = case_when(INCOME_FREQ == 1 ~ INCOME_OPEN_1 / working_weeks, # annual
+                              INCOME_FREQ == 2 ~ (INCOME_OPEN_1 * 12) / working_weeks, # monthly
+                              INCOME_FREQ == 3 ~ INCOME_OPEN_1, # weekly 
+                              INCOME_FREQ == 4 ~ INCOME_OPEN_1 * HOURS, # hourly
+                              TRUE ~ NA),
+    income_annual_percentile = ntile(income_annual, 100),
+    income_weekly_percentile = ntile(income_weekly, 100)
   )
 
 options(scipen = 999)
@@ -597,16 +610,108 @@ Outliers are given a marker (`income_drop == 1`) to identify them. In analyses i
 <!--# NOTE: Need to convert all this to account for the weights!Use Hmisc wtd.mean and wtd.var -->
 
 ```{r}
+# this is removing outliers using annual income
+# x <- data
+# 
+# # calculate the mean and sd, and 3x sd
+# mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+# std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+# Tmin = mean-(3*std)
+# Tmax = mean+(3*std)
+# 
+# # identify the first set of outliers
+# outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+# outlier_count <- length(outliers) # count how many removed this iteration
+# all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
+# 
+# # initialise some variables, i.e. iteration 0
+# count <- 0 # iteration counter
+# total_cases_removed <- 0 # total cases removed
+# 
+# cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+# 
+# # Take a look at the distribution
+# par(mfrow = c(1, 3)) # this lets us plot three plots in a row
+# hist(x$income_annual, main = "Histogram") 
+# # mark the mean and sds for the histogram
+# abline(v = mean, col='red', lwd = 3)
+# abline(v = Tmin, col='blue', lwd = 3)
+# abline(v = Tmax, col='blue', lwd = 3)
+# boxplot(x$income_annual, main = "Boxplot")
+# qqnorm(x$income_annual, main = "Normal Q-Q plot")
+# mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+# 
+# # While there are still outliers detected, remove the outliers and recalculate 
+# # mean, sd, and 3*sd and remove the outliers based on these new figures.
+# while(length(outliers) != 0){
+#   count <- count + 1
+#   x <- x[-outliers,] # remove the outliers identified in the previous iteration
+#   
+#   # recalculate
+#   mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+#   std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+#   Tmin = mean - (3 * std)
+#   Tmax = mean + (3 * std)
+#   outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+#   outlier_ids <- x$ID[outliers] # get outlier ids
+#   all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
+#   total_cases_removed <- total_cases_removed + outlier_count # count total
+#   
+#   outlier_count <- length(outliers) # count how many removed this iteration
+#   cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+#   
+#   # Replot distributions to see how they've changed
+#   par(mfrow = c(1, 3))
+#   hist(x$income_annual, main = "Histogram") 
+#   abline(v = mean, col='red', lwd = 3)
+#   abline(v = Tmin, col='blue', lwd = 3)
+#   abline(v = Tmax, col='blue', lwd = 3)
+#   boxplot(x$income_annual, main = "Boxplot")
+#   qqnorm(x$income_annual, main = "Normal Q-Q plot")
+#   mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+# }
+# cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
+# 
+# # Drop the cases identified as outliers from data
+# data$income_drop[which(data$ID %in% all_outlier_ids)] <- 1
+# data$income_drop[is.na(data$income_drop)] <- 0 # make NAs 0
+# 
+# # Check this looks right
+# sum(data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
+# 
+# # This should look the same as the last iteration above#
+# test <- data %>%
+#   filter(income_drop == 0)
+# 
+# mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
+# std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+# Tmin = mean - (3 * std)
+# Tmax = mean + (3 * std)
+# 
+# par(mfrow = c(1, 3))
+# hist(test$income_annual, main = "Histogram") 
+# abline(v = mean, col='red', lwd = 3)
+# abline(v = Tmin, col='blue', lwd = 3)
+# abline(v = Tmax, col='blue', lwd = 3)
+# boxplot(test$income_annual, main = "Boxplot")
+# qqnorm(test$income_annual, main = "Normal Q-Q plot")
+# mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+
+```
+
+```{r}
+# this is removing outliers using weekly income (it results in the same number of cases removed)
 x <- data
 
 # calculate the mean and sd, and 3x sd
-mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+mean = Hmisc::wtd.mean(x$income_weekly, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_weekly,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
 # identify the first set of outliers
-outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+outliers <- which(x$income_weekly < Tmin | x$income_weekly > Tmax)
 outlier_count <- length(outliers) # count how many removed this iteration
 all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
 
@@ -618,13 +723,13 @@ cat("Iteration ", count, ": ", outlier_count, " outliers\n")
 
 # Take a look at the distribution
 par(mfrow = c(1, 3)) # this lets us plot three plots in a row
-hist(x$income_annual, main = "Histogram") 
+hist(x$income_weekly, main = "Histogram") 
 # mark the mean and sds for the histogram
 abline(v = mean, col='red', lwd = 3)
 abline(v = Tmin, col='blue', lwd = 3)
 abline(v = Tmax, col='blue', lwd = 3)
-boxplot(x$income_annual, main = "Boxplot")
-qqnorm(x$income_annual, main = "Normal Q-Q plot")
+boxplot(x$income_weekly, main = "Boxplot")
+qqnorm(x$income_weekly, main = "Normal Q-Q plot")
 mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 
 # While there are still outliers detected, remove the outliers and recalculate 
@@ -634,11 +739,11 @@ while(length(outliers) != 0){
   x <- x[-outliers,] # remove the outliers identified in the previous iteration
   
   # recalculate
-  mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-  std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+  mean = Hmisc::wtd.mean(x$income_weekly, weights=x$NatRepemployees, na.rm=T)
+  std = sqrt(Hmisc::wtd.var(x$income_weekly,weights=x$NatRepemployees,na.rm = T))
   Tmin = mean - (3 * std)
   Tmax = mean + (3 * std)
-  outliers <- which(x$income_annual < Tmin | x$income_annual > Tmax)
+  outliers <- which(x$income_weekly < Tmin | x$income_weekly > Tmax)
   outlier_ids <- x$ID[outliers] # get outlier ids
   all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
   total_cases_removed <- total_cases_removed + outlier_count # count total
@@ -648,12 +753,12 @@ while(length(outliers) != 0){
   
   # Replot distributions to see how they've changed
   par(mfrow = c(1, 3))
-  hist(x$income_annual, main = "Histogram") 
+  hist(x$income_weekly, main = "Histogram") 
   abline(v = mean, col='red', lwd = 3)
   abline(v = Tmin, col='blue', lwd = 3)
   abline(v = Tmax, col='blue', lwd = 3)
-  boxplot(x$income_annual, main = "Boxplot")
-  qqnorm(x$income_annual, main = "Normal Q-Q plot")
+  boxplot(x$income_weekly, main = "Boxplot")
+  qqnorm(x$income_weekly, main = "Normal Q-Q plot")
   mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 }
 cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
@@ -669,22 +774,23 @@ sum(data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
 test <- data %>%
   filter(income_drop == 0)
 
-mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+mean = Hmisc::wtd.mean(x$income_weekly, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_weekly,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean - (3 * std)
 Tmax = mean + (3 * std)
 
 par(mfrow = c(1, 3))
-hist(test$income_annual, main = "Histogram") 
+hist(test$income_weekly, main = "Histogram") 
 abline(v = mean, col='red', lwd = 3)
 abline(v = Tmin, col='blue', lwd = 3)
 abline(v = Tmax, col='blue', lwd = 3)
-boxplot(test$income_annual, main = "Boxplot")
-qqnorm(test$income_annual, main = "Normal Q-Q plot")
+boxplot(test$income_weekly, main = "Boxplot")
+qqnorm(test$income_weekly, main = "Normal Q-Q plot")
 mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 
 
 ```
+
 
 As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total non-NA income_annual N after removal = `r sum(!is.na(data$income_annual)) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
 
@@ -757,11 +863,18 @@ data <- data %>%
     # make all annual incomes. Note this assumes 52 working weeks!
     income_annual_closed = case_when(INCOME_FREQ == 1 ~ INCOME_CLOSED_ANNUAL_labelled_midpoint,
                               INCOME_FREQ == 2 ~ INCOME_CLOSED_MONTHLY_labelled_midpoint*12,
-                              INCOME_FREQ == 3 ~ INCOME_CLOSED_WEEKLY_labelled_midpoint*52,
-                              INCOME_FREQ == 4 ~ INCOME_CLOSED_HOURLY_labelled_midpoint*HOURS*52,
+                              INCOME_FREQ == 3 ~ INCOME_CLOSED_WEEKLY_labelled_midpoint*working_weeks,
+                              INCOME_FREQ == 4 ~ INCOME_CLOSED_HOURLY_labelled_midpoint*HOURS*working_weeks,
                               TRUE ~ NA),
-    income_percentile_closed = ntile(income_annual, 100)
+    income_weekly_closed = case_when(INCOME_FREQ == 1 ~ INCOME_CLOSED_ANNUAL_labelled_midpoint / working_weeks,
+                              INCOME_FREQ == 2 ~ (INCOME_CLOSED_MONTHLY_labelled_midpoint*12) / working_weeks,
+                              INCOME_FREQ == 3 ~ INCOME_CLOSED_WEEKLY_labelled_midpoint,
+                              INCOME_FREQ == 4 ~ INCOME_CLOSED_HOURLY_labelled_midpoint*HOURS,
+                              TRUE ~ NA),
+    income_percentile_closed = ntile(income_annual, 100),
+    income_weekly_closed_percentile = ntile(income_weekly_closed, 100)
   )
+
 ```
 
 Next, combine the open and closed into a single variable.
@@ -771,7 +884,10 @@ data <- data %>%
   mutate(
     income_annual_all = case_when(!is.na(income_annual) ~ income_annual,
                                    !is.na(income_annual_closed) ~ income_annual_closed,
-                                   TRUE ~ NA)
+                                   TRUE ~ NA),
+    income_weekly_all = case_when(!is.na(income_weekly) ~ income_weekly,
+                                   !is.na(income_weekly_closed) ~ income_weekly_closed,
+                                   TRUE ~ NA),
   )
 
 # Double check this leads to what we expect
@@ -779,16 +895,20 @@ data <- data %>%
 # i.e., 1213 total nas: 1212 from closed reponses, 1 from open responses
 sum(!is.na(data$income_annual_all))
 sum(is.na(data$income_annual_all))
+
+sum(!is.na(data$income_weekly_all))
+sum(is.na(data$income_weekly_all))
 ```
 
 Apply the same outliers removal process as done above for the income_all_subset
 
 ```{r}
+# annual income all - same result as weekly
 x <- data
 
 # calculate the mean and sd, and 3x sd
-mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+mean = Hmisc::wtd.mean(x$income_annual_all, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual_all,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean-(3*std)
 Tmax = mean+(3*std)
 
@@ -821,8 +941,8 @@ while(length(outliers) != 0){
   x <- x[-outliers,] # remove the outliers identified in the previous iteration
   
   # recalculate
-  mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-  std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+  mean = Hmisc::wtd.mean(x$income_annual_all, weights=x$NatRepemployees, na.rm=T)
+  std = sqrt(Hmisc::wtd.var(x$income_annual_all,weights=x$NatRepemployees,na.rm = T))
   Tmin = mean - (3 * std)
   Tmax = mean + (3 * std)
   outliers <- which(x$income_annual_all < Tmin | x$income_annual_all > Tmax)
@@ -856,8 +976,8 @@ sum(data$income_drop_all, na.rm = T) # this should be equal to all_outlier_ids
 test <- data %>%
   filter(income_drop_all == 0)
 
-mean = Hmisc::wtd.mean(x$income_annual, weights=x$NatRepemployees, na.rm=T)
-std = sqrt(Hmisc::wtd.var(x$income_annual,weights=x$NatRepemployees,na.rm = T))
+mean = Hmisc::wtd.mean(x$income_annual_all, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_annual_all,weights=x$NatRepemployees,na.rm = T))
 Tmin = mean - (3 * std)
 Tmax = mean + (3 * std)
 
@@ -871,6 +991,96 @@ qqnorm(test$income_annual_all, main = "Normal Q-Q plot")
 mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 
 ```
+
+```{r}
+# income weekly all
+x <- data
+
+# calculate the mean and sd, and 3x sd
+mean = Hmisc::wtd.mean(x$income_weekly_all, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_weekly_all,weights=x$NatRepemployees,na.rm = T))
+Tmin = mean-(3*std)
+Tmax = mean+(3*std)
+
+# identify the first set of outliers
+outliers <- which(x$income_weekly_all < Tmin | x$income_weekly_all > Tmax)
+outlier_count <- length(outliers) # count how many removed this iteration
+all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
+
+# initialise some variables, i.e. iteration 0
+count <- 0 # iteration counter
+total_cases_removed <- 0 # total cases removed
+
+cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+
+# Take a look at the distribution
+par(mfrow = c(1, 3)) # this lets us plot three plots in a row
+hist(x$income_weekly_all, main = "Histogram") 
+# mark the mean and sds for the histogram
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(x$income_weekly_all, main = "Boxplot")
+qqnorm(x$income_weekly_all, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+
+# While there are still outliers detected, remove the outliers and recalculate 
+# mean, sd, and 3*sd and remove the outliers based on these new figures.
+while(length(outliers) != 0){
+  count <- count + 1
+  x <- x[-outliers,] # remove the outliers identified in the previous iteration
+  
+  # recalculate
+  mean = Hmisc::wtd.mean(x$income_weekly_all, weights=x$NatRepemployees, na.rm=T)
+  std = sqrt(Hmisc::wtd.var(x$income_weekly_all,weights=x$NatRepemployees,na.rm = T))
+  Tmin = mean - (3 * std)
+  Tmax = mean + (3 * std)
+  outliers <- which(x$income_weekly_all < Tmin | x$income_weekly_all > Tmax)
+  outlier_ids <- x$ID[outliers] # get outlier ids
+  all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
+  total_cases_removed <- total_cases_removed + outlier_count # count total
+  
+  outlier_count <- length(outliers) # count how many removed this iteration
+  cat("Iteration ", count, ": ", outlier_count, " outliers\n")
+  
+  # Replot distributions to see how they've changed
+  par(mfrow = c(1, 3))
+  hist(x$income_weekly_all, main = "Histogram") 
+  abline(v = mean, col='red', lwd = 3)
+  abline(v = Tmin, col='blue', lwd = 3)
+  abline(v = Tmax, col='blue', lwd = 3)
+  boxplot(x$income_weekly_all, main = "Boxplot")
+  qqnorm(x$income_weekly_all, main = "Normal Q-Q plot")
+  mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+}
+cat(total_cases_removed, " cases removed in total, across ", count, " iterations")
+
+# Drop the cases identified as outliers from data
+data$income_drop_all[which(data$ID %in% all_outlier_ids)] <- 1
+data$income_drop_all[is.na(data$income_drop_all)] <- 0 # make NAs 0
+
+# Check this looks right
+sum(data$income_drop_all, na.rm = T) # this should be equal to all_outlier_ids
+
+# This should look the same as the last iteration above#
+test <- data %>%
+  filter(income_drop_all == 0)
+
+mean = Hmisc::wtd.mean(x$income_weekly_all, weights=x$NatRepemployees, na.rm=T)
+std = sqrt(Hmisc::wtd.var(x$income_weekly_all,weights=x$NatRepemployees,na.rm = T))
+Tmin = mean - (3 * std)
+Tmax = mean + (3 * std)
+
+par(mfrow = c(1, 3))
+hist(test$income_weekly_all, main = "Histogram") 
+abline(v = mean, col='red', lwd = 3)
+abline(v = Tmin, col='blue', lwd = 3)
+abline(v = Tmax, col='blue', lwd = 3)
+boxplot(test$income_weekly_all, main = "Boxplot")
+qqnorm(test$income_weekly_all, main = "Normal Q-Q plot")
+mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
+```
+
 
 ### Applying income brackets
 
@@ -1077,6 +1287,171 @@ data %>%
   theme_minimal()
 ```
 
+###  Now we use 2/3 ASHE regional weekly pay as the threshold
+
+```{r}
+# from https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup
+url <- 'https://www.ons.gov.uk/file?uri=/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup/2023provisional/ashetableregionbyage2023provisional.zip'
+
+filename <- basename(url) # this takes the filename from the url
+filepath <- paste0("../data/", filename)
+output_dir <- substr(filepath,start = 1, stop=nchar(filepath) - 4)
+
+# check if the file exists. if it doesn't, download and unzip
+if(!file.exists(filepath)){ 
+  cat("Downloading data\n")
+  download.file(url, destfile = filepath, mode = "wb")
+  unzip(filepath,exdir=output_dir)
+} else{
+  cat("Data already in directory. Loading it.\n")
+}
+
+# Specify the directory
+# Use list.files to get all CSV files in the directory
+files <- list.files(path = output_dir, pattern = '* Weekly pay - Gross 2023.xls$', full.names = TRUE)
+
+ashe_data <- readxl::read_excel(files[1], sheet = 'All', skip = 4) %>%
+  filter(!is.na(Code)) %>%
+  #select(-c(last_col(offset=2):last_col(), contains('change'))) %>% # if we want some other variables
+  janitor::clean_names() %>%
+  rename(
+    #jobs_thousands = thousand,
+    Region = description,
+    Region_median_income = median
+  ) %>%
+  select(Region, Region_median_income) %>% # if we just want the median
+  # rename problematic regions
+  mutate(
+    Region = case_when(Region == "East" ~ "East of England",
+                       Region == "Yorkshire and The Humber" ~ "Yorkshire and the Humber",
+                       TRUE ~ Region),
+    Region_median_income = as.numeric(Region_median_income)
+    )
+```
+
+
+```{r}
+# join to data
+data <- data %>%
+  left_join(., ashe_data, by = "Region")
+
+# calcualte 4/5 thresholds
+data <- data %>%
+  mutate(
+    Region_four_fifths =  Region_median_income * .8,
+    Region_two_thirds = Region_median_income * (2/3),
+    UK_median = ashe_data %>% filter(Region == "United Kingdom") %>% pull(Region_median_income),
+    UK_four_fifths = UK_median * 0.8
+  )
+
+
+# stats by region
+income_statistics_regional <- data %>%
+  filter(income_drop == 0 & !is.na(income_weekly_all)) %>%
+  group_by(Region) %>%
+  summarise(
+    mean = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T)),
+    n = n()
+  )
+
+par(mar = c(2, 2, 2, 2))
+# plot the distribution of income 
+# blue lines are regional values, red lines are UK values
+# lighter lines are the actual medians, darker lines are 4/5 medians
+# data %>%
+#   filter(income_drop == 0 & !is.na(income_weekly_all)) %>%
+#   ggplot(., aes(x="",y=income_weekly_all)) + 
+#   facet_wrap(~Region) + 
+#   geom_violin() +
+#   geom_boxplot(width = 0.3) +
+#   geom_hline(aes(yintercept = UK_median), colour = "red", alpha=0.25) +
+#   geom_hline(aes(yintercept = UK_four_fifths), colour = "red") +
+#   geom_hline(aes(yintercept = Region_median_income), colour = "blue", alpha = 0.25) +
+#   geom_hline(aes(yintercept = Region_four_fifths), colour = "blue") +
+#   theme_minimal()
+
+# let's take a look at two-thrids too 
+# here blue lines are 2/3, red lines are 4/5
+data %>%
+  filter(income_drop == 0 & !is.na(income_weekly_all)) %>%
+  ggplot(., aes(x="",y=income_weekly_all)) + 
+  facet_wrap(~Region) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_hline(aes(yintercept = Region_four_fifths), colour = "red") +
+  geom_hline(aes(yintercept = Region_two_thirds), colour = "blue") +
+  theme_minimal()
+
+```
+
+```{r}
+# use 2/3 becuase that's what OECD use and what JRF have used in past
+# https://data.oecd.org/earnwage/wage-levels.htm
+
+# create the grouping variable based on Region_two_thirds
+# low pay is less than or equal to 2/3 regional median earnigns
+data <- data %>%
+  mutate(
+    income_group = case_when(income_weekly_all <= Region_two_thirds  ~ "Low",
+                             income_weekly_all > Region_two_thirds ~ "Not low",
+                             TRUE ~ NA),
+    income_group = factor(income_group, levels = c("Not low","Low"), exclude=NA)
+  ) %>%
+  ungroup()
+
+
+# visualise it to check
+# 26.77% of people are low paid
+data %>%
+  filter(income_drop == 0 & !is.na(income_weekly_all)) %>%
+  dplyr::group_by(income_group) %>%
+  dplyr::summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes("", perc, fill=income_group)) +
+  geom_col() +
+  theme_minimal() +
+  #theme(plot.margin = unit(c(0,4,0,4), "inches")) +
+  geom_label(aes(label=paste0(round(perc,2),"%")))
+
+## comparing outsoruced to not outsourced
+## 25.88% NO are low paid, 31.2% O are low paid
+data %>%
+  filter(income_drop == 0 & !is.na(income_weekly_all)) %>%
+  dplyr::group_by(outsourcing_status, income_group) %>%
+  dplyr::summarise(
+    n = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    perc = 100 * (n / sum(n))
+  ) %>%
+  ggplot(aes(outsourcing_status, perc, fill=income_group)) +
+  geom_col() +
+  theme_minimal() +
+  #theme(plot.margin = unit(c(0,4,0,4), "inches")) +
+  geom_label(aes(label=paste0(round(perc,2),"%")))
+
+# one last check to see people have been categorised correctly
+# test <- data %>%
+#   filter(income_drop==0) %>% # why do we still get nas for annual income?
+#   select(Annual_Income, Region_four_fifths, income_group) %>%
+#   mutate(
+#     test = case_when(Annual_Income < Region_four_fifths ~ "Low",
+#                      Annual_Income >= Region_four_fifths ~ "Not low",
+#                      TRUE ~ NA)
+#   )
+# # check that they're the same - value should be 0
+# sum(test$income_group != test$test, na.rm=T)
+
+```
+
 ```{r}
 # test significance
 mod <- glm(income_group ~ outsourcing_status, data, family="binomial", weights = NatRepemployees)
@@ -1152,7 +1527,14 @@ data <- data %>%
 ## Save
 
 ```{r}
-saveRDS(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.rds"))
+check <- readline("Save data? (y/n)")
+if(check=="y"){
+  saveRDS(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.rds"))
 # haven::write_sav(as.data.frame(data), path = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.sav"))
-write_csv(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.csv"))
+  write_csv(data, file = paste0("../Data/", format(Sys.Date(), "%Y-%m-%d"), " - Cleaned_Data.csv"))
+  print("File saved")
+} else{
+  print("File not saved")
+}
+
 ```
