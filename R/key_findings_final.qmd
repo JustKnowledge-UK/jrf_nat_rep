@@ -1477,10 +1477,10 @@ Comparison of ethnicities indicates that some groups are statistically more like
 
 [^15]: [outputs/data/ethnicity_model_inferential.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_model_inferential.csv)
 
--   Arab workers are `r coef_table["Ethnicity_collapsedArab/British Arab", "or"]` times more likely than White workers to be outsourced.
 -   Asian workers are `r coef_table["Ethnicity_collapsedAsian/Asian British", "or"]` times more likely than White workers to be outsourced.
--   Mixed Ethnicity workers are `r coef_table["Ethnicity_collapsedMixed/Multiple ethnic group", "or"]` times more likely than White workers to be outsourced.
 -   Black workers are `r coef_table["Ethnicity_collapsedBlack/African/Caribbean/Black British", "or"]` times more likely than White workers to be outsourced.
+-   Mixed Ethnicity workers are `r coef_table["Ethnicity_collapsedMixed/Multiple ethnic group", "or"]` times more likely than White workers to be outsourced.
+-   Arab workers are `r coef_table["Ethnicity_collapsedArab/British Arab", "or"]` times more likely than White workers to be outsourced.
 
 Other Ethnicity workers are no more or less likely than White workers to be outsourced.
 
@@ -1516,8 +1516,8 @@ Breaking down by outsourcing group helps to separate out the *type* of outsource
 
 [^16]: [outputs/data/ethnicity_ogroup_inferential_tab.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_ogroup_inferential_tab.csv)
 
--   Arabs people are more likely to be in any of the groups
--   Asians people are more likely to be in any of the groups
+-   Arab people are more likely to be in any of the groups
+-   Asian people are more likely to be in any of the groups
 -   Black people are more likely to be likely agency or outsourced
 -   People who selected Other ethnicity are more likely to be agency
 
@@ -1703,7 +1703,7 @@ Exploring the intersection of ethnicity and arrival time reveals some patterns w
 
 -   Among workers born in the UK, a Black worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - (Black/African/Caribbean/Black British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 -   Among workers born in the UK, a Asian worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - (Asian/Asian British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
--   Among workers born in the UK, a Other ethnicity worker is `r round(sig_cons %>% filter(contrast == "(White/White British - Other ethnic group") %>% pull(or),2)` times more likely to be outsourced than a White other worker.
+-   Among workers born in the UK, a Other ethnicity worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - Other ethnic group") %>% pull(or),2)` times more likely to be outsourced than a White other worker.
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed"), dodge=0.5) +
@@ -1802,9 +1802,9 @@ Exploring these categories[^22] confirms that
 
 [^22]: [outputs/data/region_stats_3.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_3.csv)
 
--   Among workers born in the UK, a Black worker is `r round(sig_cons %>% filter(contrast == "White/White British - Black/African/Caribbean/Black British") %>% pull(or),2)` times more likely to be outsourced than a White worker.
+-   Among workers born in the UK, a Black worker is `r round(sig_cons %>% filter(contrast == (White/White British) - (Black/African/Caribbean/Black British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 
--   Among workers born in the UK, a Asian worker is `r round(sig_cons %>% filter(contrast == "White/White British - Asian/Asian British") %>% pull(or),2)` times more likely to be outsourced than a White worker.
+-   Among workers born in the UK, a Asian worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - (Asian/Asian British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_collapsed","Ethnicity_collapsed"), dodge=0.5) +
