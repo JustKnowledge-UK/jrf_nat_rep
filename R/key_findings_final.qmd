@@ -99,6 +99,11 @@ data <- data %>%
 
 #make white the reference category
 data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "White/White British")
+
+data <- data %>%
+  mutate(
+    Has_Degree = factor(Has_Degree, levels = c("No", "Yes", "Don't know"))
+  )
 ```
 
 # How many people are outsourced?
@@ -526,7 +531,7 @@ mod <- lm(income_annual_all ~ outsourcing_status, income_data, weights = NatRepe
 
 coef_table <- extract_lm_coefs(mod)
 rownames(coef_table) <- coef_table$variable
-sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+sig_coefs <- extract_lm_coefs(mod, only_sig = T)
 
 write_csv(coef_table, file="../outputs/data/model_income_by_o-status.csv")
 
@@ -563,27 +568,32 @@ data %>%
 ```
 
 ```{r}
-mod_2 <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status, income_data, weights = NatRepemployees)
-# summary(mod_2)
+#| output: false
+mod <- lm(income_annual_all ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod)
+
+mod_2 <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod_2)
 
 mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
- summary(mod_3)
+summary(mod_3)
 
 # anova(mod_2, mod_3) # adding BORNUK improves model fit
 
 coef_table <- extract_lm_coefs(mod_3)
 rownames(coef_table) <- coef_table$variable
-sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+sig_coefs <- extract_glm_coefs(mod_3, only_sig = T)
 
 write_csv(coef_table, file="../outputs/data/model_2_income_by_o-status.csv")
 ```
 
-This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Ethnicity, Region, and Arrival Time. [^9] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average,
+
+This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Education, Ethnicity, Region, and Arrival Time. [^9] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average, and controlling for each of the otehr variables in the model:
 
 [^9]: [outputs/data/model_2_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)
 
 -   Men earn £`r abs(round(coef_table['GenderMale','Estimate'],0))` more than women.
--   Asian/Asian British workers earn £`r abs(round(coef_table['Ethnicity_collapsedAsian/Asian British','Estimate'],0))` more than White British workers.
+-   People who have a degree earn £`r abs(round(coef_table['Has_DegreeYes','Estimate'],0))` more than people without a degree.
 -   Workers in all non-London regions earn less than workers in London
     -   East Midlands: -£`r abs(round(coef_table['RegionEast Midlands','Estimate'],0))`
     -   East of England: -£`r abs(round(coef_table['RegionEast of England','Estimate'],0))`
@@ -596,6 +606,8 @@ This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsou
     -   West Midlands: -£`r abs(round(coef_table['RegionWest Midlands','Estimate'],0))`
     -   Yorkshire and the Humber: -£`r abs(round(coef_table['RegionYorkshire and the Humber','Estimate'],0))`
 -   People who arrived in the UK within the last year earn £`r abs(round(coef_table['BORNUK_labelledWithin the last year','Estimate'],0))` less than people born in the UK
+-   People who arrived in the UK within the last 3 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 3 years','Estimate'],0))` less than people born in the UK
+-   People who arrived in the UK within the last 5 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 5 years','Estimate'],0))` less than people born in the UK
 -   People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
 
 ### Income group[^10]
@@ -603,16 +615,18 @@ This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsou
 [^10]: [../outputs/data/income_group_outsourcing.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_group_outsourcing.csv)
 
 ```{r}
+#| output: false
+
 # test significance
 mod <- glm(income_group ~ outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
-# summary(mod)
+summary(mod)
 
 test <- summary(mod)
 
 or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
 p <- test[["coefficients"]][2,4]
 
-mod_2 <- glm(income_group ~ Age + Gender + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
+mod_2 <- glm(income_group ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod_2)
 
 # test <- summary(mod_2)
@@ -620,7 +634,7 @@ summary(mod_2)
 or <- exp(mod_2[["coefficients"]][["outsourcing_statusOutsourced"]])
 p <- test[["coefficients"]][2,4]
 
-coef_table <- extract_lm_coefs(mod_2)
+coef_table <- extract_glm_coefs(mod_2)
 rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod_2, only_sig = T)
 
@@ -632,19 +646,19 @@ A person is more likely to be in the low income group if they are:
 
 -   Older
 -   Female
--   Prefer not to say when they arrived
+-   Don't have a degree (or don't know if they have a degree?)
+-   Are outsourced
+-   Arrived in the UK in the last year
 
 And less likely if they are:
 
--   Asian/Asian British
--   Live in North West or Wales
+-   Younger
+-   Male
+-   Have a degree
+-   Live in the North West or Wales (compared to London)
 -   Arrived in the UK in last 30 years
 
-### Gender pay gap
-
-[outputs/data/gender_outsourced_gap.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/gender_outsourced_gap.csv)
-
-[outputs/data/mod_gender_outsourcing.csv](outputs/data/mod_gender_outsourcing.csv)
+### Gender pay gap^[[outputs/data/gender_outsourced_gap.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/gender_outsourced_gap.csv) & [outputs/data/mod_gender_outsourcing.csv](outputs/data/mod_gender_outsourcing.csv)]
 
 ```{r gender-pay-gap-1}
 gender_outsourced_gap <- income_data %>%
@@ -679,25 +693,31 @@ outsourced_gap <- gender_outsourced_gap %>%
 write_csv(gender_outsourced_gap, "../outputs/data/gender_outsourced_gap.csv")
 ```
 
-Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r not_outsourced_gap` less than males. For outsourced workers, females are paid £`r outsourced_gap` less than males. The difference between non-outsourced and outsourced workers is not significant.
+Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r round(not_outsourced_gap,2)` less than males. For outsourced workers, females are paid £`r round(outsourced_gap,2)` less than males. The difference between non-outsourced and outsourced workers is not significant.
 
 ```{r gender-outsourcing-int}
+#| output: false
 ggplot(gender_outsourced_gap, aes(outsourcing_status, median, fill = Gender)) +
   geom_col(position="dodge") +
   geom_label(aes(label=round(median,0)), position=position_dodge(width=0.9)) +
   theme_minimal() + 
   ylab("Median income") + xlab("Outsourcing status")
 
-simp_mod <- lm(income_annual_all ~Gender*outsourcing_status, income_data, weights = NatRepemployees)
-# summary(simp_mod)
+simp_mod <- lm(income_annual_all ~ Gender*outsourcing_status, income_data, weights = NatRepemployees)
+summary(simp_mod)
 
-mod_2 <- lm(income_annual_all ~ Age + Ethnicity_collapsed + Region + Gender*outsourcing_status, income_data, weights = NatRepemployees)
-# summary(mod_2)
+# simp_mod2 <- update(simp_mod, ~. + Has_Degree)
+# summary(simp_mod2)
+
+# anova(simp_mod, simp_mod2)
+
+mod_2 <- lm(income_annual_all ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod_2)
 
 mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
-# summary(mod_3)
+summary(mod_3)
 
-# anova(mod_2, mod_3) # adding BORNUK improves model fit
+anova(mod_2, mod_3) # adding BORNUK improves model fit
 
 coef_table <- extract_lm_coefs(mod_3)
 rownames(coef_table) <- coef_table$variable
@@ -707,10 +727,11 @@ write_csv(coef_table, "../outputs/data/mod_gender_outsourcing.csv")
 
 ```
 
-Also see if the outsourcing \* gender interaction is relevant for whether someone is low paid or not. It isn't
+The gender by outsourcing status is also not relevant for whether a worker is low income (i.e. non-sig relationship with income_group).
 
 ```{r}
-mod <- glm(income_group ~ Age +  Ethnicity_collapsed + Region + Gender*outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
+#| output: false
+mod <- glm(income_group ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod)
 
 # test <- summary(mod)
@@ -723,6 +744,20 @@ rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 
 write_csv(coef_table, "../outputs/data/mod_gender_outsourcing_income_group.csv")
+```
+
+```{r}
+#| output: false
+
+# just test for low income group
+low_pay_data <- income_data %>%
+  filter(income_group=="Low")
+
+mod_2 <- lm(income_annual_all ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_status, low_pay_data, weights = NatRepemployees)
+summary(mod_2)
+
+mod_3 <- update(mod_2, ~.+ BORNUK_labelled) 
+summary(mod_3)
 ```
 
 Notable takeaways:
@@ -1584,6 +1619,10 @@ This variable is worded a little strangely, e.g. responses are things like "with
 
 Looking at the figure below, compared to non-outsourced people, there is a larger proportion of outsourced workers for each arrival time apart from 'Within the last 30 years'.
 
+::: callout-note
+Note that all figures here should be interpreted as e.g. "75% of outsourced workers were born in the UK; 87% of non-outsourced workers were born in the UK"
+:::
+
 ```{r}
 # bornuk_statistics %>%
 #   ggplot(., aes(outsourcing_status, Percentage, fill = BORNUK_labelled)) +
@@ -1604,6 +1643,50 @@ bornuk_statistics %>%
   xlab("Arrival in UK") 
 
 ```
+
+### Collapsed^[[/outputs/data/arrival_in_UK_collapsed_stats.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_collapsed_stats.csv)]
+
+```{r}
+data <- data %>%
+  mutate(
+    BORNUK_collapsed = forcats::fct_collapse(BORNUK_labelled,
+                                            "Born in UK" = "I was born in the UK",
+                                            "Came to UK recently" = c("Within the last year"),
+                                            "Came to UK not recently" =  c("Within the last 3 years",
+                                                                       "Within the last 5 years",
+                                                                       "Within the last 10 years",
+                                                                       "Within the last 15 years",
+                                                                           "Within the last 20 years",
+                                                                           "Within the last 30 years",
+                                                                           "More than 30 years ago"),
+                                            "Prefer not to say" = c("Prefer not to say")
+    )
+  )
+
+bornuk_statistics <- data %>%
+  group_by(outsourcing_status, BORNUK_collapsed) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(bornuk_statistics, file="../outputs/data/arrival_in_UK_collapsed_stats.csv")
+
+bornuk_statistics %>%
+  ggplot(., aes(BORNUK_collapsed, Percentage, fill =outsourcing_status)) +
+  geom_col(colour="black", position = "dodge") +
+  geom_text(aes(BORNUK_collapsed, y = 99, label = paste0("n = ",n)), position=position_dodge(width=1), hjust=1) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name="Outsourcing status") +
+  theme_minimal() +
+  xlab("Arrival in UK") 
+```
+
 
 ```{r}
 mod <- multinom(outsourcing_group ~ BORNUK_binary, data, weights=NatRepemployees)
@@ -1672,6 +1755,33 @@ bornuk_statistics_2 %>%
   xlab("Arrival in UK") +
   ylim(0,100)
 
+```
+### Collapsed^[[/outputs/data/arrival_in_UK_o-group_collapsed_stats.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_o-group_collapsed_stats.csv)]
+
+
+```{r}
+bornuk_statistics <- data %>%
+  group_by(outsourcing_group, BORNUK_collapsed) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(bornuk_statistics, file="../outputs/data/arrival_in_UK_o-group_collapsed_stats.csv")
+
+bornuk_statistics %>%
+  ggplot(., aes(BORNUK_collapsed, Percentage, fill =outsourcing_group)) +
+  geom_col(colour="black", position = "dodge") +
+  geom_text(aes(BORNUK_collapsed, y = 99, label = paste0("n = ",n)), position=position_dodge(width=1), hjust=1) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours, name="Outsourcing group") +
+  theme_minimal() +
+  xlab("Arrival in UK") 
 ```
 
 ## Interaction: Ethnicity and arrival time
@@ -1751,11 +1861,11 @@ data <- data %>%
   mutate(
     BORNUK_collapsed = forcats::fct_collapse(BORNUK_labelled,
                                             "Born in UK" = "I was born in the UK",
-                                            "Came to UK recently" = c("Within the last year",
-                                                                       "Within the last 3 years",
+                                            "Came to UK recently" = c("Within the last year"),
+                                            "Came to UK not recently" =  c("Within the last 3 years",
                                                                        "Within the last 5 years",
-                                                                       "Within the last 10 years"),
-                                            "Came to UK not recently" =  c("Within the last 15 years",
+                                                                       "Within the last 10 years",
+                                                                       "Within the last 15 years",
                                                                            "Within the last 20 years",
                                                                            "Within the last 30 years",
                                                                            "More than 30 years ago"),
@@ -1786,14 +1896,14 @@ We next explore arrival time by collapsing responses to the arrival time questio
 | Born in UK              | -   I was born in the UK     |
 +-------------------------+------------------------------+
 | Came to UK recently     | -   Within the last year     |
-|                         |                              |
-|                         | -   Within the last 3 years  |
++-------------------------+------------------------------+
+| Came to UK not recently | -   Within the last 3 years  |
 |                         |                              |
 |                         | -   Within the last 5 years  |
 |                         |                              |
 |                         | -   Within the last 10 years |
-+-------------------------+------------------------------+
-| Came to UK not recently | -   Within the last 15 years |
+|                         |                              |
+|                         | -   Within the last 15 years |
 |                         |                              |
 |                         | -   Within the last 20 years |
 |                         |                              |
