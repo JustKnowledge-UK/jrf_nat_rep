@@ -1,0 +1,241 @@
+---
+title: "Key findings - matched to report"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    self-contained: true
+    code-fold: true
+    # code-tools: true
+    # code-summary: "Code for Nerds"
+    toc: true
+    toc-depth: 5
+editor: visual
+execute: 
+  echo: false
+  warning: false
+---
+
+```{r packages}
+library(haven)
+library(poLCA)
+library(Hmisc)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(kableExtra)
+#library(MASS)
+library(wesanderson)
+library(ggrepel)
+library(here)
+library(emmeans)
+#library(devtools)
+#install_version("sjstats", version = "0.18.2")
+library(sjstats)
+library(readr)
+library(sjPlot)
+library(nnet)
+```
+
+```{r palette}
+rm(list = ls())
+options(scipen = 999)
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+better_colours <- c('#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462')
+many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f')
+```
+
+```{r functions}
+extract_glm_coefs <- function(mod, only_sig=F, decimal_places = 3){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") %>% # specify new variable to add rownames to 
+    mutate(
+    or = round(exp(Estimate), decimal_places), .after=Estimate
+    )
+}
+
+extract_lm_coefs <- function(mod, only_sig = F){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") # specify new variable to add rownames to 
+}
+
+```
+
+```{r data, output=FALSE}
+#data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
+data <- readRDS("../Data/2024-09-30 - Cleaned_Data.rds") 
+
+data <- data %>%
+  mutate(
+    Ethnicity_collapsed = case_when(
+      # Grouping White ethnicities
+      Ethnicity %in% c(1,2,5
+                       ) ~ "White/White British",
+      # Grouping Asian ethnicities
+      Ethnicity %in% c(10,11,12,13,14) ~ "Asian/Asian British",
+      # Grouping Black ethnicities
+      Ethnicity %in% c(15,16,17) ~ "Black/African/Caribbean/Black British",
+      # Grouping Mixed ethnicities
+      Ethnicity %in% c(6,7,8,9) ~ "Mixed/Multiple ethnic group",
+      # Grouping Other ethnicities
+      Ethnicity %in% c(18) ~ "Arab/British Arab",
+      # Handling missing or ambiguous categories
+      Ethnicity %in% c(3,4,19)  ~ "Other ethnic group",
+      #prefer not to say
+      Ethnicity %in% c(20,21) ~ "Prefer not to say",
+      # Default case for any unmatched entries
+      TRUE ~ "Prefer not to say"
+    )
+  )
+
+#make white the reference category
+data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "White/White British")
+
+data <- data %>%
+  mutate(
+    Has_Degree = factor(Has_Degree, levels = c("No", "Yes", "Don't know"))
+  )
+```
+
+# Chapter 2: How many outsourced workers are there in the UK?
+
+## How many UK workers are outsourced?
+
+-   Around 1 in 6 UK workers meet our definition of an outsourced worker
+-   The 'outsourced sub-group' is the most dominant of the three sub-groups - meaning the total group is predominantly made up of people who self-identify as an outsourced worker and they say they are hired to do work that is long-term or ongoing. People included in this sub-group (either uniquely, or while also meeting the criteria for at least one of the other sub-groups) make up around 67% (check) of our total outsourced group, or nearly 7 in 10. This group makes up X of all UK workers.
+-   The two other sub-groups – the agency and indicators sub-groups – are less dominant in comparison. Around 58% of all respondents meet the criteria for either or both of these sub-groups, but this falls to around 33% if we exclude people who are already captured in the outsourced sub-group. Excluding the first sub-group, these other two groups makes up X of all UK workers.
+-   There is some overlap between these sub-groups, but they are not like for like. Just over a quarter (27%) of respondents are in more than one sub-group, while nearly three quarters (73%) of respondents are uniquely captured in just one of the three sub-groups.
+
+
+```{r sum-outsourced}
+#| echo: true
+total_outsourced <- data %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    Sum = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    Proportion = Sum / sum(Sum),
+    Percentage = 100 * Proportion
+  )
+
+readr::write_csv(total_outsourced, file="../outputs/data/total_outsourced.csv")
+
+# Create function to find nearest denominator to express as a fraction.
+f <- function(x) ifelse(abs(1/floor(1/x) - x) < abs(1/ceiling(1/x) - x),floor(1/x),ceiling(1/x))
+```
+
+**1 in `r f(total_outsourced$Proportion[which(total_outsourced$outsourcing_status=="Outsourced")])` (`r round(total_outsourced$Percentage[which(total_outsourced$outsourcing_status=="Outsourced")], 0)`%) of UK workers are outsourced.**[^1]
+
+[^1]: [outputs/data/total_outsourced.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/total_outsourced.csv)
+
+```{r sum-outsourcing-group}
+#| echo: true
+total_outsourced <- data %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    Sum = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    Proportion = Sum / sum(Sum),
+    Percentage = 100 * Proportion
+  )
+
+readr::write_csv(total_outsourced, file="../outputs/data/total_outsourced_2.csv")
+```
+
+In terms of the the different possible types of outsourced groups[^2], the numbers are as follows:
+
+[^2]: [outputs/data/total_outsourced_2.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/total_outsourced_2.csv)
+
+1.  Definitely outsourced: `r round(total_outsourced$Percentage[which(total_outsourced$outsourcing_group=="Outsourced")], 0)`%
+2.  Likely agency: `r round(total_outsourced$Percentage[which(total_outsourced$outsourcing_group=="Likely agency")], 0)`%
+3.  High indicators: `r round(total_outsourced$Percentage[which(total_outsourced$outsourcing_group=="High indicators")], 0)`%
+
+
+## Evaluating our total estimate
+
+-   Around 1 in 4 "outsourced" respondents sit in more than one sub-group within our definition, but around 3 in 4 are uniquely captured in just one of the three sub-groups - predominantly in the outsourced sub-group.
+-   As figure X shows, not all respondents in the outsourced sub-group said yes five or six of our six outsourcing
+
+# Chapter 3: Who are the UK’s outsourced workers?
+
+## Evidence paints a racialised picture of outsourcing in the UK, with links to both ethnicity and migration
+
+-   More than 1 in 4 outsourced workers are from an ethnic minority background
+-   Workers from ethnic minority backgrounds are disproportionately over-represented in outsourced work in the UK, and typically more likely to be outsourced than (White British) workers.
+-   Overall, 16% (16.26%) of non-outsourced workers are from an ethnic minority background, rising to 27% (26.72%) of outsourced workers – a more than ten percentage point difference. This means that while just over 1 in 6 non-outsourced workers in our sample were from an ethnic minority background, 1 in 4 outsourced workers were.
+-   People from an ethnic minority background are overall 1.878 times more likely to be outsourced than people from a White British background.
+-   Workers from Arab backgrounds are 3.319 times more likely than White workers to be outsourced; (check sample size – are we confident in all of these significance tests, or should we just use some of them in these bullet points?)
+-   Workers from Black backgrounds are 2.287 times more likely than White workers to be outsourced.
+-   Workers from Asian backgrounds are 1.943 times more likely than White workers to be outsourced
+-   Workers from Mixed Ethnicity backgrounds are 1.828 times more likely than White workers to be outsourced
+-   And within these aggregated ethnicity groups, we can see further differences. Of workers from Black backgrounds, workers from Black African backgrounds are the most over-represented in outsourced jobs compared to non-outsourced, making up 2.7% of the non-outsourced workforce but a striking 6.6% of the outsourced workforce, a share of the workforce which is nearly 2.5 times larger . Does this need to talk about risk rate too?
+-   These differences in ethnicity also shift slightly depending on which outsourced “sub-group” we look at. For example, compared to White British workers, Black outsourced workers are more likely to be in the “outsourced sub-group” meaning they have self-identified as outsourced, or the “agency sub-group”, meaning they are agency workers doing more long-term and ongoing work. Are there any other interesting points to mention here? Should we do a chart showing this different across sub-groups? Do we need an interpretive comment in this section?
+-   On the low-pay / high-pay split, you say “*A person is more likely to be in the low income group if they are: Older; Female; Prefer not to say when they arrived, And less likely if they are: Asian/Asian British; Live in North West or Wales; Arrived in the UK in last 30 years*”; Can I confirm this means we don’t see any other significant differences in the ethnicity breakdown if we look at high paid vs low paid workers? If so, let’s clarify what this says about how ethnicity relates to a) outsourced workers being disproportionately low paid, but b) ethnic minority workers being no more likely to be in our low pay group.
+-   As you would expect, the vast majority of outsourced workers were born in the UK. However, we still see a significantly higher likelihood of outsourced workers having been born outside of the UK compared to people who aren’t outsourced. While around 14% of non-outsourced workers were born outside of the UK, this rose to just over 24% for outsourced workers – or nearly 1 in 4.
+-   Overall, people who were born outside of the UK are 1.94 times more likely to be in outsourced work than people who were born here.
+-   This pattern broadly holds across our three outsourcing sub-groups, with nearly no difference in the likelihood of people born outside of the UK being in any one of the three groups .
+-   Black workers are 2.01 times more likely to be outsourced than a White worker
+-   Asian workers are 2.02 times more likely to be outsourced than a White worker.
+-   Workers from Other ethnic backgrounds are X times more likely to be outsourced than a White other worker
+-   Among White workers, someone not born in the UK is 1.82 times more likely to be outsourced than someone born in the UK.
+-   Among workers from Mixed ethnic backgrounds, someone not born in the UK is 2.73 times more likely to be outsourced than someone born in the UK.
+-   Among Other workers, someone not born in the UK is 0.13 times more likely to be outsourced than someone born in the UK.
+-   For workers from other ethnicities, it doesn’t matter whether you are born in the UK or not – you are equally likely as a Black or an Asian worker to be outsourced, whether you were born in the UK or somewhere else. And compared to a White person born in the UK, Black African and South Asian workers specifically are more likely to be outsourced, whether or not they were born in the UK . Does this need any further detail or explanation
+
+## Outsourced workers are on average younger than non-outsourced workers
+
+-   We find that outsourced workers are significantly younger than non-outsourced workers, on average. The median age of an outsourced worker is 35, compared to a media[n]{.underline} age of 43 for a non-outsourced worker.
+
+-    the outsourced and indicator sub-groups – people who directly said that they were or might be outsourced, or ticked a high number of our indicators of outsourced working – see higher proportions of younger workers than the “agency” sub-group.
+
+-   The evidence also finds meaningful differences by gender between the outsourced and non-outsourced groups in our data. Men make up 56% of the outsourced workforce compared to 47% of the non-outsourced workforce, a nearly 10 percentage point difference.
+
+-   Outsourced workers are 1.44 times more likely to be male than female. 
+
+-   The group with the largest proportion of men in the workforce is the ‘high indicators’ group (66.35%), followed by the ‘likely agency’ group (56.66%), followed by the ‘outsourced’ group (53.94%). Comparison of outsourced and non-outsourced workers finds that
+
+-   Someone in the high indicators sub-group is 2.18 times more likely to be male than female.
+
+-   Someone in the agency sub-group is 1.45 times more likely to be male than female.
+
+-   Someone in the outsourced sub-group is 1.31 times more likely to be male than female.
+
+-   Possible addition: Will readers want to know more about how this intersects with the roles or sectors with higher rates of outsourcing – even if this is just an interpretive comment from us on how gender interacts with jobs and sectors more generally in the labour market?
+
+## Outsourced workers are more likely to work in some sectors than others; but seem to be spread across the labour market
+
+-   The three most common sectors for outsourced workers in our survey to be employed within – excluding those with an N size below X – were administrative and support service activities; water supply, sewerage, waste supply and remediation activities; and other service activities
+
+-   Five of the twenty employment sectors have at least 1 in 5 of their workforce “outsourced”: more than the average of around 17% across the whole workforce.
+
+-   Figure X also shows how the total outsourced group in each sector splits into our three outsourced “sub-groups”. We find – as you might expect, based on its dominance within the group of outsourced workers – that outsourced workers in every sector are most likely to be in the “outsourced sub-group”, i.e. those who self-identified as outsourced workers.
+
+-   Using regression analysis, we find that outsourced workers are on average paid £2170 less than non-outsourced workers .
+
+-   The “outsourced sub-group” earns £3,813 less, and the “agency sub-group” £2,603 less, than the non-outsourced group. This finds that pay is lowest in the “outsourced sub-group” of workers, i.e. those who directly identified themselves as being outsourced. Figure X below shows the median and distribution of pay across the three outsourced sub-groups and the non-outsourced group, for comparison.
+
+-   In particular, people are more likely to be in our low-paid outsourced group if they are female, or older workers .
+
+-   On average within our sample, male workers earn £6400 more than female workers per year; but further exploration of how pay relates to gender for outsourced workers suggests that this gender pay gap doesn’t differ in a statistically significant way depending on whether workers are outsourced or not
+
+-   For female outsourced workers, this suggests that being an outsourced worker neither exacerbates nor diminishes the gender pay gap they face compared to male workers .
+
+-   Overall, we find that workers in administrative and support service activities – one of the dominant sectors for outsourced workers in this research – are more likely to be lower-paid than non-outsourced workers in the same sector. The same is true for outsourced water supply (full name; sewerage, waste etc.) workers – another prominent outsourcing sector – information and communication, transportation and storage, and education workers, amongst others. In contrast, we find outsourced workers in financial and insurance activities, for example, appear to be slightly higher paid on average than their non-outsourced counterparts; however, this is one of the few sectors in which this appears to be the case.
+
+## London has a disproportionate share of the UK’s outsourced workers, followed by the East and West Midlands
+
+-   In London, around 25% of workers are outsourced – the highest proportion of any region in the UK. London is followed by the East Midlands (19%) and West Midlands (18%) in the share of workers in the region who are outsourced, with the East of England being the region with the lowest share of outsourced workers as part of the total employed workforce, at 13%.
+
+-   Possible addition: Should this include some comment on WHY we think this might be the case? Should we look at sectoral splits in London, compared to everywhere else, to see whether there are significant sector differences that might explain this trend?
+
