@@ -8,11 +8,10 @@ format:
   html:
     self-contained: true
     code-fold: true
-    # code-tools: true
-    # code-summary: "Code for Nerds"
+    code-tools: true
+    code-summary: "Code for Nerds"
     toc: true
     toc-depth: 5
-editor: visual
 execute: 
   echo: false
   warning: false
@@ -118,7 +117,6 @@ data <- data %>%
 :::
 
 ```{r sum-outsourced}
-#| echo: true
 total_outsourced <- data %>%
   group_by(outsourcing_status) %>%
   summarise(
@@ -140,7 +138,6 @@ f <- function(x) ifelse(abs(1/floor(1/x) - x) < abs(1/ceiling(1/x) - x),floor(1/
 [^1]: [outputs/data/total_outsourced.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/total_outsourced.csv)
 
 ```{r sum-outsourcing-group}
-#| echo: true
 total_outsourced <- data %>%
   group_by(outsourcing_group) %>%
   summarise(
@@ -404,7 +401,7 @@ write_csv(coefs, file = "../outputs/data/bornuk_ostatus_inferential_tab.csv")
 
 ```
 
-As for non-outsourced workers, the vast majority of outsourced workers are born in the UK. However, people not born in the UK are more likely to be outsourced than people born in the UK. `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of outsourced workers are not born in the UK, compared to `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK_labelled == "I was born in the UK"), "Percentage"],2)`% of non-outsourced workers.[^18] This difference is statistically significant; **outsourced workers are `r round(coefs %>% filter(variable == "BORNUK_binaryNot born in UK") %>% pull(or),2)` times more likely to have been born outside the UK than non-outsourced workers.**[^19]
+As for non-outsourced workers, the vast majority of outsourced workers are born in the UK. However, people not born in the UK are more likely to be outsourced than people born in the UK. `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Outsourced" & bornuk_statistics$BORNUK_collapsed == "Born in UK"), "Percentage"],2)`% of outsourced workers are not born in the UK, compared to `r 100 - round(bornuk_statistics[which(bornuk_statistics$outsourcing_status == "Not outsourced" & bornuk_statistics$BORNUK_collapsed == "Born in UK"), "Percentage"],2)`% of non-outsourced workers.[^18] This difference is statistically significant; **outsourced workers are `r round(coefs %>% filter(variable == "BORNUK_binaryNot born in UK") %>% pull(or),2)` times more likely to have been born outside the UK than non-outsourced workers.**[^19]
 
 [^18]: [outputs/data/arrival_in_UK_stats.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/arrival_in_UK_stats.csv)
 
@@ -583,8 +580,8 @@ Outsourced workers are on average younger than non-outsourced workers. The media
 [^4]: [outputs/data/age_inferential.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/age_inferential.csv)
 
 ```{r age-by-status-plot}
-knitr::kable(age_statistics, 
-             digits = 2, 
+knitr::kable(age_statistics,
+             digits = 2,
              col.names = c("Outsourcing group",
                            "Mean",
                            "Median",
@@ -628,8 +625,8 @@ readr::write_csv(age_statistics_2, file = "../outputs/data/age_stats_2.csv")
 ```
 
 ```{r age-by-group-plot}
-knitr::kable(age_statistics_2, 
-             digits = 2, 
+knitr::kable(age_statistics_2,
+             digits = 2,
              col.names = c("Outsourcing group",
                            "Mean",
                            "Median",
@@ -941,8 +938,8 @@ The table and plot below show descriptive statistics on income and its distribut
 [^8]: [outputs/data/income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
 
 ```{r income-plot}
-knitr::kable(income_statistics, 
-             digits = 2, 
+knitr::kable(income_statistics,
+             digits = 2,
              col.names = c("Outsourcing group",
                            "n",
                            "Mean",
@@ -1094,13 +1091,13 @@ mod <- glm(income_group ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gend
 summary(mod)
 
 # test <- summary(mod)
-
-or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
-p <- test[["coefficients"]][2,4]
-
-coef_table <- extract_lm_coefs(mod_3)
-rownames(coef_table) <- coef_table$variable
-sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+# 
+# or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
+# p <- test[["coefficients"]][2,4]
+# 
+# coef_table <- extract_lm_coefs(mod_3)
+# rownames(coef_table) <- coef_table$variable
+# sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 
 write_csv(coef_table, "../outputs/data/mod_gender_outsourcing_income_group.csv")
 ```
