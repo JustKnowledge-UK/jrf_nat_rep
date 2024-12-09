@@ -106,6 +106,18 @@ data <- data %>%
     Has_Degree = factor(Has_Degree, levels = c("No", "Yes", "Don't know"))
   )
 
+# make binary born uk var
+categories <- as.vector(unique(data$BORNUK_labelled))
+non_categories <- categories[!(categories %in% "I was born in the UK")]
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+data <- data %>%
+  mutate(
+    BORNUK_binary = forcats::fct_collapse(BORNUK_labelled,
+                                      "Born in UK" = "I was born in the UK",
+                                      "Not born in UK" = non_categories)
+  ) 
+
 income_data <- filter(data, income_drop_all==0)
 ```
 
@@ -756,16 +768,7 @@ bornuk_statistics %>%
 ```
 
 ```{r bornuk_inferential, output=FALSE}
-categories <- as.vector(unique(data$BORNUK_labelled))
-non_categories <- categories[!(categories %in% "I was born in the UK")]
 
-# Will throw NA warning. I think this OK but investigate how to avoid the problem
-data <- data %>%
-  mutate(
-    BORNUK_binary = forcats::fct_collapse(BORNUK_labelled,
-                                      "Born in UK" = "I was born in the UK",
-                                      "Not born in UK" = non_categories)
-  ) 
 
 mod <- glm(outsourcing_status ~ BORNUK_binary, data, weights = NatRepemployees, family="quasibinomial")
 # mod <- glm(Ethnicity_binary~outsourcing_status , data, weights = NatRepemployees, family="quasibinomial")
@@ -929,6 +932,59 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
 Put differently, being born in the UK is relevant in predicting outsourcing status only for White, Mixed, and Other ethnicities. For the remaining ethnicities, it doesn't matter whether you are born in the UK or not. And compared to a White person born in the UK, Black and Asian workers are more likely to be outsourced whether or not they were born in the UK.
 
 In summary, people born in the UK are more likely to be outsourced if they are Black, Asian, or 'Other', compared to White, and White and mixed ethnicities are more likely to be outsourced if they are not born in the UK, whereas 'other' ethnicities are less likely to be outsourced if they were not born in the uk.
+
+::: {.callout-tip title="#migration-by-pay-split"}
+If we do a basic “born UK / not born UK” split, looking by low and high pay, what % of the low-paid workers group were born outside of the UK, vs in the high-paid group?
+:::
+
+```{r}
+#| message: false
+mig_pay_split <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, BORNUK_binary) %>%
+  summarise(
+    freq = sum(NatRepemployees),
+    n = n()
+  ) %>%
+  mutate(
+    total = sum(freq),
+    percentage = 100 * (freq / total),
+    N = sum(n)
+  )
+
+low_pay_perc <- mig_pay_split %>%
+  filter(income_group == "Low" & BORNUK_binary == "Not born in UK" & outsourcing_status == "Outsourced") %>%
+  mutate(
+    round(percentage,2)
+  ) %>%
+  pull()
+
+high_pay_perc <- mig_pay_split %>%
+  filter(income_group == "Not low" & BORNUK_binary == "Not born in UK" & outsourcing_status == "Outsourced") %>%
+  mutate(
+    round(percentage,2)
+  ) %>%
+  pull()
+
+
+mod <- glm(income_group ~ BORNUK_binary, income_data, weights = NatRepemployees, family ="quasibinomial")
+# summary(mod)
+
+mod_2 <- glm(income_group ~ BORNUK_binary * outsourcing_status, income_data, weights = NatRepemployees, family ="quasibinomial")
+# summary(mod_2)
+```
+
+`r low_pay_perc`% of outsourced workers in the low pay group were not born in the UK, compared to `r high_pay_perc`% of people in the not low pay group. This difference is marginally statistically significant; someone in the low income group is less likely to be born outside the UK than someone in the not low income group. This pattern is the same for non outsourced workers, and when we consider the interaction between outsourcing status and migration status, the only factor predicting income group is outsourcing status.
+
+```{r}
+mig_pay_split %>% 
+  ggplot(aes(income_group, percentage, fill = BORNUK_binary)) +
+  facet_grid(rows = vars(outsourcing_status)) +
+  geom_col(position="dodge") + 
+  theme_minimal()
+```
+
+
 
 ## Outsourced workers are on average younger than non-outsourced workers
 
@@ -1626,6 +1682,58 @@ And less likely if they are:
 -   Have a degree
 -   Live in the North West or Wales (compared to London)
 -   Arrived in the UK in last 30 years
+
+
+::: {.callout-tip title="#gender-by-pay-split"}
+Is there already a basic low / high pay split for gender? I know you talk about women being more likely to be in the low-paid group, but again not sure if there is just a basic “women make up x% of low pay group and x% of not low pay group”?
+:::
+
+```{r}
+#| message: false
+gender_pay_split <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, Gender) %>%
+  summarise(
+    freq = sum(NatRepemployees),
+    n = n()
+  ) %>%
+  mutate(
+    total = sum(freq),
+    percentage = 100 * (freq / total),
+    N = sum(n)
+  )
+
+low_pay_perc <- gender_pay_split %>%
+  filter(income_group == "Low" & outsourcing_status == "Outsourced" & Gender == "Female") %>%
+  mutate(
+    round(percentage,2)
+  ) %>%
+  pull()
+
+high_pay_perc <- gender_pay_split %>%
+  filter(income_group == "Not low" & outsourcing_status == "Outsourced" & Gender == "Female") %>%
+  mutate(
+    round(percentage,2)
+  ) %>%
+  pull()
+
+
+mod <- glm(income_group ~ Gender, income_data, weights = NatRepemployees, family ="quasibinomial")
+# summary(mod)
+
+mod_2 <- glm(income_group ~ Gender * outsourcing_status, income_data, weights = NatRepemployees, family ="quasibinomial")
+# summary(mod_2)
+```
+
+`r low_pay_perc`% of outsourced workers in the low pay group were female, compared to `r high_pay_perc`% of outsourced workers in the not low pay group. This difference is statistically significant; women are more likely to be in the low income group. This pattern is the same for non outsourced workers, and there is no interaction effect; irrespective of outsourcing status, women are more likely to be low paid, and irrespective of gender, outsourced people are more likely to be low paid.
+
+```{r}
+gender_pay_split %>% 
+  ggplot(aes(income_group, percentage, fill = Gender)) +
+  facet_grid(rows = vars(outsourcing_status)) +
+  geom_col(position="dodge") + 
+  theme_minimal()
+```
 
 ::: {.callout-important title="#pay-gap-sector"}
 -   Overall, we find that workers in administrative and support service activities – one of the dominant sectors for outsourced workers in this research – are more likely to be lower-paid than non-outsourced workers in the same sector. The same is true for outsourced water supply (full name; sewerage, waste etc.) workers – another prominent outsourcing sector – information and communication, transportation and storage, and education workers, amongst others. In contrast, we find outsourced workers in financial and insurance activities, for example, appear to be slightly higher paid on average than their non-outsourced counterparts; however, this is one of the few sectors in which this appears to be the case.**to be confirmed**
