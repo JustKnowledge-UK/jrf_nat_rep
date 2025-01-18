@@ -15,6 +15,7 @@ format:
 execute: 
   echo: false
   warning: false
+number-sections: true
 ---
 
 ```{r packages}
@@ -427,6 +428,259 @@ Just over a quarter (`r round(groups_count[which(groups_count$number_of_groups==
 
 # Chapter 3: Who are the UK’s outsourced workers?
 
+## Demographic breakdown 
+
+Demographic variables:
+
+- Categorical
+  - [x] Gender
+  - [x] Ethnicity
+- Numeric
+  - [x] Age - in age section: @sec-age
+  
+We want them broken down by 
+
+- outsourcing status
+  - high low pay
+- outsourcing group
+  - high low pay
+  
+### Ethnicity by oustourcing status
+
+```{r}
+# pollster
+# crosstab(df = data, x = outsourcing_status, y = Ethnicity_collapsed, weight = NatRepemployees) %>%
+#   kable()
+# 
+# # base r
+# tab <- as.data.frame(xtabs(NatRepemployees ~ outsourcing_status + Ethnicity_collapsed, data=data))
+# test <- xtabs(NatRepemployees ~ outsourcing_status + income_group + Ethnicity_collapsed, data=data)
+# prop.table(test)
+# 
+# percent_row <- 100 * prop.table(test, margin = 1)
+# test2 <- as.data.frame(percent_row)
+# 
+# test2 %>%
+#   filter(outsourcing_status=="Outsourced") %>%
+#   summarise(sum(Freq))
+```
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_status, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_collapsed
+  ) %>%
+    pivot_wider(
+      id_cols = outsourcing_status,
+      names_from = Ethnicity_collapsed, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Ethnicity by outsourcing status (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+
+```
+
+#### By high/low pay
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_collapsed
+  ) %>%
+    pivot_wider(
+      id_cols = c(outsourcing_status,income_group),
+      names_from = Ethnicity_collapsed, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Ethnicity by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+### Ethnicity by oustourcing group
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_collapsed
+  ) %>%
+    pivot_wider(
+      id_cols = outsourcing_group,
+      names_from = Ethnicity_collapsed, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Ethnicity by outsourcing group (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+#### By high/low pay
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_group, income_group, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_collapsed
+  ) %>%
+    pivot_wider(
+      id_cols = c(outsourcing_group,income_group),
+      names_from = Ethnicity_collapsed, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Ethnicity by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+### Gender by outsourcing status
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_status, Gender) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+    pivot_wider(
+      id_cols = outsourcing_status,
+      names_from = Gender, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Gender by outsourcing status (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+
+```
+
+#### By high/low pay
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, Gender) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+    pivot_wider(
+      id_cols = c(outsourcing_status,income_group),
+      names_from = Gender, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Gender by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+### Gender by outsourcing group
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_group, Gender) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+    pivot_wider(
+      id_cols = outsourcing_group,
+      names_from = Gender, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Gender by outsourcing group (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+
+```
+
+#### By high/low pay
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_group, income_group, Gender) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+    pivot_wider(
+      id_cols = c(outsourcing_group,income_group),
+      names_from = Gender, 
+      values_from = Percentage
+    )
+
+tab %>%
+  kable(caption = "Gender by outsourcing group and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
 ## Evidence paints a racialised picture of outsourcing in the UK, with links to both ethnicity and migration
 
 ::: {.callout-tip title="#ethnicity"}
@@ -695,6 +949,12 @@ rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod_2, only_sig = T)
 
 write_csv(coef_table, file="../outputs/data/income_group_outsourcing.csv")
+```
+```{r}
+#| output: false
+#| message: false
+mod_2 <- glm(income_group ~ Ethnicity_collapsed * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_2)
 ```
 
 A person is more likely to be in the low income group if they are:
@@ -986,7 +1246,7 @@ mig_pay_split %>%
 
 
 
-## Outsourced workers are on average younger than non-outsourced workers
+## Outsourced workers are on average younger than non-outsourced workers {#sec-age}
 
 ::: {.callout-tip title="#age"}
 -   We find that outsourced workers are significantly younger than non-outsourced workers, on average. The median age of an outsourced worker is 35, compared to a median age of 43 for a non-outsourced worker.
@@ -1056,6 +1316,47 @@ The higher concentration of younger workers identified above appears to be drive
 
 [^14]: [outputs/data/sector_summary_3.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
 
+```{r}
+age_statistics_income_group <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group) %>%
+  summarise(
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),
+    N = n()
+  )
+
+knitr::kable(age_statistics_income_group,
+             digits = 2,
+             col.names = c("Outsourcing status",
+                           "Income group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.",
+                           "N")) %>%
+  kable_styling(full_width = F)
+
+income_data %>%
+  filter(!is.na(income_group)) %>%
+  mutate(
+    Age = as.numeric(as.character(as_factor(Age)))
+  ) %>%
+  ggplot(.,aes(Age, colour = outsourcing_status, fill = outsourcing_status)) +
+  facet_grid(rows = vars(income_group)) + 
+  geom_density(alpha = 0.3) +
+  geom_vline(data = age_statistics_income_group, aes(xintercept=median, colour = outsourcing_status)) +
+  scale_x_continuous(breaks = seq(min(age_statistics_income_group$min), max(age_statistics_income_group$max),5)) +
+  theme_minimal() +
+  scale_colour_manual(values=colours, name = "Outsourcing status") +
+  scale_fill_manual(values=colours, name = "Outsourcing status")
+```
+
+
 ```{r age-by-group}
 age_statistics_2 <- data %>%
   group_by(outsourcing_group) %>%
@@ -1093,6 +1394,49 @@ data %>%
   scale_fill_manual(values=better_colours, name = "Outsourcing group")
   
 ```
+
+
+```{r}
+age_statistics2_income_group <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_group, income_group) %>%
+  summarise(
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),
+    N = n()
+  )
+
+knitr::kable(age_statistics2_income_group,
+             digits = 2,
+             col.names = c("Outsourcing group",
+                           "Income group",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.",
+                           "N")) %>%
+  kable_styling(full_width = F)
+
+income_data %>%
+  filter(!is.na(income_group)) %>%
+  mutate(
+    Age = as.numeric(as.character(as_factor(Age)))
+  ) %>%
+  ggplot(.,aes(Age, colour = outsourcing_group, fill = outsourcing_group)) +
+  facet_grid(rows = vars(income_group)) + 
+  geom_density(alpha = 0.3) +
+  geom_vline(data = age_statistics2_income_group, aes(xintercept=median, colour = outsourcing_group)) +
+  scale_x_continuous(breaks = seq(min(age_statistics2_income_group$min), max(age_statistics2_income_group$max),5)) +
+  theme_minimal() +
+  scale_colour_manual(values=colours, name = "Outsourcing group") +
+  scale_fill_manual(values=colours, name = "Outsourcing group")
+```
+
+
 
 ::: {.callout-tip title="#gender"}
 -   The evidence also finds meaningful differences by gender between the outsourced and non-outsourced groups in our data. Men make up 56% of the outsourced workforce compared to 47% of the non-outsourced workforce, a nearly 10 percentage point difference.
@@ -1424,6 +1768,7 @@ ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_group)) +
 
 ```
 
+# Pay
 
 ::: {.callout-tip title="'#pay"}
 -   Using regression analysis, we find that outsourced workers are on average paid £2170 less than non-outsourced workers .
@@ -1461,16 +1806,40 @@ sig_coefs <- extract_lm_coefs(mod, only_sig = T)
 
 write_csv(coef_table, file="../outputs/data/model_income_by_o-status.csv")
 
+income_statistics_weekly <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
+  )
+
+readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-status.csv")
+
+
+mod_weekly <- lm(income_weekly_all ~ outsourcing_status, income_data, weights = NatRepemployees)
+# summary(mod)
+
+coef_table_weekly <- extract_lm_coefs(mod_weekly)
+rownames(coef_table_weekly) <- coef_table_weekly$variable
+sig_coefs_weekly <- extract_lm_coefs(mod_weekly, only_sig = T)
+
+write_csv(coef_table_weekly, file="../outputs/data/model_income_by_o-status_weekly.csv")
+
 ```
 
-The table and plot below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**.[^18]
+The tables and plots below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**
 
 [^18]: [outputs/data/income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
 
 ```{r income-plot}
 knitr::kable(income_statistics,
              digits = 2,
-             col.names = c("Outsourcing group",
+             col.names = c("Outsourcing status",
                            "n",
                            "Mean",
                            "Median",
@@ -1491,6 +1860,138 @@ data %>%
   xlab("Outsourcing status") + ylab("Annual income") +
   coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
   scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+
+# weekly
+knitr::kable(income_statistics_weekly,
+             digits = 2,
+             col.names = c("Outsourcing status",
+                           "n",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  ggplot(., aes(outsourcing_status, income_weekly_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics_weekly, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics_weekly$mean,0),"\n", "Median = ", income_statistics_weekly$median), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing status") + ylab("Weekly income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics_weekly$min), 10, f = floor),plyr::round_any(max(income_statistics_weekly$max),10, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics_weekly$min), 10, f = ceiling), plyr::round_any(max(income_statistics_weekly$max),10, f = ceiling), 100))
+```
+
+```{r income-outsourcing-group}
+# filter to just cases where income is abovve the fifth percentile and lower than the 95th? I.e., drop the top and bottom 5%.
+income_statistics <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+  )
+readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-group.csv")
+
+
+mod <- lm(income_annual_all ~ outsourcing_group, income_data, weights = NatRepemployees)
+
+# summary(mod)
+
+coef_table <- extract_lm_coefs(mod)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_lm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, file="../outputs/data/model_income_by_o-group.csv")
+
+income_statistics_weekly <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(outsourcing_group) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
+  )
+
+readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-group.csv")
+
+
+mod_weekly <- lm(income_weekly_all ~ outsourcing_group, income_data, weights = NatRepemployees)
+# summary(mod)
+
+coef_table_weekly <- extract_lm_coefs(mod_weekly)
+rownames(coef_table_weekly) <- coef_table_weekly$variable
+sig_coefs_weekly <- extract_lm_coefs(mod_weekly, only_sig = T)
+
+write_csv(coef_table_weekly, file="../outputs/data/model_income_by_o-group_weekly.csv")
+
+```
+
+The tables and plots below show descriptive statistics on income and its distribution for outsrouced groups. Only the full outsourced subgroup has lower income than non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**
+
+[^18]: [outputs/data/income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
+
+```{r income-plot-group}
+knitr::kable(income_statistics,
+             digits = 2,
+             col.names = c("Outsourcing group",
+                           "n",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
+  ggplot(., aes(outsourcing_group, income_annual_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_group, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", round(income_statistics$median,0)), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing group") + ylab("Annual income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000))
+
+# weekly
+knitr::kable(income_statistics_weekly,
+             digits = 2,
+             col.names = c("Outsourcing group",
+                           "n",
+                           "Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.")) %>%
+  kable_styling(full_width = F)
+
+# plot the distribution of income for the two groups
+data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  ggplot(., aes(outsourcing_group, income_weekly_all)) + 
+  geom_violin() +
+  geom_boxplot(width = 0.3) +
+  geom_text(inherit.aes=F, data=income_statistics_weekly, aes(outsourcing_group, y = 1300), label=paste0("Mean = ", round(income_statistics_weekly$mean,0),"\n", "Median = ", round(income_statistics_weekly$median,0)), nudge_x = 0.1, hjust=0) +
+  coord_cartesian(xlim=c(1,2.5)) +
+  theme_minimal() +
+  xlab("Outsourcing group") + ylab("Weekly income") +
+  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics_weekly$min), 10, f = floor),plyr::round_any(max(income_statistics_weekly$max),10, f = ceiling))) +
+  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics_weekly$min), 10, f = ceiling), plyr::round_any(max(income_statistics_weekly$max),10, f = ceiling), 100))
 ```
 
 ```{r}
@@ -1511,9 +2012,20 @@ rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod_3, only_sig = T)
 
 write_csv(coef_table, file="../outputs/data/model_2_income_by_o-status.csv")
+
+mod_3_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_3_weekly)
+
+coef_table_weekly <- extract_lm_coefs(mod_3_weekly)
+rownames(coef_table_weekly) <- coef_table_weekly$variable
+sig_coefs <- extract_glm_coefs(mod_3_weekly, only_sig = T)
+
+write_csv(coef_table_weekly, file="../outputs/data/model_2_income_by_o-status_weekly.csv")
 ```
 
-This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` when we take into account Age, Gender, Education, Ethnicity, Region, and Arrival Time. [^19] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average, and controlling for each of the otehr variables in the model:
+This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` annually (£`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` per week) when we take into account Age, Gender, Education, Ethnicity, Region, and Arrival Time. [^19] This analysis shows that all other variables, apart from Age, are in some way relevant to income. On average, and controlling for each of the other variables in the model. 
+
+Annually:
 
 [^19]: [outputs/data/model_2_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status.csv)
 
@@ -1534,6 +2046,46 @@ This difference increases to £`r abs(round(coef_table['outsourcing_statusOutsou
 -   People who arrived in the UK within the last 3 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 3 years','Estimate'],0))` less than people born in the UK
 -   People who arrived in the UK within the last 5 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 5 years','Estimate'],0))` less than people born in the UK
 -   People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
+
+Weekly:
+
+-   Men earn £`r abs(round(coef_table_weekly['GenderMale','Estimate'],0))` more than women.
+-   People who have a degree earn £`r abs(round(coef_table_weekly['Has_DegreeYes','Estimate'],0))` more than people without a degree.
+-   Workers in all non-London regions earn less than workers in London
+    -   East Midlands: -£`r abs(round(coef_table_weekly['RegionEast Midlands','Estimate'],0))`
+    -   East of England: -£`r abs(round(coef_table_weekly['RegionEast of England','Estimate'],0))`
+    -   North East: -£`r abs(round(coef_table_weekly['RegionNorth East','Estimate'],0))`
+    -   North West: -£`r abs(round(coef_table_weekly['RegionNorth West','Estimate'],0))`
+    -   Northern Ireland: -£`r abs(round(coef_table_weekly['RegionNorthern Ireland','Estimate'],0))`
+    -   Scotland: -£`r abs(round(coef_table_weekly['RegionScotland','Estimate'],0))`
+    -   South East: -£`r abs(round(coef_table_weekly['RegionSouth East','Estimate'],0))`
+    -   Wales: -£`r abs(round(coef_table_weekly['RegionWales','Estimate'],0))`
+    -   West Midlands: -£`r abs(round(coef_table_weekly['RegionWest Midlands','Estimate'],0))`
+    -   Yorkshire and the Humber: -£`r abs(round(coef_table_weekly['RegionYorkshire and the Humber','Estimate'],0))`
+-   People who arrived in the UK within the last year earn £`r abs(round(coef_table_weekly['BORNUK_labelledWithin the last year','Estimate'],0))` less than people born in the UK
+-   People who arrived in the UK within the last 3 years earn £`r abs(round(coef_table_weekly['BORNUK_labelledWithin the last 3 years','Estimate'],0))` less than people born in the UK
+-   People who arrived in the UK within the last 5 years earn £`r abs(round(coef_table_weekly['BORNUK_labelledWithin the last 5 years','Estimate'],0))` less than people born in the UK
+-   People who arrived within the last 30 years earn £`r abs(round(coef_table_weekly['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
+
+## Gender pay gap
+
+```{r}
+#| output: false
+#| messages: false
+#| warnings: false
+simp_mod <- lm(income_annual_all ~ outsourcing_status*Gender, income_data, weights=NatRepemployees)
+summary(simp_mod)
+
+mod <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod)
+
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod_weekly)
+
+simp_mod_weekly <- lm(income_weekly_all ~ outsourcing_status*Gender, income_data, weights=NatRepemployees)
+summary(simp_mod)
+
+```
 
 ::: {.callout-warning title="#gender-pay-gap"}
 -   On average within our sample, male workers earn £6400 more than female workers per year; but further exploration of how pay relates to gender for outsourced workers suggests that this gender pay gap doesn’t differ in a statistically significant way depending on whether workers are outsourced or not
@@ -1575,10 +2127,67 @@ outsourced_gap <- gender_outsourced_gap %>%
   ) %>%
   pull(diff)
 
+
+gender_outsourced_gap %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+gender_outsourced_gap %>%
+  ggplot(aes(outsourcing_status, median, fill = Gender)) +
+  geom_col(position="dodge") +
+  ggtitle("Annual income")
+
 write_csv(gender_outsourced_gap, "../outputs/data/gender_outsourced_gap.csv")
+
+# weekly
+gender_outsourced_gap_weekly <- income_data %>%
+  group_by(outsourcing_status, Gender) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
+  )
+
+not_outsourced_gap_weekly <- gender_outsourced_gap_weekly %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  select(c(outsourcing_status, Gender, median)) %>%
+  pivot_wider(names_from = "Gender", values_from = "median") %>%
+  mutate(
+    diff = Male - Female
+  ) %>%
+  pull(diff)
+
+outsourced_gap_weekly <- gender_outsourced_gap_weekly %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  select(c(outsourcing_status, Gender, median)) %>%
+  pivot_wider(names_from = "Gender", values_from = "median") %>%
+  mutate(
+    diff = Male - Female
+  ) %>%
+  pull(diff)
+
+
+gender_outsourced_gap_weekly %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+gender_outsourced_gap_weekly%>%
+  ggplot(aes(outsourcing_status, median, fill = Gender)) +
+  geom_col(position="dodge")+
+  ggtitle("Weekly income")
+
+write_csv(gender_outsourced_gap_weekly, "../outputs/data/gender_outsourced_gap_weekly.csv")
 ```
+**Annual**:
 
 Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r round(not_outsourced_gap,2)` less than males. For outsourced workers, females are paid £`r round(outsourced_gap,2)` less than males. The difference between non-outsourced and outsourced workers is not significant.
+
+**Weekly**: 
+
+Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r round(not_outsourced_gap_weekly,2)` less than males. For outsourced workers, females are paid £`r round(outsourced_gap_weekly,2)` less than males. The difference between non-outsourced and outsourced workers is not significant.
 
 ```{r gender-outsourcing-int}
 #| output: false
@@ -1617,6 +2226,72 @@ The gender by outsourcing status is also not relevant for whether a worker is lo
 ```{r}
 #| output: false
 mod <- glm(income_group ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_status + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod)
+
+# test <- summary(mod)
+# 
+# or <- exp(mod[["coefficients"]][["outsourcing_statusOutsourced"]])
+# p <- test[["coefficients"]][2,4]
+# 
+# coef_table <- extract_lm_coefs(mod_3)
+# rownames(coef_table) <- coef_table$variable
+# sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, "../outputs/data/mod_gender_outsourcing_income_group.csv")
+```
+
+
+### Outsourcing group
+
+```{r gender-pay-gap-group}
+gender_outsourced_gap <- income_data %>%
+  group_by(outsourcing_group, Gender) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T))
+  )
+
+gender_outsourced_gap %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+gender_outsourced_gap %>%
+  ggplot(aes(outsourcing_group, median, fill = Gender)) +
+  geom_col(position="dodge") +
+  ggtitle("Annual income")
+
+
+# weekly
+gender_outsourced_gap_weekly <- income_data %>%
+  group_by(outsourcing_group, Gender) %>%
+  summarise(
+    n = n(),
+    mean = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
+  )
+
+gender_outsourced_gap_weekly %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+gender_outsourced_gap_weekly%>%
+  ggplot(aes(outsourcing_group, median, fill = Gender)) +
+  geom_col(position="dodge")+
+  ggtitle("Weekly income")
+
+```
+The gender by outsourcing group is also not relevant for whether a worker is low income (i.e. non-sig relationship with income_group).
+
+```{r}
+#| output: false
+mod <- glm(income_group ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_group + BORNUK_labelled, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod)
 
 # test <- summary(mod)
