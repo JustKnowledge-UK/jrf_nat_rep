@@ -1,0 +1,11 @@
+variable,Estimate,or,Std. Error,t value,Pr(>|t|)
+(Intercept),-1.75,0.17,0.03,-55.07,0
+Ethnicity_collapsed_disaggregatedWhite other,0.36,1.43,0.12,3.05,0
+Ethnicity_collapsed_disaggregatedBlack Caribbean,0.08,1.09,0.24,0.34,0.73
+Ethnicity_collapsed_disaggregatedBlack African,1.01,2.75,0.14,7.44,0
+Ethnicity_collapsed_disaggregatedMixed other,0.78,2.19,0.24,3.31,0
+Ethnicity_collapsed_disaggregatedSouth Asian,0.81,2.25,0.1,8.02,0
+Ethnicity_collapsed_disaggregatedEast Asian,-0.02,0.98,0.24,-0.1,0.92
+Ethnicity_collapsed_disaggregatedOther,0.48,1.62,0.11,4.55,0
+Ethnicity_collapsed_disaggregatedBlack other,0.98,2.66,0.35,2.77,0.01
+Ethnicity_collapsed_disaggregatedArab,1.22,3.39,0.36,3.35,0

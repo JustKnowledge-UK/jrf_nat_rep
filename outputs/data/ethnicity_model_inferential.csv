@@ -1,8 +1,8 @@
 variable,Estimate,or,Std. Error,t value,Pr(>|t|)
-(Intercept),-1.7316776492422759,0.177,0.030672764115231843,-56.45652418988672,0
-Ethnicity_collapsedArab/British Arab,1.1997469082833812,3.319,0.36471945956929036,3.2895061582406466,0.0010070534142385527
-Ethnicity_collapsedAsian/Asian British,0.6642458744067944,1.943,0.08453726086076503,7.857433132365429,4.318224689688468e-15
-Ethnicity_collapsedBlack/African/Caribbean/Black British,0.8273793240637596,2.287,0.12431971302988717,6.655254455621635,2.9741343159047896e-11
-Ethnicity_collapsedMixed/Multiple ethnic group,0.6029887935992727,1.828,0.17396150271878902,3.466219733535021,5.300164562646862e-4
-Ethnicity_collapsedOther ethnic group,0.5887557670969837,1.802,0.33604350864671745,1.752022437415813,0.07980015206672192
-Ethnicity_collapsedPrefer not to say,0.3084556556883563,1.361,0.1331830179723459,2.3160284275312333,0.020576543852431406
+(Intercept),-1.73,0.18,0.03,-56.46,0
+Ethnicity_collapsedArab/British Arab,1.2,3.32,0.36,3.29,0
+Ethnicity_collapsedAsian/Asian British,0.66,1.94,0.08,7.86,0
+Ethnicity_collapsedBlack/African/Caribbean/Black British,0.83,2.29,0.12,6.66,0
+Ethnicity_collapsedMixed/Multiple ethnic group,0.6,1.83,0.17,3.47,0
+Ethnicity_collapsedOther ethnic group,0.59,1.8,0.34,1.75,0.08
+Ethnicity_collapsedPrefer not to say,0.31,1.36,0.13,2.32,0.02
