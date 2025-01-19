@@ -445,7 +445,8 @@ We want them broken down by
 - outsourcing group
   - high low pay
   
-### Ethnicity by oustourcing status
+### Ethnicity by outsourcing status^[[outputs/data/status_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity.csv)]
+
 
 ```{r}
 # pollster
@@ -477,21 +478,23 @@ tab <- data %>%
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
-  ) %>%
-    pivot_wider(
-      id_cols = outsourcing_status,
-      names_from = Ethnicity_collapsed, 
-      values_from = Percentage
-    )
+  )
+
+write_csv(tab, file="../outputs/data/status_by_ethnicity.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = outsourcing_status,
+    names_from = Ethnicity_collapsed, 
+    values_from = Percentage
+  ) %>%
   kable(caption = "Ethnicity by outsourcing status (%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 
 ```
 
-#### By high/low pay
+#### By high/low pay^[[outputs/data/status_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -506,20 +509,22 @@ tab <- income_data %>%
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
-  ) %>%
-    pivot_wider(
-      id_cols = c(outsourcing_status,income_group),
-      names_from = Ethnicity_collapsed, 
-      values_from = Percentage
-    )
+  )
 
-tab %>%
+write_csv(tab, file="../outputs/data/status_by_ethnicity_income_group.csv")
+
+tab  %>%
+  pivot_wider(
+    id_cols = c(outsourcing_status,income_group),
+    names_from = Ethnicity_collapsed, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Ethnicity by outsourcing status and income group(%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 ```
 
-### Ethnicity by oustourcing group
+### Ethnicity by oustourcing group^[[outputs/data/group_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity.csv)]
 
 ```{r}
 tab <- data %>%
@@ -533,20 +538,22 @@ tab <- data %>%
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
-  ) %>%
-    pivot_wider(
-      id_cols = outsourcing_group,
-      names_from = Ethnicity_collapsed, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_ethnicity.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = outsourcing_group,
+    names_from = Ethnicity_collapsed, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Ethnicity by outsourcing group (%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 ```
 
-#### By high/low pay
+#### By high/low pay^[[outputs/data/group_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -561,20 +568,22 @@ tab <- income_data %>%
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
-  ) %>%
-    pivot_wider(
-      id_cols = c(outsourcing_group,income_group),
-      names_from = Ethnicity_collapsed, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_ethnicity_income_group.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = c(outsourcing_group,income_group),
+    names_from = Ethnicity_collapsed, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Ethnicity by outsourcing status and income group(%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 ```
 
-### Gender by outsourcing status
+### Gender by outsourcing status^[[outputs/data/status_by_gender.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_gender.csv)]
 
 ```{r}
 tab <- data %>%
@@ -587,21 +596,23 @@ tab <- data %>%
     N = sum(n),
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum)
-  ) %>%
-    pivot_wider(
-      id_cols = outsourcing_status,
-      names_from = Gender, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/status_by_gender.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = outsourcing_status,
+    names_from = Gender, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Gender by outsourcing status (%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 
 ```
 
-#### By high/low pay
+#### By high/low pay^[[outputs/data/status_by_gender_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_gender_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -615,19 +626,24 @@ tab <- income_data %>%
     N = sum(n),
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum)
-  ) %>%
-    pivot_wider(
-      id_cols = c(outsourcing_status,income_group),
-      names_from = Gender, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/status_by_gender_income_group.csv")
+
 
 tab %>%
+  pivot_wider(
+    id_cols = c(outsourcing_status,income_group),
+    names_from = Gender, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Gender by outsourcing status and income group(%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 ```
-### Gender by outsourcing group
+
+### Gender by outsourcing group^[[outputs/data/group_by_gender.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_gender.csv)]
+
 
 ```{r}
 tab <- data %>%
@@ -640,21 +656,23 @@ tab <- data %>%
     N = sum(n),
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum)
-  ) %>%
-    pivot_wider(
-      id_cols = outsourcing_group,
-      names_from = Gender, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_gender.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = outsourcing_group,
+    names_from = Gender, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Gender by outsourcing group (%)",
         digits = 2) %>%
   kable_styling(full_width = F)
 
 ```
 
-#### By high/low pay
+#### By high/low pay^[[outputs/data/group_by_gender_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_gender_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -668,14 +686,16 @@ tab <- income_data %>%
     N = sum(n),
     Sum = sum(Frequency),
     Percentage = 100 * (Frequency / Sum)
-  ) %>%
-    pivot_wider(
-      id_cols = c(outsourcing_group,income_group),
-      names_from = Gender, 
-      values_from = Percentage
-    )
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_gender_income_group.csv")
 
 tab %>%
+  pivot_wider(
+    id_cols = c(outsourcing_group,income_group),
+    names_from = Gender, 
+    values_from = Percentage
+  )%>%
   kable(caption = "Gender by outsourcing group and income group(%)",
         digits = 2) %>%
   kable_styling(full_width = F)
@@ -1818,7 +1838,7 @@ income_statistics_weekly <- data %>%
     stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
   )
 
-readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-status.csv")
+readr::write_csv(income_statistics_weekly, file="../outputs/data/weekly_income_stats_o-status.csv")
 
 
 mod_weekly <- lm(income_weekly_all ~ outsourcing_status, income_data, weights = NatRepemployees)
@@ -1835,6 +1855,8 @@ write_csv(coef_table_weekly, file="../outputs/data/model_income_by_o-status_week
 The tables and plots below show descriptive statistics on income and its distribution for outsourced and non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**
 
 [^18]: [outputs/data/income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
+
+Weekly stats here^[[outputs/data/weekly_income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/weekly_income_stats_o-status.csv) & [outputs/data/model_income_by_o-status_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status_weekly.csv)]
 
 ```{r income-plot}
 knitr::kable(income_statistics,
@@ -1925,7 +1947,7 @@ income_statistics_weekly <- data %>%
     stdev = sqrt(wtd.var(income_weekly_all, w = NatRepemployees, na.rm = T))
   )
 
-readr::write_csv(income_statistics, file="../outputs/data/income_stats_o-group.csv")
+readr::write_csv(income_statistics_weekly, file="../outputs/data/weekly_income_stats_o-group.csv")
 
 
 mod_weekly <- lm(income_weekly_all ~ outsourcing_group, income_data, weights = NatRepemployees)
@@ -1941,7 +1963,9 @@ write_csv(coef_table_weekly, file="../outputs/data/model_income_by_o-group_weekl
 
 The tables and plots below show descriptive statistics on income and its distribution for outsrouced groups. Only the full outsourced subgroup has lower income than non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**
 
-[^18]: [outputs/data/income_stats_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-status.csv) & [outputs/data/model_income_by_o-status.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-status.csv)
+[^18]: [outputs/data/income_stats_o-group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-group.csv) & [outputs/data/model_income_by_o-group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group.csv)
+
+Weekly stats here^[[outputs/data/weekly_income_stats_o-group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/weekly_income_stats_o-group.csv) & [outputs/data/model_income_by_o-group_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group_weekly.csv)]
 
 ```{r income-plot-group}
 knitr::kable(income_statistics,
@@ -2047,7 +2071,7 @@ Annually:
 -   People who arrived in the UK within the last 5 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 5 years','Estimate'],0))` less than people born in the UK
 -   People who arrived within the last 30 years earn £`r abs(round(coef_table['BORNUK_labelledWithin the last 30 years','Estimate'],0))` more than people born in the UK.
 
-Weekly:
+Weekly^[[outputs/data/model_2_income_by_o-status_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_2_income_by_o-status_weekly.csv)]:
 
 -   Men earn £`r abs(round(coef_table_weekly['GenderMale','Estimate'],0))` more than women.
 -   People who have a degree earn £`r abs(round(coef_table_weekly['Has_DegreeYes','Estimate'],0))` more than people without a degree.
@@ -2093,9 +2117,7 @@ summary(simp_mod)
 -   For female outsourced workers, this suggests that being an outsourced worker neither exacerbates nor diminishes the gender pay gap they face compared to male workers. **Check what this controls for**
 :::
 
-Gender pay gap[^20]
-
-[^20]: [outputs/data/gender_outsourced_gap.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/gender_outsourced_gap.csv) & [outputs/data/mod_gender_outsourcing.csv](outputs/data/mod_gender_outsourcing.csv)
+### Outsourcing status
 
 ```{r gender-pay-gap-1}
 gender_outsourced_gap <- income_data %>%
@@ -2137,7 +2159,7 @@ gender_outsourced_gap %>%
   geom_col(position="dodge") +
   ggtitle("Annual income")
 
-write_csv(gender_outsourced_gap, "../outputs/data/gender_outsourced_gap.csv")
+write_csv(gender_outsourced_gap, "../outputs/data/o-status_gender_gap.csv")
 
 # weekly
 gender_outsourced_gap_weekly <- income_data %>%
@@ -2179,13 +2201,13 @@ gender_outsourced_gap_weekly%>%
   geom_col(position="dodge")+
   ggtitle("Weekly income")
 
-write_csv(gender_outsourced_gap_weekly, "../outputs/data/gender_outsourced_gap_weekly.csv")
+write_csv(gender_outsourced_gap_weekly, "../outputs/data/o-status_gender_gap_weekly.csv")
 ```
-**Annual**:
+**Annual**^[[outputs/data/o-status_gender_gap.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/o-status_gender_gap.csv) & [outputs/data/mod_o-status_gender.csv](outputs/data/mod_o-status_gender.csv)]:
 
 Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r round(not_outsourced_gap,2)` less than males. For outsourced workers, females are paid £`r round(outsourced_gap,2)` less than males. The difference between non-outsourced and outsourced workers is not significant.
 
-**Weekly**: 
+**Weekly**^[[outputs/data/o-status_gender_gap_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/o-status_gender_gap_weekly.csv) & [outputs/data/mod_o-status_gender_weekly.csv](outputs/data/mod_o-status_gender_weekly.csv)]: 
 
 Exploring the gender pay gap by outsourcing status indicates that the pay gap does not differ depending on whether workers are outsourced our not. For non-outsourced workers, females are paid £`r round(not_outsourced_gap_weekly,2)` less than males. For outsourced workers, females are paid £`r round(outsourced_gap_weekly,2)` less than males. The difference between non-outsourced and outsourced workers is not significant.
 
@@ -2217,7 +2239,16 @@ coef_table <- extract_lm_coefs(mod_3)
 rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 
-write_csv(coef_table, "../outputs/data/mod_gender_outsourcing.csv")
+write_csv(coef_table, "../outputs/data/mod_o-status_gender.csv")
+
+mod_3_weekly <- lm(income_weekly_all ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_3_weekly)
+
+coef_table_weekly <- extract_lm_coefs(mod_3_weekly)
+rownames(coef_table_weekly) <- coef_table_weekly$variable
+sig_coefs <- extract_glm_coefs(mod_3_weekly, only_sig = T)
+
+write_csv(coef_table_weekly, "../outputs/data/mod_o-status_gender_weekly.csv")
 
 ```
 
@@ -2244,6 +2275,9 @@ write_csv(coef_table, "../outputs/data/mod_gender_outsourcing_income_group.csv")
 ### Outsourcing group
 
 ```{r gender-pay-gap-group}
+#| output: false
+#| warnings: false
+#| messages: false
 gender_outsourced_gap <- income_data %>%
   group_by(outsourcing_group, Gender) %>%
   summarise(
@@ -2264,6 +2298,7 @@ gender_outsourced_gap %>%
   geom_col(position="dodge") +
   ggtitle("Annual income")
 
+write_csv(gender_outsourced_gap, "../outputs/data/o-group_gender_gap.csv")
 
 # weekly
 gender_outsourced_gap_weekly <- income_data %>%
@@ -2286,7 +2321,37 @@ gender_outsourced_gap_weekly%>%
   geom_col(position="dodge")+
   ggtitle("Weekly income")
 
+write_csv(gender_outsourced_gap_weekly, "../outputs/data/o-group_gender_gap_weekly.csv")
+
+
+# models
+## annual
+mod_3 <- lm(income_annual_all ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_group + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_3)
+
+coef_table <- extract_lm_coefs(mod_3)
+rownames(coef_table) <- coef_table$variable
+sig_coefs <- extract_glm_coefs(mod, only_sig = T)
+
+write_csv(coef_table, "../outputs/data/mod_o-group_gender.csv")
+
+# weekly
+mod_3_weekly <- lm(income_weekly_all ~ Age + Has_Degree + Ethnicity_collapsed + Region + Gender*outsourcing_group + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_3_weekly)
+
+coef_table_weekly <- extract_lm_coefs(mod_3_weekly)
+rownames(coef_table_weekly) <- coef_table_weekly$variable
+sig_coefs_weekly <- extract_glm_coefs(mod_3_weekly, only_sig = T)
+
+write_csv(coef_table_weekly, "../outputs/data/mod_o-group_gender_weekly.csv")
+
 ```
+
+**Annual data files**^[[outputs/data/o-group_gender_gap.csv.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/o-group_gender_gap.csv.csv) & [outputs/data/mod_o-group_gender.csv](outputs/data/mod_o-group_gender.csv)]:
+
+**Weekly**^[[outputs/data/o-group_gender_gap_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/o-group_gender_gap_weekly.csv) & [outputs/data/mod_o-group_gender_weekly.csv](outputs/data/mod_o-group_gender_weekly.csv)]: 
+
+
 The gender by outsourcing group is also not relevant for whether a worker is low income (i.e. non-sig relationship with income_group).
 
 ```{r}
