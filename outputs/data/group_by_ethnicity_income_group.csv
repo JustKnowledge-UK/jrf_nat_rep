@@ -1,0 +1,53 @@
+outsourcing_group,income_group,Ethnicity_collapsed,n,Frequency,N,Sum,Percentage,Ethnicity_short
+Not outsourced,Not low,White/White British,4487,4318.642699413699,5280,5120.091653802492,84.34698031638578,White/White British
+Not outsourced,Not low,Arab/British Arab,9,13.75719323722442,5280,5120.091653802492,0.26869037055239997,Arab/British Arab
+Not outsourced,Not low,Asian/Asian British,280,407.4819754542006,5280,5120.091653802492,7.958489867101884,Asian/Asian British
+Not outsourced,Not low,Black/African/Caribbean/Black British,221,148.9343604430806,5280,5120.091653802492,2.908822156190756,Black/African/Caribbean/Black British
+Not outsourced,Not low,Mixed/Multiple ethnic group,142,82.66160076172953,5280,5120.091653802492,1.6144554892946104,Mixed/Multiple ethnic group
+Not outsourced,Not low,Other ethnic group,19,31.9834655655286,5280,5120.091653802492,0.6246658795995522,Other ethnic group
+Not outsourced,Not low,Prefer not to say,122,116.63035892702943,5280,5120.091653802492,2.2778959208750225,Prefer not to say
+Not outsourced,Low,White/White British,1394,1539.1528508503025,1644,1788.0524687427219,86.07984820113056,White/White British
+Not outsourced,Low,Arab/British Arab,2,4.730080650243655,1644,1788.0524687427219,0.2645381348104195,Arab/British Arab
+Not outsourced,Low,Asian/Asian British,80,113.1349201978422,1644,1788.0524687427219,6.327270713559854,Asian/Asian British
+Not outsourced,Low,Black/African/Caribbean/Black British,73,59.50240426615459,1644,1788.0524687427219,3.3277773055504354,Black/African/Caribbean/Black British
+Not outsourced,Low,Mixed/Multiple ethnic group,49,28.47184685273386,1644,1788.0524687427219,1.592338443667371,Mixed/Multiple ethnic group
+Not outsourced,Low,Other ethnic group,1,0.6331886360119569,1644,1788.0524687427219,0.03541219550772951,Other ethnic group
+Not outsourced,Low,Prefer not to say,45,42.427177289433054,1644,1788.0524687427219,2.372815005773625,Prefer not to say
+Outsourced,Not low,White/White British,446,437.91958695860495,625,614.0480478748451,71.31682748185553,White/White British
+Outsourced,Not low,Arab/British Arab,2,3.217399502786165,625,614.0480478748451,0.5239654313569178,Arab/British Arab
+Outsourced,Not low,Asian/Asian British,65,89.36077092973876,625,614.0480478748451,14.552732679308544,Asian/Asian British
+Outsourced,Not low,Black/African/Caribbean/Black British,64,44.5862818090023,625,614.0480478748451,7.261041210587783,Black/African/Caribbean/Black British
+Outsourced,Not low,Mixed/Multiple ethnic group,26,12.630590837430782,625,614.0480478748451,2.0569385215283904,Mixed/Multiple ethnic group
+Outsourced,Not low,Other ethnic group,5,5.477019239046754,625,614.0480478748451,0.8919528786065087,Other ethnic group
+Outsourced,Not low,Prefer not to say,17,20.856398598235426,625,614.0480478748451,3.396541796756329,Prefer not to say
+Outsourced,Low,White/White British,201,247.97228904474838,272,318.2082025471031,77.92768604324147,White/White British
+Outsourced,Low,Arab/British Arab,1,1.7568934585174687,272,318.2082025471031,0.5521207324180786,Arab/British Arab
+Outsourced,Low,Asian/Asian British,21,30.2833892390426,272,318.2082025471031,9.516847459191398,Asian/Asian British
+Outsourced,Low,Black/African/Caribbean/Black British,15,10.5636371996418,272,318.2082025471031,3.3197249835437876,Black/African/Caribbean/Black British
+Outsourced,Low,Mixed/Multiple ethnic group,20,13.252442604806008,272,318.2082025471031,4.164708042950056,Mixed/Multiple ethnic group
+Outsourced,Low,Prefer not to say,14,14.379551000346853,272,318.2082025471031,4.518912738655223,Prefer not to say
+Likely agency,Not low,White/White British,115,113.53741100309536,168,157.01652630045868,72.30921080615174,White/White British
+Likely agency,Not low,Arab/British Arab,1,1.2385155683913387,168,157.01652630045868,0.7887803899198353,Arab/British Arab
+Likely agency,Not low,Asian/Asian British,15,19.815836251326072,168,157.01652630045868,12.620223309110479,Asian/Asian British
+Likely agency,Not low,Black/African/Caribbean/Black British,22,13.18150994621167,168,157.01652630045868,8.394982526226707,Black/African/Caribbean/Black British
+Likely agency,Not low,Mixed/Multiple ethnic group,7,3.3538258266555268,168,157.01652630045868,2.1359699553140157,Mixed/Multiple ethnic group
+Likely agency,Not low,Other ethnic group,1,0.7706144242078602,168,157.01652630045868,0.49078555128219586,Other ethnic group
+Likely agency,Not low,Prefer not to say,7,5.118813280570861,168,157.01652630045868,3.2600474619950295,Prefer not to say
+Likely agency,Low,White/White British,47,48.598046204093485,63,71.74761575277356,67.7347193968809,White/White British
+Likely agency,Low,Asian/Asian British,8,10.738971438583926,63,71.74761575277356,14.967704955643473,Asian/Asian British
+Likely agency,Low,Black/African/Caribbean/Black British,2,1.6809605907059613,63,71.74761575277356,2.3428800707443442,Black/African/Caribbean/Black British
+Likely agency,Low,Mixed/Multiple ethnic group,3,5.128173452376677,63,71.74761575277356,7.14751758448285,Mixed/Multiple ethnic group
+Likely agency,Low,Other ethnic group,1,3.9329493835023297,63,71.74761575277356,5.481644710054764,Other ethnic group
+Likely agency,Low,Prefer not to say,2,1.6685146835111726,63,71.74761575277356,2.325533282193663,Prefer not to say
+High indicators,Not low,White/White British,140,132.9132716134164,193,185.42751815936893,71.67936719035508,White/White British
+High indicators,Not low,Arab/British Arab,1,1.6134707873318983,193,185.42751815936893,0.8701355674432165,Arab/British Arab
+High indicators,Not low,Asian/Asian British,28,34.54535488971781,193,185.42751815936893,18.63011231160803,Asian/Asian British
+High indicators,Not low,Black/African/Caribbean/Black British,13,7.792051725928727,193,185.42751815936893,4.202208929546105,Black/African/Caribbean/Black British
+High indicators,Not low,Mixed/Multiple ethnic group,6,4.378443821799993,193,185.42751815936893,2.361269710807898,Mixed/Multiple ethnic group
+High indicators,Not low,Other ethnic group,1,1.603928715454267,193,185.42751815936893,0.8649895826550094,Other ethnic group
+High indicators,Not low,Prefer not to say,4,2.5809966057198226,193,185.42751815936893,1.391916707584653,Prefer not to say
+High indicators,Low,White/White British,33,30.359450422626676,46,44.17606070026707,68.72376110811332,White/White British
+High indicators,Low,Asian/Asian British,5,5.180401859819022,46,44.17606070026707,11.726717542715852,Asian/Asian British
+High indicators,Low,Black/African/Caribbean/Black British,4,3.4122417563937133,46,44.17606070026707,7.724187495000169,Black/African/Caribbean/Black British
+High indicators,Low,Mixed/Multiple ethnic group,2,1.2651201919867963,46,44.17606070026707,2.8638139569994476,Mixed/Multiple ethnic group
+High indicators,Low,Prefer not to say,2,3.958846469440866,46,44.17606070026707,8.961519897171213,Prefer not to say
