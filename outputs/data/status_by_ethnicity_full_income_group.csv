@@ -1,0 +1,85 @@
+outsourcing_status,income_group,Ethnicity_labelled,n,Frequency,N,Sum,Percentage,Ethnicity_short
+Not outsourced,Not low,English / Welsh / Scottish / Northern Irish / British,4179,4020.7965160377407,5280,5120.091653802492,78.52977618187073,English / Welsh / Scottish / Northern Irish / British
+Not outsourced,Not low,Irish,62,49.875362124215506,5280,5120.091653802492,0.9741107288025797,Irish
+Not outsourced,Not low,Gypsy or Irish Traveller,4,6.651422517839223,5280,5120.091653802492,0.1299082705462796,Gypsy or Irish Traveller
+Not outsourced,Not low,Roma,4,5.236993918025174,5280,5120.091653802492,0.10228320647611577,Roma
+Not outsourced,Not low,Any other White background,246,247.97082125174268,5280,5120.091653802492,4.843093405712462,Any other White background
+Not outsourced,Not low,White and Black Caribbean,38,27.03480624590393,5280,5120.091653802492,0.5280141074393899,White and Black Caribbean
+Not outsourced,Not low,White and Black African,26,13.414623814012367,5280,5120.091653802492,0.2619996812762102,White and Black African
+Not outsourced,Not low,White and Asian,41,21.629764173454422,5280,5120.091653802492,0.42244876920105207,White and Asian
+Not outsourced,Not low,Any other Mixed / Multiple ethnic background,37,20.582406528358813,5280,5120.091653802492,0.40199293137795816,Any other Mixed / Multiple ethnic background
+Not outsourced,Not low,Indian,111,160.85055421163415,5280,5120.091653802492,3.14155614953058,Indian
+Not outsourced,Not low,Pakistani,61,58.12308325996024,5280,5120.091653802492,1.1351961486235211,Pakistani
+Not outsourced,Not low,Bangladeshi,25,25.62734836656902,5280,5120.091653802492,0.5005251878164444,Bangladeshi
+Not outsourced,Not low,Chinese,50,91.20796941056763,5280,5120.091653802492,1.7813737639409448,Chinese
+Not outsourced,Not low,Any other Asian background,33,71.67302020546958,5280,5120.091653802492,1.399838617190394,Any other Asian background
+Not outsourced,Not low,African,154,100.73577117730457,5280,5120.091653802492,1.967460311037441,African
+Not outsourced,Not low,Caribbean,47,36.00549324057827,5280,5120.091653802492,0.7032197014254304,Caribbean
+Not outsourced,Not low,"Any other Black, Black British, or Caribbean background",20,12.193096025197763,5280,5120.091653802492,0.23814214372788475,"Any other Black, Black British, or Caribbean background"
+Not outsourced,Not low,Arab,9,13.75719323722442,5280,5120.091653802492,0.26869037055239997,Arab
+Not outsourced,Not low,Any other ethnic group,11,20.095049129664204,5280,5120.091653802492,0.3924744025771569,Any other ethnic group
+Not outsourced,Not low,Don’t think of myself as any of these,4,3.0282096461708754,5280,5120.091653802492,0.0591436609132171,Don’t think of myself as any of these
+Not outsourced,Not low,Prefer not to say,13,11.51021102747157,5280,5120.091653802492,0.2248047848698838,Prefer not to say
+Not outsourced,Not low,NA,105,102.09193825338699,5280,5120.091653802492,1.993947475091921,NA
+Not outsourced,Low,English / Welsh / Scottish / Northern Irish / British,1300,1433.6456180029384,1644,1788.0524687427219,80.17916940720501,English / Welsh / Scottish / Northern Irish / British
+Not outsourced,Low,Irish,23,24.74367380275412,1644,1788.0524687427219,1.3838337652447503,Irish
+Not outsourced,Low,Gypsy or Irish Traveller,1,0.6331886360119569,1644,1788.0524687427219,0.03541219550772951,Gypsy or Irish Traveller
+Not outsourced,Low,Any other White background,71,80.76355904461,1644,1788.0524687427219,4.5168450286808035,Any other White background
+Not outsourced,Low,White and Black Caribbean,20,11.198049857795365,1644,1788.0524687427219,0.6262707640603706,White and Black Caribbean
+Not outsourced,Low,White and Black African,5,3.1017575970334,1644,1788.0524687427219,0.17347128516952395,White and Black African
+Not outsourced,Low,White and Asian,11,6.506929865895537,1644,1788.0524687427219,0.3639115730463389,White and Asian
+Not outsourced,Low,Any other Mixed / Multiple ethnic background,13,7.665109532009558,1644,1788.0524687427219,0.42868482139113734,Any other Mixed / Multiple ethnic background
+Not outsourced,Low,Indian,29,36.259195289397226,1644,1788.0524687427219,2.02785969222106,Indian
+Not outsourced,Low,Pakistani,17,18.32246912101226,1644,1788.0524687427219,1.0247165248957038,Pakistani
+Not outsourced,Low,Bangladeshi,9,9.784235057407754,1644,1788.0524687427219,0.5472006682380852,Bangladeshi
+Not outsourced,Low,Chinese,9,15.134357437551106,1644,1788.0524687427219,0.8464157345557598,Chinese
+Not outsourced,Low,Any other Asian background,16,33.63466329247385,1644,1788.0524687427219,1.8810780936492448,Any other Asian background
+Not outsourced,Low,African,51,39.187596986136,1644,1788.0524687427219,2.191635741745932,African
+Not outsourced,Low,Caribbean,13,11.815632474412228,1644,1788.0524687427219,0.6608101653035076,Caribbean
+Not outsourced,Low,"Any other Black, Black British, or Caribbean background",9,8.499174805606366,1644,1788.0524687427219,0.4753313985009961,"Any other Black, Black British, or Caribbean background"
+Not outsourced,Low,Arab,2,4.730080650243655,1644,1788.0524687427219,0.2645381348104195,Arab
+Not outsourced,Low,Don’t think of myself as any of these,1,0.7020089786232652,1644,1788.0524687427219,0.039261095012322896,Don’t think of myself as any of these
+Not outsourced,Low,Prefer not to say,4,4.64844370840309,1644,1788.0524687427219,0.2599724443025806,Prefer not to say
+Not outsourced,Low,NA,40,37.0767246024067,1644,1788.0524687427219,2.073581466458721,NA
+Outsourced,Not low,English / Welsh / Scottish / Northern Irish / British,642,621.2018141480502,986,956.4920923346727,64.94583898041199,English / Welsh / Scottish / Northern Irish / British
+Outsourced,Not low,Irish,8,7.553065031165004,986,956.4920923346727,0.7896630920104059,Irish
+Outsourced,Not low,Gypsy or Irish Traveller,2,2.47560567087183,986,956.4920923346727,0.2588213421429547,Gypsy or Irish Traveller
+Outsourced,Not low,Roma,3,2.25262072763344,986,956.4920923346727,0.23550855733005444,Roma
+Outsourced,Not low,Any other White background,51,55.615390395901585,986,956.4920923346727,5.8145164859807315,Any other White background
+Outsourced,Not low,White and Black Caribbean,4,2.1292146335346636,986,956.4920923346727,0.2226066112410326,White and Black Caribbean
+Outsourced,Not low,White and Black African,19,9.859908215095556,986,956.4920923346727,1.0308405363842374,White and Black African
+Outsourced,Not low,White and Asian,5,2.2697216831083287,986,956.4920923346727,0.2372964399076456,White and Asian
+Outsourced,Not low,Any other Mixed / Multiple ethnic background,11,6.104015954147755,986,956.4920923346727,0.6381669020648824,Any other Mixed / Multiple ethnic background
+Outsourced,Not low,Indian,39,55.181202802549876,986,956.4920923346727,5.769122739724877,Indian
+Outsourced,Not low,Pakistani,30,29.835511253980755,986,956.4920923346727,3.1192637652817554,Pakistani
+Outsourced,Not low,Bangladeshi,13,13.078450731029081,986,956.4920923346727,1.3673349561214128,Bangladeshi
+Outsourced,Not low,Chinese,9,15.282269965538157,986,956.4920923346727,1.5977413810328662,Chinese
+Outsourced,Not low,Any other Asian background,17,30.344527317684776,986,956.4920923346727,3.1724807304593323,Any other Asian background
+Outsourced,Not low,African,78,48.226952739130354,986,956.4920923346727,5.042064971119064,African
+Outsourced,Not low,Caribbean,10,9.724684191412134,986,956.4920923346727,1.0167030411799272,Caribbean
+Outsourced,Not low,"Any other Black, Black British, or Caribbean background",11,7.608206550600208,986,956.4920923346727,0.795428065905863,"Any other Black, Black British, or Caribbean background"
+Outsourced,Not low,Arab,4,6.069385858509403,986,956.4920923346727,0.6345463707593045,Arab
+Outsourced,Not low,Any other ethnic group,2,3.1233359802036116,986,956.4920923346727,0.3265407006742685,Any other ethnic group
+Outsourced,Not low,Don’t think of myself as any of these,3,2.0708055910644507,986,956.4920923346727,0.21650002207649033,Don’t think of myself as any of these
+Outsourced,Not low,Prefer not to say,2,2.190689807500749,986,956.4920923346727,0.22903376045206605,Prefer not to say
+Outsourced,Not low,NA,23,24.29471308596091,986,956.4920923346727,2.53998054773884,NA
+Outsourced,Low,English / Welsh / Scottish / Northern Irish / British,260,298.0997998400433,381,434.1318790001437,68.66572446294474,English / Welsh / Scottish / Northern Irish / British
+Outsourced,Low,Irish,3,2.47814534125335,381,434.1318790001437,0.5708277740305105,Irish
+Outsourced,Low,Any other White background,18,26.351840490171877,381,434.1318790001437,6.070008162234765,Any other White background
+Outsourced,Low,White and Black Caribbean,6,3.0533859235147083,381,434.1318790001437,0.7033314232870923,White and Black Caribbean
+Outsourced,Low,White and Black African,4,3.3284129265235496,381,434.1318790001437,0.7666824500861977,White and Black African
+Outsourced,Low,White and Asian,6,5.2310159725180165,381,434.1318790001437,1.204937076854539,White and Asian
+Outsourced,Low,Any other Mixed / Multiple ethnic background,9,8.032921426613207,381,434.1318790001437,1.850341293782424,Any other Mixed / Multiple ethnic background
+Outsourced,Low,Indian,11,13.584741213127382,381,434.1318790001437,3.129173845609915,Indian
+Outsourced,Low,Pakistani,12,17.267436068148868,381,434.1318790001437,3.977463278651129,Pakistani
+Outsourced,Low,Bangladeshi,5,6.121301215800306,381,434.1318790001437,1.410009610420312,Bangladeshi
+Outsourced,Low,Chinese,2,3.7683908513643347,381,434.1318790001437,0.8680290560654927,Chinese
+Outsourced,Low,Any other Asian background,4,5.460893189004658,381,434.1318790001437,1.257888087274708,Any other Asian background
+Outsourced,Low,African,16,11.467079331017477,381,434.1318790001437,2.6413815445729294,African
+Outsourced,Low,Caribbean,4,3.5830933625135604,381,434.1318790001437,0.8253467519514673,Caribbean
+Outsourced,Low,"Any other Black, Black British, or Caribbean background",1,0.606666853210437,381,434.1318790001437,0.1397425258443728,"Any other Black, Black British, or Caribbean background"
+Outsourced,Low,Arab,1,1.7568934585174687,381,434.1318790001437,0.4046911879781321,Arab
+Outsourced,Low,Any other ethnic group,1,3.9329493835023297,381,434.1318790001437,0.9059342503389455,Any other ethnic group
+Outsourced,Low,Don’t think of myself as any of these,1,0.3971689135709877,381,434.1318790001437,0.09148577489534147,Don’t think of myself as any of these
+Outsourced,Low,Prefer not to say,1,2.5790441955702934,381,434.1318790001437,0.5940692956043986,Prefer not to say
+Outsourced,Low,NA,16,17.03069904415761,381,434.1318790001437,3.9229321475725984,NA
