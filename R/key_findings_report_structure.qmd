@@ -445,7 +445,7 @@ We want them broken down by
 - outsourcing group
   - high low pay
   
-### Ethnicity by outsourcing status^[[outputs/data/status_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity.csv)]
+### Ethnicity by outsourcing status
 
 
 ```{r}
@@ -465,6 +465,8 @@ We want them broken down by
 #   filter(outsourcing_status=="Outsourced") %>%
 #   summarise(sum(Freq))
 ```
+
+#### Collapsed ethnicity^[[outputs/data/status_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity.csv)]
 
 ```{r}
 tab <- data %>%
@@ -494,7 +496,38 @@ tab %>%
 
 ```
 
-#### By high/low pay^[[outputs/data/status_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity_income_group.csv)]
+#### Full ethnicity^[[outputs/data/status_by_ethnicity_full.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity_full.csv)]
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_status, Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+write_csv(tab, file="../outputs/data/status_by_ethnicity_full.csv")
+
+tab %>%
+  pivot_wider(
+    id_cols = outsourcing_status,
+    names_from = Ethnicity_labelled, 
+    values_from = Percentage
+  ) %>%
+  kable(caption = "Ethnicity by outsourcing status (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+
+```
+
+#### By high/low pay
+
+##### Collapsed ethnicity^[[outputs/data/status_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -524,7 +557,40 @@ tab  %>%
   kable_styling(full_width = F)
 ```
 
-### Ethnicity by oustourcing group^[[outputs/data/group_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity.csv)]
+##### Full ethnicity^[[outputs/data/status_by_ethnicity_full_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/status_by_ethnicity_full_income_group.csv)]
+
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  )
+
+write_csv(tab, file="../outputs/data/status_by_ethnicity_full_income_group.csv")
+
+tab  %>%
+  pivot_wider(
+    id_cols = c(outsourcing_status,income_group),
+    names_from = Ethnicity_labelled, 
+    values_from = Percentage
+  )%>%
+  kable(caption = "Ethnicity by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+### Ethnicity by oustourcing group
+
+#### Collapsed ethnicity^[[outputs/data/group_by_ethnicity.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity.csv)]
 
 ```{r}
 tab <- data %>%
@@ -553,7 +619,38 @@ tab %>%
   kable_styling(full_width = F)
 ```
 
-#### By high/low pay^[[outputs/data/group_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity_income_group.csv)]
+#### Full ethnicity^[[outputs/data/group_by_ethnicity_full.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity_full.csv)]
+
+```{r}
+tab <- data %>%
+  group_by(outsourcing_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_ethnicity_full.csv")
+
+tab %>%
+  pivot_wider(
+    id_cols = outsourcing_group,
+    names_from = Ethnicity_labelled, 
+    values_from = Percentage
+  )%>%
+  kable(caption = "Ethnicity by outsourcing group (%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+#### By high/low pay
+
+##### Collapsed ethnicity^[[outputs/data/group_by_ethnicity_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity_income_group.csv)]
 
 ```{r}
 tab <- income_data %>%
@@ -576,6 +673,36 @@ tab %>%
   pivot_wider(
     id_cols = c(outsourcing_group,income_group),
     names_from = Ethnicity_collapsed, 
+    values_from = Percentage
+  )%>%
+  kable(caption = "Ethnicity by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+##### Full ethnicity^[[outputs/data/group_by_ethnicity_full_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/group_by_ethnicity_full_income_group.csv)]
+
+```{r}
+tab <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_group, income_group, Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_labelled
+  ) 
+
+write_csv(tab, file="../outputs/data/group_by_ethnicity_full_income_group.csv")
+
+tab %>%
+  pivot_wider(
+    id_cols = c(outsourcing_group,income_group),
+    names_from = Ethnicity_labelled, 
     values_from = Percentage
   )%>%
   kable(caption = "Ethnicity by outsourcing status and income group(%)",
