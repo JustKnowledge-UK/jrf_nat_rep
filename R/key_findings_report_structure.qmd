@@ -119,6 +119,18 @@ data <- data %>%
                                       "Not born in UK" = non_categories)
   ) 
 
+# make binary ethnicity var
+ethnicities <- as.vector(unique(data$Ethnicity_collapsed))
+non_white_ethnicities <- ethnicities[!(ethnicities %in% "White/White British")]
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+data <- data %>%
+  mutate(
+    Ethnicity_binary = forcats::fct_collapse(Ethnicity_collapsed,
+                                      "White British" = c("White/White British"),
+                                      "Non-White British" = non_white_ethnicities)
+  )
+  
 income_data <- filter(data, income_drop_all==0)
 ```
 
@@ -428,7 +440,7 @@ Just over a quarter (`r round(groups_count[which(groups_count$number_of_groups==
 
 # Chapter 3: Who are the UK’s outsourced workers?
 
-## Demographic breakdown 
+## Demographic breakdown {#sec-demographic-breakdown}
 
 Demographic variables:
 
@@ -884,9 +896,12 @@ mod <- glm(outsourcing_status ~ Ethnicity_binary, data, weights = NatRepemployee
 coefs <- extract_glm_coefs(mod)
 
 write_csv(coefs, file = "../outputs/data/ethnicity_binary_o-status_inferential_tab.csv")
+
 ```
 
 People from an ethnic minority are `r round(coefs[2, 'or'],2)` times more likely to be outsourced than people from a White British background; `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White/White British"), "Percentage"],2)`% of outsourced workers are from an ethnic minority, compared to `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White/White British"), "Percentage"],2)`% of non-outsourced workers.[^3]
+
+
 
 [^3]: [outputs/data/ethnicity_stats_1.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_stats_1.csv) & [outputs/data/ethnicity_binary_o-status_inferential_tab.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_binary_o-status_inferential_tab.csv)
 
@@ -911,6 +926,69 @@ data %>%
   theme_minimal()
 
 ```
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+mod_2 <- glm(income_group ~ Ethnicity_collapsed * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_2)
+
+mod_3 <-  glm(income_group ~ Ethnicity_binary * outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_3)
+
+black_coef <- extract_glm_coefs(mod_2,, only_sig = T)[5,"Estimate"] %>%
+  exp(.) %>%
+  round(.,2) %>%
+  pull()
+
+other_coef <- extract_glm_coefs(mod_2,, only_sig = T)[6,"Estimate"] %>%
+  exp(.) %>%
+  round(.,2) %>%
+  pull()
+
+```
+
+Overall, there is no interaction between being from a minority and outsourced on whether you are low paid. i.e., being from an ethnic minority and outsourced is not associated with being in the low pay group.^[[outputs/data/ethnicity_binary_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_binary_income_group.csv)]
+
+However there is nuance in the groups. There is evidence to suggest that people who are Black and outsourced are less likely to be in the high income group (OR = `r black_coef`x). People who are from an 'other ethnic group and outsourced are more likely to be in the high income group (OR = `r other_coef`x!) (see tables in @sec-demographic-breakdown)
+
+```{r}
+tab_split <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  group_by(outsourcing_status, income_group, Ethnicity_binary) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) 
+
+tab_split %>%
+  pivot_wider(
+  id_cols = c(outsourcing_status,income_group),
+  names_from = Ethnicity_binary, 
+  values_from = Percentage
+  )%>%
+  kable(caption = "Ethnicity (binary) by outsourcing status and income group(%)",
+        digits = 2) %>%
+  kable_styling(full_width = F)
+
+write_csv(tab_split, "../outputs/data/ethnicity_binary_income_group.csv")
+
+tab_split %>%
+  ggplot(., aes(outsourcing_status, Percentage, fill = Ethnicity_binary)) +
+  facet_grid(rows=vars(income_group)) +
+  geom_col(colour="black") +
+  coord_flip() +
+  scale_fill_manual(values = many_colours, name = "Ethnicity") +
+  xlab("") +
+  theme_minimal()
+```
+
 
 ```{r ethnicity-interential-status}
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed, data, weights = NatRepemployees, family = "quasibinomial")
@@ -1102,6 +1180,19 @@ write_csv(coef_table, file="../outputs/data/income_group_outsourcing.csv")
 #| message: false
 mod_2 <- glm(income_group ~ Ethnicity_collapsed * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod_2)
+
+mod_3 <-  glm(income_group ~ Ethnicity_binary * outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_3)
+
+black_coef <- extract_glm_coefs(mod_2,, only_sig = T)[5,"Estimate"] %>%
+  exp(.) %>%
+  round(.,2) %>%
+  pull()
+
+other_coef <- extract_glm_coefs(mod_2,, only_sig = T)[6,"Estimate"] %>%
+  exp(.) %>%
+  round(.,2) %>%
+  pull()
 ```
 
 A person is more likely to be in the low income group if they are:
@@ -1127,6 +1218,8 @@ And less likely if they are:
 -   Live in the North West or Wales (compared to London)
 
 -   Arrived in the UK in last 30 years
+
+ 
 
 ::: {.callout-tip title="#migration"}
 -   As you would expect, the vast majority of outsourced workers were born in the UK. However, we still see a significantly higher likelihood of outsourced workers having been born outside of the UK compared to people who aren’t outsourced. While around 14% of non-outsourced workers were born outside of the UK, this rose to just over 24% for outsourced workers – or nearly 1 in 4.
