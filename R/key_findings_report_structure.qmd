@@ -74,7 +74,10 @@ extract_lm_coefs <- function(mod, only_sig = F){
 #data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
 data <- readRDS("../Data/2024-09-30 - Cleaned_Data.rds") 
 
-data$Ethnicity_collapsed_disaggregated <- data$Ethnicity_collapsed
+# Make our disaggregated ethnicity groups identical to the originla census groups
+# as per request in JRF - Outsourced workers - To dos 
+
+data$Ethnicity_collapsed_disaggregated <- data$Ethnicity_labelled
 
 data <- data %>%
   mutate(
@@ -1024,10 +1027,15 @@ mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated, data, weights
 
 coef_table <- extract_glm_coefs(mod) %>%
   mutate(across(where(is.numeric), ~round(.x,2)))
-
 rownames(coef_table) <- coef_table$variable
-sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 
+sig_coefs <- extract_glm_coefs(mod, only_sig = T) %>%
+  mutate(across(where(is.numeric), ~round(.x,2)))
+
+rownames(sig_coefs) <- sig_coefs$variable
+
+ethnicity_keys <- sig_coefs$variable
+ethnicity_labs <- sub(".*disaggregated","",ethnicity_keys)
 write_csv(coef_table, file="../outputs/data/ethnicity_model_inferential_2.csv")
 ```
 
@@ -1035,15 +1043,28 @@ Comparison of more disaggregated ethnicities indicates more nuance[^5]:
 
 [^5]: [outputs/data/ethnicity_model_inferential_2.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_model_inferential_2.csv)
 
--   White other workers are `r coef_table["Ethnicity_collapsed_disaggregatedWhite other", "or"]` times more likely than White workers to be outsourced.
--   Black African workers are `r coef_table["Ethnicity_collapsed_disaggregatedBlack African", "or"]` times more likely than White workers to be outsourced.
--   Mixed other workers are `r coef_table["Ethnicity_collapsed_disaggregatedMixed other", "or"]` times more likely than White workers to be outsourced.
--   South Asian workers are `r coef_table["Ethnicity_collapsed_disaggregatedSouth Asian", "or"]` times more likely than White workers to be outsourced.
--   Other workers are `r coef_table["Ethnicity_collapsed_disaggregatedOther", "or"]` times more likely than White workers to be outsourced.
--   Black other workers are `r coef_table["Ethnicity_collapsed_disaggregatedBlack other", "or"]` times more likely than White workers to be outsourced.
--   Arab workers are `r coef_table["Ethnicity_collapsed_disaggregatedArab", "or"]` times more likely than White workers to be outsourced.
+-   `r ethnicity_labs[2]` workers are `r sig_coefs[ethnicity_keys[2], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[3]` workers are `r sig_coefs[ethnicity_keys[3], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[4]` workers are `r sig_coefs[ethnicity_keys[4], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[5]` workers are `r sig_coefs[ethnicity_keys[5], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[6]` workers are `r sig_coefs[ethnicity_keys[6], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[7]` workers are `r sig_coefs[ethnicity_keys[7], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[8]` workers are `r sig_coefs[ethnicity_keys[8], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[9]` workers are `r sig_coefs[ethnicity_keys[9], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[10]` workers are `r sig_coefs[ethnicity_keys[10], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[11]` workers are `r sig_coefs[ethnicity_keys[11], "or"]` times more likely than White British workers to be outsourced.
 
-Black Caribbean and East Asian workers are no more or less likely than White workers to be outsourced.
+```{r}
+#| include: false
+count <- data %>%
+  group_by(Ethnicity_collapsed) %>%
+  summarise(
+    count = n(),
+    freq = sum(NatRepemployees)
+  )
+
+cis <- confint(mod, level=.95)
+```
 
 ::: {.callout-tip title="#ethnicity-sub-group"}
 -   These differences in ethnicity also shift slightly depending on which outsourced “sub-group” we look at. For example, compared to White British workers, Black outsourced workers are more likely to be in the “outsourced sub-group” meaning they have self-identified as outsourced, or the “agency sub-group”, meaning they are agency workers doing more long-term and ongoing work. **Are there any other interesting points to mention here? Should we do a chart showing this different across sub-groups? Do we need an interpretive comment in this section?**
@@ -1124,21 +1145,48 @@ coefs2 <- cbind(coefs, ors, p) %>%
     predicted_group = group, .before=everything() # insert predicted group so output table can be better interpeted
   )
 
+sig_ors2 <- sig_ors[,colSums(!is.na(sig_ors)) > 0]
+sig_ors2 <- t(sig_ors2)
+
+# get teh sample informatoin
+sample_count <- data %>%
+  group_by(outsourcing_group,Ethnicity_collapsed_disaggregated) %>%
+  summarise(
+    n = n(),
+    freq = sum(NatRepemployees)
+  ) %>%
+  filter(outsourcing_group != "Not outsourced") %>%
+  pivot_wider(names_from = outsourcing_group, values_from = c(n, freq))
+
+# combine sampel info with estimates
+# NAs in this table simply indicate non-sig results 
+sig_ors2 <- as.data.frame(sig_ors2) %>%
+  tibble::rownames_to_column(var = "Ethnicity_collapsed_disaggregated") %>%
+  mutate(
+    Ethnicity_collapsed_disaggregated = sub(".*disaggregated","", Ethnicity_collapsed_disaggregated)
+  ) %>%
+  filter(Ethnicity_collapsed_disaggregated != "(Intercept)") %>%
+  left_join(sample_count, by = "Ethnicity_collapsed_disaggregated")
+
 write_csv(coefs2, file = "../outputs/data/ethnicity_ogroup_inferential_tab_2.csv")
+
 
 ```
 
-More nuance from disaggregated ethnicities[^7]. Compared to White British workers,
+More nuance from disaggregated ethnicities[^7]. The table below shows the likelihood of workers of different ethnicities falling into each of the outsourcing groups, compared to White British workers. Note that only significant relationships are shown here. *Note also that the 'n' for many of these statistics is very low. As such many of these statistics are illustrative but not inferential.*
 
 [^7]: [outputs/data/ethnicity_ogroup_inferential_tab_2.csv](https://github.com/Project-X-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_ogroup_inferential_tab_2.csv)
 
--   White other workers are more likely to be outsourced than not outsourced
--   Black African workers are more likely to be outsourced, likely agency, or high indicators than not outsourced
--   Mixed other workers are more likely to be likely agency workers than not outsourced
--   South Asian workers are more likely to be outsourced, likely agency, or high indicators than not outsourced
--   Other workers are more likely to be outsourced or likely agency than not outsourced
--   Black other workers are more likely to be outsourced than not outsourced
--   Arab workers are more likely to be likely agency or high indicators than not outsourced
+
+
+```{r}
+sig_ors2  %>%
+  rename(
+    Ethnicity = Ethnicity_collapsed_disaggregated
+  ) %>%
+  kable(caption = "Likelihood of belonging to different groups compared to White British. Note: NAs are non-sig. relationships. 'n_' is sample size, 'freq_' is weighted sample size", digits = 2) %>%
+  kable_styling(full_width = F)
+```
 
 Again, Black Caribbean and East Asian workers are no more or less likely than White British workers to be engaged in any type of outsourced work.
 
@@ -2181,7 +2229,7 @@ write_csv(coef_table_weekly, file="../outputs/data/model_income_by_o-group_weekl
 
 ```
 
-The tables and plots below show descriptive statistics on income and its distribution for outsrouced groups. Only the full outsourced subgroup has lower income than non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_statusOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_statusOutsourced','Estimate'],0))` less than non-outsourced workers**
+The tables and plots below show descriptive statistics on income and its distribution for outsrouced groups. Only the full outsourced subgroup has lower income than non-outsourced people. Regression analysis shows that **outsourced workers are on average paid £`r abs(round(coef_table['outsourcing_groupOutsourced','Estimate'],0))` less annually than non-outsourced workers**.[^18] Per week, **outsourced workers are on average paid £`r abs(round(coef_table_weekly['outsourcing_groupOutsourced','Estimate'],0))` less than non-outsourced workers**
 
 [^18]: [outputs/data/income_stats_o-group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/income_stats_o-group.csv) & [outputs/data/model_income_by_o-group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/model_income_by_o-group.csv)
 
@@ -2700,6 +2748,192 @@ gender_pay_split %>%
 
 I don’t quite understand the chart below the above chart in the file, would you be able to explain it – thanks! Is this the best chart to use, above? Does this need to control for anything else to show us the most accurate analysis of pay by sector for outsourced and non outsourced, or are we confident that this is showing us something notable about sector and pay?
 :::
+
+## Sectoral pay differences^[[outputs/data/sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_weekly.csv)]
+
+```{r sector-bubble}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write_csv(sector_summary_pay, file="../outputs/data/sector_summary_pay_weekly.csv")
+
+plot_data <- sector_summary_pay %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, N, .desc = FALSE))
+
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+        ) %>%
+  arrange(desc(SectorName_short))
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  select(SectorName_short, n) %>%
+  group_by(SectorName_short) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 100)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_label_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average weekly income") + ylab("Sector") +
+  labs(caption = "Size of bubble represents the size of the respective workforce within the sector")
+
+sectors_of_interest <- unique(plot_data$SectorName_labelled)
+sectors_of_interest <- sectors_of_interest[1:13] %>%
+  stringr::str_to_title()
+```
+
+#### Occupations^[[outputs/data/occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/occupation_in_sector_summary_pay_weekly.csv)]
+
+Here we look at Major subgroup occupations within sectors. We only consider the down to 'Other services', as the remaining sectors have small n for outsourced group. Note you can find larger images for these plots in [outputs/figures/occupation_pay_plots](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/figures/occupation_pay_plots).
+
+The figures indicate there is variation between occupations within sectors in terms of whether outsourced people are paid less or more than non-outsourced workers.
+
+```{r}
+#| height: 10
+#| width: 10
+occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  ) 
+
+write_csv(occ_in_sect_summary_pay, file="../outputs/data/occupation_in_sector_summary_pay_weekly.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- occ_in_sect_summary_pay %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+      distinct(MajorsubgroupOccupation_labelled, N) %>%
+      mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      select(MajorsubgroupOccupation_labelled, n) %>%
+      group_by(MajorsubgroupOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average weekly income") + ylab("Sector") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    ggsave(here('outputs','figures','occupation_pay_plots',paste0('occupation_pay_plot_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
+
+In addition to plots, we could show the average difference in pay for each sector? 
 
 ## London has a disproportionate share of the UK’s outsourced workers, followed by the East and West Midlands
 
