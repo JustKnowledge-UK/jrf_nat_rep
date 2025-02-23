@@ -1,11 +1,22 @@
 variable,Estimate,or,Std. Error,t value,Pr(>|t|)
-(Intercept),-1.75,0.17,0.03,-55.07,0
-Ethnicity_collapsed_disaggregatedWhite other,0.36,1.43,0.12,3.05,0
-Ethnicity_collapsed_disaggregatedBlack Caribbean,0.08,1.09,0.24,0.34,0.73
-Ethnicity_collapsed_disaggregatedBlack African,1.01,2.75,0.14,7.44,0
-Ethnicity_collapsed_disaggregatedMixed other,0.78,2.19,0.24,3.31,0
-Ethnicity_collapsed_disaggregatedSouth Asian,0.81,2.25,0.1,8.02,0
-Ethnicity_collapsed_disaggregatedEast Asian,-0.02,0.98,0.24,-0.1,0.92
-Ethnicity_collapsed_disaggregatedOther,0.48,1.62,0.11,4.55,0
-Ethnicity_collapsed_disaggregatedBlack other,0.98,2.66,0.35,2.77,0.01
-Ethnicity_collapsed_disaggregatedArab,1.22,3.39,0.36,3.35,0
+(Intercept),-1.75,0.17,0.03,-54.61,0
+Ethnicity_collapsed_disaggregatedIrish,-0.14,0.87,0.28,-0.51,0.61
+Ethnicity_collapsed_disaggregatedGypsy or Irish Traveller,0.54,1.72,0.73,0.74,0.46
+Ethnicity_collapsed_disaggregatedRoma,0.91,2.48,0.8,1.14,0.26
+Ethnicity_collapsed_disaggregatedAny other White background,0.34,1.41,0.12,2.85,0
+Ethnicity_collapsed_disaggregatedWhite and Black Caribbean,-0.51,0.6,0.45,-1.14,0.25
+Ethnicity_collapsed_disaggregatedWhite and Black African,1.42,4.12,0.34,4.11,0
+Ethnicity_collapsed_disaggregatedWhite and Asian,0.49,1.62,0.38,1.29,0.2
+Ethnicity_collapsed_disaggregatedAny other Mixed / Multiple ethnic background,1,2.73,0.31,3.27,0
+Ethnicity_collapsed_disaggregatedIndian,0.58,1.79,0.14,4.26,0
+Ethnicity_collapsed_disaggregatedPakistani,1.17,3.23,0.17,6.76,0
+Ethnicity_collapsed_disaggregatedBangladeshi,0.91,2.48,0.25,3.62,0
+Ethnicity_collapsed_disaggregatedChinese,-0.03,0.97,0.24,-0.11,0.91
+Ethnicity_collapsed_disaggregatedAny other Asian background,0.78,2.18,0.18,4.37,0
+Ethnicity_collapsed_disaggregatedAfrican,0.94,2.57,0.15,6.4,0
+Ethnicity_collapsed_disaggregatedCaribbean,0.43,1.54,0.29,1.48,0.14
+"Ethnicity_collapsed_disaggregatedAny other Black, Black British, or Caribbean background",0.98,2.65,0.35,2.76,0.01
+Ethnicity_collapsed_disaggregatedArab,1.22,3.39,0.37,3.34,0
+Ethnicity_collapsed_disaggregatedAny other ethnic group,0.55,1.74,0.43,1.28,0.2
+Ethnicity_collapsed_disaggregatedDon’t think of myself as any of these,1.06,2.89,0.72,1.48,0.14
+Ethnicity_collapsed_disaggregatedPrefer not to say,0.53,1.69,0.43,1.21,0.23
