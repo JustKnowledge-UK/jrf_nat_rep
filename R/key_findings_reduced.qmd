@@ -10,7 +10,7 @@ format:
     toc-depth: 5
     code-fold: true
     embed-resources: true
-editor: visual
+editor: source
 execute: 
   echo: false
   warning: false
