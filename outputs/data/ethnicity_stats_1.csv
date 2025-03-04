@@ -1,15 +1,17 @@
 outsourcing_status,Ethnicity_collapsed,n,Frequency,N,Sum,Percentage,Ethnicity_short,Ethnicity detail
-Not outsourced,White/White British,7103,7073.333460551484,8472,8446.644209397018,83.7413449081032,White/White British,NA
+Not outsourced,White British,6623,6589.164356783756,8472,8446.644209397018,78.0092566164112,White British,NA
 Not outsourced,Arab/British Arab,12,20.473144396598034,8472,8446.644209397018,0.24238199087184653,Arab/British Arab,NA
 Not outsourced,Asian/Asian British,437,630.1523467832743,8472,8446.644209397018,7.460387002949886,Asian/Asian British,NA
 Not outsourced,Black/African/Caribbean/Black British,342,239.2489749121751,8472,8446.644209397018,2.832473689918264,Black/African/Caribbean/Black British,NA
 Not outsourced,Mixed/Multiple ethnic group,244,139.63777135418962,8472,8446.644209397018,1.653174537632833,Mixed/Multiple ethnic group,NA
 Not outsourced,Other ethnic group,23,36.955260170612505,8472,8446.644209397018,0.4375141092068164,Other ethnic group,NA
 Not outsourced,Prefer not to say,311,306.84325122868455,8472,8446.644209397018,3.6327237613171492,Prefer not to say,NA
-Outsourced,White/White British,1221,1251.8897544641814,1683,1708.3557906029905,73.28038815745211,White/White British,NA
+Not outsourced,White other,480,484.1691037677272,8472,8446.644209397018,5.732088291692005,White other,NA
+Outsourced,White British,1124,1143.0718956885103,1683,1708.3557906029905,66.91064601273985,White British,NA
 Outsourced,Arab/British Arab,7,12.027350406733706,1683,1708.3557906029905,0.7040307688182722,Arab/British Arab,NA
 Outsourced,Asian/Asian British,163,216.70345138859653,1683,1708.3557906029905,12.684913328979775,Asian/Asian British,NA
 Outsourced,Black/African/Caribbean/Black British,142,96.8541676133155,1683,1708.3557906029905,5.669437721701363,Black/African/Caribbean/Black British,NA
 Outsourced,Mixed/Multiple ethnic group,72,45.16682542219073,1683,1708.3557906029905,2.6438769763673413,Mixed/Multiple ethnic group,NA
 Outsourced,Other ethnic group,8,11.784511762211212,1683,1708.3557906029905,0.6898160106362672,Other ethnic group,NA
 Outsourced,Prefer not to say,70,73.92972954576146,1683,1708.3557906029905,4.327537036044864,Prefer not to say,NA
+Outsourced,White other,97,108.817858775671,1683,1708.3557906029905,6.3697421447122595,White other,NA
