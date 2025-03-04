@@ -83,8 +83,8 @@ data <- data %>%
   mutate(
     Ethnicity_collapsed = case_when(
       # Grouping White ethnicities
-      Ethnicity %in% c(1,2,5
-                       ) ~ "White/White British",
+      Ethnicity %in% c(1) ~ "White British", # Just white british as reference
+      Ethnicity %in% c(2, 5) ~ "White other", # Irish and White other grouped together
       # Grouping Asian ethnicities
       Ethnicity %in% c(10,11,12,13,14) ~ "Asian/Asian British",
       # Grouping Black ethnicities
@@ -103,7 +103,7 @@ data <- data %>%
   )
 
 #make white the reference category
-data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "White/White British")
+data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "White British")
 
 data <- data %>%
   mutate(
@@ -124,13 +124,13 @@ data <- data %>%
 
 # make binary ethnicity var
 ethnicities <- as.vector(unique(data$Ethnicity_collapsed))
-non_white_ethnicities <- ethnicities[!(ethnicities %in% "White/White British")]
+non_white_ethnicities <- ethnicities[!(ethnicities %in% "White British")]
 
 # Will throw NA warning. I think this OK but investigate how to avoid the problem
 data <- data %>%
   mutate(
     Ethnicity_binary = forcats::fct_collapse(Ethnicity_collapsed,
-                                      "White British" = c("White/White British"),
+                                      "White British" = c("White British"),
                                       "Non-White British" = non_white_ethnicities)
   )
   
@@ -846,14 +846,15 @@ tab %>%
 ## Evidence paints a racialised picture of outsourcing in the UK, with links to both ethnicity and migration
 
 ::: {.callout-tip title="#ethnicity"}
--   More than 1 in 4 outsourced workers are from an ethnic minority background
--   Workers from ethnic minority backgrounds are disproportionately over-represented in outsourced work in the UK, and typically more likely to be outsourced than (White British) workers.
--   Overall, 16% (16.26%) of non-outsourced workers are from an ethnic minority background, rising to 27% (26.72%) of outsourced workers – a more than ten percentage point difference. This means that while just over 1 in 6 non-outsourced workers in our sample were from an ethnic minority background, 1 in 4 outsourced workers were.
--   People from an ethnic minority background are overall 1.878 times more likely to be outsourced than people from a White British background.
--   Workers from Arab backgrounds are 3.319 times more likely than White workers to be outsourced; (check sample size – are we confident in all of these significance tests, or should we just use some of them in these bullet points?)
--   Workers from Black backgrounds are 2.287 times more likely than White workers to be outsourced.
--   Workers from Asian backgrounds are 1.943 times more likely than White workers to be outsourced
--   Workers from Mixed Ethnicity backgrounds are 1.828 times more likely than White workers to be outsourced
+-   More than 1 in 4 (nearly 1/3) outsourced workers are from an ethnic minority background
+-   Workers from ethnic minority backgrounds are disproportionately over-represented in outsourced work in the UK, and typically more likely to be outsourced than White British workers.
+-   Overall, 22% of non-outsourced workers are from an ethnic minority background, rising to 33% of outsourced workers – a more than ten percentage point difference. This means that while just over 1 in 6 non-outsourced workers in our sample were from an ethnic minority background, nearly 1 in 3 outsourced workers were.
+-   People from an ethnic minority background are overall 1.75 times more likely to be outsourced than people from a White British background.
+-   Workers from Arab backgrounds are 3.86 times more likely than White workers to be outsourced; (check sample size – are we confident in all of these significance tests, or should we just use some of them in these bullet points?)
+-   Workers from Black backgrounds are 2.33 times more likely than White workers to be outsourced.
+-   Workers from Asian backgrounds are 1.98 times more likely than White workers to be outsourced
+-   Workers from Mixed Ethnicity backgrounds are 1.86 times more likely than White workers to be outsourced
+-   White other worksers are 1.30 times more likely than White British workers to be outsourced
 :::
 
 ```{r ethnicity-counts}
@@ -880,20 +881,20 @@ readr::write_csv(ethnicity_statistics, file = "../outputs/data/ethnicity_stats_1
 
 ```{r ethnicity_binary_inferential, output=FALSE}
 ethnicities <- as.vector(unique(data$Ethnicity_collapsed))
-non_white_ethnicities <- ethnicities[!(ethnicities %in% "White/White British")]
+non_white_ethnicities <- ethnicities[!(ethnicities %in% "White British")]
 
 # Will throw NA warning. I think this OK but investigate how to avoid the problem
 data <- data %>%
   mutate(
     Ethnicity_binary = forcats::fct_collapse(Ethnicity_collapsed,
-                                      "White British" = c("White/White British"),
+                                      "White British" = c("White British"),
                                       "Non-White British" = non_white_ethnicities)
   )
   
 mod <- glm(outsourcing_status ~ Ethnicity_binary, data, weights = NatRepemployees, family="quasibinomial")
 # mod <- glm(Ethnicity_binary~outsourcing_status , data, weights = NatRepemployees, family="quasibinomial")
 
-#summary(mod)
+# summary(mod)
 
 
 coefs <- extract_glm_coefs(mod)
@@ -902,7 +903,7 @@ write_csv(coefs, file = "../outputs/data/ethnicity_binary_o-status_inferential_t
 
 ```
 
-People from an ethnic minority are `r round(coefs[2, 'or'],2)` times more likely to be outsourced than people from a White British background; `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White/White British"), "Percentage"],2)`% of outsourced workers are from an ethnic minority, compared to `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White/White British"), "Percentage"],2)`% of non-outsourced workers.[^3]
+People from an ethnic minority are `r round(coefs[2, 'or'],2)` times more likely to be outsourced than people from a White British background; `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White British"), "Percentage"],2)`% of outsourced workers are from an ethnic minority, compared to `r round(100 - ethnicity_statistics[which(ethnicity_statistics$outsourcing_status == "Not outsourced" & ethnicity_statistics$Ethnicity_collapsed == "White British"), "Percentage"],2)`% of non-outsourced workers.[^3]
 
 
 
@@ -1004,6 +1005,13 @@ coef_table <- extract_glm_coefs(mod) %>%
 rownames(coef_table) <- coef_table$variable
 sig_coefs <- extract_glm_coefs(mod, only_sig = T)
 
+# set rownames so we can index
+rownames(sig_coefs) <- sig_coefs$variable
+
+# get labels for piping
+ethnicity_keys <- sig_coefs$variable
+ethnicity_labs <- sub(".*collapsed","",ethnicity_keys)
+
 write_csv(coef_table, file="../outputs/data/ethnicity_model_inferential.csv")
 ```
 
@@ -1011,14 +1019,13 @@ Comparison of ethnicities indicates that some groups are statistically more like
 
 [^4]: [outputs/data/ethnicity_model_inferential.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_model_inferential.csv)
 
--   Asian workers are `r coef_table["Ethnicity_collapsedAsian/Asian British", "or"]` times more likely than White workers to be outsourced.
--   Black workers are `r coef_table["Ethnicity_collapsedBlack/African/Caribbean/Black British", "or"]` times more likely than White workers to be outsourced.
--   Mixed Ethnicity workers are `r coef_table["Ethnicity_collapsedMixed/Multiple ethnic group", "or"]` times more likely than White workers to be outsourced.
--   Arab workers are `r coef_table["Ethnicity_collapsedArab/British Arab", "or"]` times more likely than White workers to be outsourced.
+-   `r ethnicity_labs[2]` workers are `r sig_coefs[ethnicity_keys[2], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[3]` workers are `r sig_coefs[ethnicity_keys[3], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[4]` workers are `r sig_coefs[ethnicity_keys[4], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[5]` workers are `r sig_coefs[ethnicity_keys[5], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[6]` workers are `r sig_coefs[ethnicity_keys[6], "or"]` times more likely than White British workers to be outsourced.
+-   `r ethnicity_labs[7]` workers are `r sig_coefs[ethnicity_keys[7], "or"]` times more likely than White British workers to be outsourced.
 
-::: {.callout-tip title="#ethnicity-disaggregated"}
--   And within these aggregated ethnicity groups, we can see further differences. Of workers from Black backgrounds, workers from Black African backgrounds are the most over-represented in outsourced jobs compared to non-outsourced, making up 2.7% of the non-outsourced workforce but a striking 6.6% of the outsourced workforce, a share of the workforce which is nearly 2.5 times larger . Does this need to talk about risk rate too?
-:::
 
 ```{r}
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated, data, weights = NatRepemployees, family = "quasibinomial")
@@ -1107,11 +1114,12 @@ Breaking down by outsourcing group helps to separate out the *type* of outsource
 
 [^6]: [outputs/data/ethnicity_ogroup_inferential_tab.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/ethnicity_ogroup_inferential_tab.csv)
 
--   Arab people are more likely to be likely agency or outsourced
+-   Arab people are more likely to be likely agency or high indicators
 -   Asian people are more likely to be in any of the groups
 -   Black people are more likely to be likely agency or outsourced
 -   People of mixed ethnicity are more likely to be outsourced
 -   People who selected Other ethnicity are more likely to be agency
+-   White other people are more likely to be outsourced
 
 ```{r}
 sjPlot::plot_model(mod)
@@ -1188,7 +1196,6 @@ sig_ors2  %>%
   kable_styling(full_width = F)
 ```
 
-Again, Black Caribbean and East Asian workers are no more or less likely than White British workers to be engaged in any type of outsourced work.
 
 ::: {.callout-tip title="#ethnicity-pay-split"}
 -   On the low-pay / high-pay split, you say “*A person is more likely to be in the low income group if they are: Older; Female; Prefer not to say when they arrived, And less likely if they are: Asian/Asian British; Live in North West or Wales; Arrived in the UK in last 30 years*”; Can I confirm this means we don’t see any other significant differences in the ethnicity breakdown if we look at high paid vs low paid workers? If so, let’s clarify what this says about how ethnicity relates to a) outsourced workers being disproportionately low paid, but b) ethnic minority workers being no more likely to be in our low pay group.
@@ -1440,9 +1447,12 @@ Exploring the intersection of ethnicity and arrival time reveals some patterns w
 
 [^10]: [outputs/data/bornUK_binary_contrasts.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/bornUK_binary_contrasts.csv)
 
--   Among workers born in the UK, a Black worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - (Black/African/Caribbean/Black British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
--   Among workers born in the UK, a Asian worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - (Asian/Asian British)") %>% pull(or),2)` times more likely to be outsourced than a White worker.
--   Among workers born in the UK, a Other ethnicity worker is `r round(sig_cons %>% filter(contrast == "(White/White British) - Other ethnic group") %>% pull(or),2)` times more likely to be outsourced than a White other worker.
+-   Among workers born in the UK, a Black worker is `r round(sig_cons %>% filter(contrast == "White British - (Black/African/Caribbean/Black British)") %>% pull(or),2)` times more likely to be outsourced than a White British worker.
+-   Among workers born in the UK, an Asian worker is `r round(sig_cons %>% filter(contrast == "White British - (Asian/Asian British)") %>% pull(or),2)` times more likely to be outsourced than a White British worker.
+-   Among workers born in the UK, an Other ethnicity worker is `r round(sig_cons %>% filter(contrast == "White British - Other ethnic group") %>% pull(or),2)` times more likely to be outsourced than a White other worker.
+-   Among workers not born in the UK, a White other worker is `r round(sig_cons %>% filter(contrast == "White British - White other") %>% pull(or),2)` times as likely (i.e., less likely) to be outsourced than a White British worker.
+-   Among workers not born in the UK, a White other worker is `r round(sig_cons %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or),2)` times as likely (i.e., less likely) to be outsourced than a Black worker.
+-   Among workers not born in the UK, a White other worker is `r round(sig_cons %>% filter(contrast == "(Mixed/Multiple ethnic group) - White other") %>% pull(or),2)` times as likely (i.e., less likely) to be outsourced than a worker of mixed ethnicity.
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed"), dodge=0.5) +
@@ -1466,9 +1476,11 @@ Similarly, the plot below shows that[^11]
 
 [^11]: [outputs/data/region_stats_2.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/region_stats_2.csv)
 
--   Among White workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "White/White British") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
+-   Among White British workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "White British") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
 -   Among Mixed workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
--   Among Other workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or),2)` times as likely (i.e.,`r round(100 * (1 - (sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or))),0)`% less likely) to be outsourced than someone born in the UK.
+-   Among Other ethnicity workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or),2)` times as likely (i.e.,`r round(100 * (1 - (sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or))),0)`% less likely) to be outsourced than someone born in the UK.
+-   Among people who preferred not to say their ethnicity, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Prefer not to say") %>% pull(or),2)` times as likely (i.e.,`r round(100 * (1 - (sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Prefer not to say") %>% pull(or))),0)`% less likely) to be outsourced than someone born in the UK.
+
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_binary"), dodge=0.5) +
@@ -1476,10 +1488,6 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
   xlab("") + ylab("Likelihood of being outsourced") +
   theme_minimal()
 ```
-
-Put differently, being born in the UK is relevant in predicting outsourcing status only for White, Mixed, and Other ethnicities. For the remaining ethnicities, it doesn't matter whether you are born in the UK or not. And compared to a White person born in the UK, Black and Asian workers are more likely to be outsourced whether or not they were born in the UK.
-
-In summary, people born in the UK are more likely to be outsourced if they are Black, Asian, or 'Other', compared to White, and White and mixed ethnicities are more likely to be outsourced if they are not born in the UK, whereas 'other' ethnicities are less likely to be outsourced if they were not born in the uk.
 
 ::: {.callout-tip title="#migration-by-pay-split"}
 If we do a basic “born UK / not born UK” split, looking by low and high pay, what % of the low-paid workers group were born outside of the UK, vs in the high-paid group?
