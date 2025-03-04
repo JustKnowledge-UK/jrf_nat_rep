@@ -84,7 +84,7 @@ data <- data %>%
     Ethnicity_collapsed = case_when(
       # Grouping White ethnicities
       Ethnicity %in% c(1) ~ "White British", # Just white british as reference
-      Ethnicity %in% c(2, 5) ~ "White other", # Irish and White other grouped together
+      Ethnicity %in% c(2, 3, 4, 5) ~ "White other", # Gyspy, Irish traveller, Roma, Irish and White other grouped together
       # Grouping Asian ethnicities
       Ethnicity %in% c(10,11,12,13,14) ~ "Asian/Asian British",
       # Grouping Black ethnicities
@@ -94,7 +94,7 @@ data <- data %>%
       # Grouping Other ethnicities
       Ethnicity %in% c(18) ~ "Arab/British Arab",
       # Handling missing or ambiguous categories
-      Ethnicity %in% c(3,4,19)  ~ "Other ethnic group",
+      Ethnicity %in% c(19)  ~ "Other ethnic group",
       #prefer not to say
       Ethnicity %in% c(20,21) ~ "Prefer not to say",
       # Default case for any unmatched entries
@@ -135,6 +135,31 @@ data <- data %>%
   )
   
 income_data <- filter(data, income_drop_all==0)
+```
+
+# Ethnicity categorisations
+
+For reference, the table below provides a disambiguation of how ethnicities have been grouped in this analysis.
+
+For analyses using the disaggregated (survey) categories, the reference category is "English / Welsh / Scottish / Northern Irish / British".
+
+For analyses using the aggregated categories, the reference category is "White British"
+
+```{r}
+ethnicity_cat <- data %>%
+  select(contains("ethnicity")) %>%
+  distinct() %>%
+  arrange(Ethnicity) %>%
+  select(-c(1:2,Ethnicity_collapsed_disaggregated))
+
+ethn_colnames = c(
+  "Ethnicity: Survey",
+  "Ethnicity: Aggregated",
+  "Ethnicity: Binary"
+)
+ethnicity_cat %>%
+  kable(col.names = ethn_colnames) %>%
+  kable_styling(full_width=FALSE)
 ```
 
 # Chapter 2: How many outsourced workers are there in the UK?
@@ -854,7 +879,7 @@ tab %>%
 -   Workers from Black backgrounds are 2.33 times more likely than White workers to be outsourced.
 -   Workers from Asian backgrounds are 1.98 times more likely than White workers to be outsourced
 -   Workers from Mixed Ethnicity backgrounds are 1.86 times more likely than White workers to be outsourced
--   White other worksers are 1.30 times more likely than White British workers to be outsourced
+-   White other workers are 1.32 times more likely than White British workers to be outsourced
 :::
 
 ```{r ethnicity-counts}
@@ -941,21 +966,23 @@ summary(mod_2)
 mod_3 <-  glm(income_group ~ Ethnicity_binary * outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
 summary(mod_3)
 
-black_coef <- extract_glm_coefs(mod_2,, only_sig = T)[5,"Estimate"] %>%
-  exp(.) %>%
-  round(.,2) %>%
-  pull()
+coefs <- extract_glm_coefs(mod_2)
 
-other_coef <- extract_glm_coefs(mod_2,, only_sig = T)[6,"Estimate"] %>%
-  exp(.) %>%
-  round(.,2) %>%
-  pull()
+black_coef <- extract_glm_coefs(mod_2, only_sig = T) %>%
+  filter(variable == "Ethnicity_collapsedBlack/African/Caribbean/Black British:outsourcing_statusOutsourced") %>%
+  mutate(or=round(or,2)) %>%
+  pull(or)
+
+# other_coef <- extract_glm_coefs(mod_2,, only_sig = T)[6,"Estimate"] %>%
+#   exp(.) %>%
+#   round(.,2) %>%
+#   pull()
 
 ```
 
 Overall, there is no interaction between being from a minority and outsourced on whether you are low paid. i.e., being from an ethnic minority and outsourced is not associated with being in the low pay group.^[[outputs/data/ethnicity_binary_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_binary_income_group.csv)]
 
-However there is nuance in the groups. There is evidence to suggest that people who are Black and outsourced are less likely to be in the high income group (OR = `r black_coef`x). People who are from an 'other ethnic group and outsourced are more likely to be in the high income group (OR = `r other_coef`x!) (see tables in @sec-demographic-breakdown)
+However there is nuance in the groups. There is evidence to suggest that people who are Black and outsourced are less likely to be in the high income group (OR = `r black_coef`x). 
 
 ```{r}
 tab_split <- income_data %>%
@@ -2943,6 +2970,8 @@ for(sector in sectors_of_interest){
 
 ### Weekly pay penalty in occupations within sectors
 
+Note I only consider unit occupations where the the minimum n is >= 10.
+
 ```{r}
 #| height: 10
 #| width: 10
@@ -3061,12 +3090,17 @@ Many instances where outsourced workers within a unit occupation are paid less t
 ```{r}
 paid_less %>%
   arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = unit_occupation_labelled
+  ) %>%
   kable(caption = "Weekly pay penalty for unit occupations within sectors") %>%
   kable_styling()
 
 ```
 
 ### Weekly pay penalty in occupations across all sectors
+
+Note I only consider unit occupations where the the minimum n is >= 10.
 
 ```{r}
 #| height: 10
@@ -3182,6 +3216,9 @@ Looking at occupations across all sectors, there are many occupations where outs
 ```{r}
 paid_less %>%
   arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = unit_occupation_labelled
+  ) %>%
   kable(caption = "Weekly pay penalty for unit occupations across all sectors") %>%
   kable_styling()
 
