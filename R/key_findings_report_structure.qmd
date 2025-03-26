@@ -2784,7 +2784,83 @@ gender_pay_split %>%
 I don’t quite understand the chart below the above chart in the file, would you be able to explain it – thanks! Is this the best chart to use, above? Does this need to control for anything else to show us the most accurate analysis of pay by sector for outsourced and non outsourced, or are we confident that this is showing us something notable about sector and pay?
 :::
 
-## Sectoral pay differences^[[outputs/data/sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_weekly.csv)]
+
+## Sectors/occupations
+
+### Sector and occupation hierarchy
+
+The data from Opinium has four variables relating to sectors/occupations. These are
+
+- SectorName
+- Majorgroupcode
+- MajorsubgroupOccupation
+- UnitOccupation
+
+SOC 2020 has nine major groups, 26 sub-major groups, 104 minor groups and 412 unit groups. The variables we have appear to map in the following way:
+
+- Majorgroupcode = the 9 'major groups'
+- MajorsubgroupOccupation = the 26 'sub-major' groups
+- UnitOccupation = the 104 'minor groups'
+
+This last pairing is the point of confusion. The 'UnitOccupation' wording came from Opinium and these categories match the [coding index](https://www.ons.gov.uk/methodology/classificationsandstandards/standardoccupationalclassificationsoc/soc2020/soc2020volume2codingrulesandconventions) where they are confusingly referred to as 'unit groups' even though they are the minor groups.
+
+There is no variable in our data that relates to the most disaggregated category, the 412 'unit groups'.
+
+The unique values of each variable are shown in each section below.
+
+#### SectorName
+
+```{r}
+data %>%
+  distinct(SectorName_labelled) %>%
+  filter(SectorName_labelled != "NA") %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+
+#### Majorgroupcode
+
+
+These are the 9 major groups according to SOC
+  
+```{r}
+data %>%
+  distinct(Majorgroupcode_labelled) %>%
+  drop_na() %>%
+  filter(Majorgroupcode_labelled != "NA") %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+
+#### MajorsubgroupOccupation
+
+These are the 26 'sub-major' groups
+
+```{r}
+data %>%
+  distinct(MajorsubgroupOccupation_labelled) %>%
+  drop_na() %>%
+  filter(MajorsubgroupOccupation_labelled != "NA") %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+
+#### UnitOccupation
+
+These are indeed the 104 'minor groups'. 
+
+```{r}
+data %>%
+  distinct(UnitOccupation_labelled) %>%
+  drop_na %>%
+  kable() %>%
+  kable_styling(full_width = F)
+```
+
+### Sectoral pay differences^[[outputs/data/sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_weekly.csv)]
 
 ```{r sector-bubble}
 sector_summary_pay <- data %>%
@@ -2873,7 +2949,7 @@ sectors_of_interest <- sectors_of_interest[1:13] %>%
   stringr::str_to_title()
 ```
 
-#### Occupations^[[outputs/data/occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/occupation_in_sector_summary_pay_weekly.csv)]
+### Occupations^[[outputs/data/occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/occupation_in_sector_summary_pay_weekly.csv)]
 
 Here we look at Major subgroup occupations within sectors. We only consider the down to 'Other services', as the remaining sectors have small n for outsourced group. Note you can find larger images for these plots in [outputs/figures/occupation_pay_plots](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/figures/occupation_pay_plots).
 
