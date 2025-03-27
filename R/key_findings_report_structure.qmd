@@ -147,10 +147,10 @@ For analyses using the aggregated categories, the reference category is "White B
 
 ```{r}
 ethnicity_cat <- data %>%
-  select(contains("ethnicity")) %>%
+  dplyr::select(contains("ethnicity")) %>%
   distinct() %>%
   arrange(Ethnicity) %>%
-  select(-c(1:2,Ethnicity_collapsed_disaggregated))
+  dplyr::select(-c(1:2,Ethnicity_collapsed_disaggregated))
 
 ethn_colnames = c(
   "Ethnicity: Survey",
@@ -1978,12 +1978,12 @@ plot_data <- plot_data %>%
          )
 
 # annotation_df <- plot_data %>%
-#   select(SectorName_short, outsourcing_status, perc, n
+#   dplyr::select(SectorName_short, outsourcing_status, perc, n
 # mutate(
   
 annotation_df <- plot_data %>%
   filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, N) %>%
+  dplyr::select(SectorName_short, N) %>%
   mutate(
     ypos = 80
   )
@@ -2068,12 +2068,12 @@ plot_data <- plot_data %>%
     SectorName_short = factor(SectorName_short, levels = levels(outsourced_levels$SectorName_short)),
          ) 
 # annotation_df <- plot_data %>%
-#   select(SectorName_short, outsourcing_status, perc, n
+#   dplyr::select(SectorName_short, outsourcing_status, perc, n
 # mutate(
   
 annotation_df <- plot_data %>%
   filter(outsourcing_group == "Outsourced") %>%
-  select(SectorName_short, N) %>%
+  dplyr::select(SectorName_short, N) %>%
   mutate(
     ypos = 80
   )
@@ -2436,7 +2436,7 @@ gender_outsourced_gap <- income_data %>%
 
 not_outsourced_gap <- gender_outsourced_gap %>%
   filter(outsourcing_status == "Not outsourced") %>%
-  select(c(outsourcing_status, Gender, median)) %>%
+  dplyr::select(c(outsourcing_status, Gender, median)) %>%
   pivot_wider(names_from = "Gender", values_from = "median") %>%
   mutate(
     diff = Male - Female
@@ -2445,7 +2445,7 @@ not_outsourced_gap <- gender_outsourced_gap %>%
 
 outsourced_gap <- gender_outsourced_gap %>%
   filter(outsourcing_status == "Outsourced") %>%
-  select(c(outsourcing_status, Gender, median)) %>%
+  dplyr::select(c(outsourcing_status, Gender, median)) %>%
   pivot_wider(names_from = "Gender", values_from = "median") %>%
   mutate(
     diff = Male - Female
@@ -2478,7 +2478,7 @@ gender_outsourced_gap_weekly <- income_data %>%
 
 not_outsourced_gap_weekly <- gender_outsourced_gap_weekly %>%
   filter(outsourcing_status == "Not outsourced") %>%
-  select(c(outsourcing_status, Gender, median)) %>%
+  dplyr::select(c(outsourcing_status, Gender, median)) %>%
   pivot_wider(names_from = "Gender", values_from = "median") %>%
   mutate(
     diff = Male - Female
@@ -2487,7 +2487,7 @@ not_outsourced_gap_weekly <- gender_outsourced_gap_weekly %>%
 
 outsourced_gap_weekly <- gender_outsourced_gap_weekly %>%
   filter(outsourcing_status == "Outsourced") %>%
-  select(c(outsourcing_status, Gender, median)) %>%
+  dplyr::select(c(outsourcing_status, Gender, median)) %>%
   pivot_wider(names_from = "Gender", values_from = "median") %>%
   mutate(
     diff = Male - Female
@@ -2917,7 +2917,7 @@ plot_data <- plot_data %>%
 
 annotation_df <- plot_data %>%
   #filter(outsourcing_status == "Not outsourced") %>%
-  select(SectorName_short, n) %>%
+  dplyr::select(SectorName_short, n) %>%
   group_by(SectorName_short) %>%
   summarise(
     N = sum(n)
@@ -2995,7 +2995,7 @@ for(sector in sectors_of_interest){
     # Order occs by N
     # First filter for 'outsourced' level and reorder by N
     not_outsourced_levels <- plot_data %>%
-      select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
       distinct(MajorsubgroupOccupation_labelled, N) %>%
       mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
     
@@ -3010,7 +3010,7 @@ for(sector in sectors_of_interest){
     
     annotation_df <- plot_data %>%
       #filter(outsourcing_status == "Not outsourced") %>%
-      select(MajorsubgroupOccupation_labelled, n) %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
       group_by(MajorsubgroupOccupation_labelled) %>%
       summarise(
         N = sum(n)
@@ -3110,7 +3110,7 @@ for(sector in sectors_of_interest){
     # Order occs by N
     # First filter for 'outsourced' level and reorder by N
     not_outsourced_levels <- plot_data %>%
-      select(UnitOccupation_labelled, outsourcing_status, N) %>%
+      dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
       distinct(UnitOccupation_labelled, N) %>%
       mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
     
@@ -3125,7 +3125,7 @@ for(sector in sectors_of_interest){
     
     annotation_df <- plot_data %>%
       #filter(outsourcing_status == "Not outsourced") %>%
-      select(UnitOccupation_labelled, n) %>%
+      dplyr::select(UnitOccupation_labelled, n) %>%
       group_by(UnitOccupation_labelled) %>%
       summarise(
         N = sum(n)
@@ -3236,7 +3236,7 @@ plot_data <- unit_subset %>%
 # Order occs by N
 # First filter for 'outsourced' level and reorder by N
 not_outsourced_levels <- plot_data %>%
-  select(UnitOccupation_labelled, outsourcing_status, N) %>%
+  dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
   distinct(UnitOccupation_labelled, N) %>%
   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
 
@@ -3251,7 +3251,7 @@ plot_data <- plot_data %>%
 
 annotation_df <- plot_data %>%
   #filter(outsourcing_status == "Not outsourced") %>%
-  select(UnitOccupation_labelled, n) %>%
+  dplyr::select(UnitOccupation_labelled, n) %>%
   group_by(UnitOccupation_labelled) %>%
   summarise(
     N = sum(n)
@@ -3340,7 +3340,7 @@ reg_levels <- region_statistics_2 %>%
 
 annotation_df <- region_statistics_2 %>%
   filter(`Outsourcing status` == "Not outsourced") %>%
-  select(Region, N) %>%
+  dplyr::select(Region, N) %>%
   mutate(
     ypos = 100
   )
