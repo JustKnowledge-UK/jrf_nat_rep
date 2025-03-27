@@ -10,7 +10,7 @@ format:
     toc-depth: 5
     code-fold: true
     embed-resources: true
-editor: visual
+editor: source
 execute: 
   warning: false
 ---
@@ -791,7 +791,6 @@ mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1,
 
 ```
 
-
 As shown above, the process involved `r count` iterations, and in total identified `r total_cases_removed` observations which should be removed when examining income data (total non-NA income_annual N after removal = `r sum(!is.na(data$income_annual)) - total_cases_removed`). The resulting income distribution is now more sensibly distributed.
 
 ### Converting closed responses to continuous
@@ -1081,125 +1080,9 @@ qqnorm(test$income_weekly_all, main = "Normal Q-Q plot")
 mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
 ```
 
+### Applying income brackets - revisons on 30/09/2024
 
-### Applying income brackets
-
-We want to group people into income brackets. Based on conversation in April, suggested methods for doing this include
-
-1.  Use the standard low pay measure of 2/3 median wage (or we could bump this up to 80% median wage given the National Living Wage is now 2/3 median so there are probably fewer people below the 2/3 median line) and splitting the sample in half this way
-
-2.  Use ASHE deciles, e.g., 20%, 40%, or 50% (50% may be an approximate proxy for the JRF Minimum Income Standard for an individual)
-
-In any event we could use the ASHE deciles to sense check/contextualise the income distributions in our sample. We use the most recent [ASHE data](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/allemployeesashetable1), using median income of all workers (£29,699). As a proxy for the low payment threshold (which is set at 2/3 median hourly pay, see [here](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/lowandhighpayuk/2023)), we use 2/3 median gross annual income. As an alternative, we also calculate 80% median gross annual income as a higher threshold.
-
-```{r}
-ashe_data <- readxl::read_xls("../Data/raw_data/ashetable12023provisional/PROV - Total Table 1.7a   Annual pay - Gross 2023.xls",
-                              sheet = "All", skip = 4, n_max = 1) %>%
-  select(Median, "10":"90") %>%
-  rename(
-    `50` = Median # rename median to 50th percentile
-  ) %>%
-  pivot_longer(everything(), names_to = "Decile", values_to = "Value") %>%
-  mutate(
-    Decile = as.numeric(Decile)
-  ) %>%
-  arrange(Decile)
-
-# make a smaller table with just 25, 50 and 75 percentiles - for plotting
-ashe_data_2 <- ashe_data %>%
-  subset(Decile %in% c(25, 50, 75)) %>%
-  mutate(
-    Label = case_when(Decile == 25 ~ "ASHE 25th percentile",
-                      Decile == 50 ~ "ASHE median",
-                      Decile == 75 ~ "ASHE 75th percentile",
-                      TRUE ~ NA)
-  )
-
-# make tibble of possible pay thresholds
-low_pay_thresholds <- tibble("Threshold" = c("Two thirds median", 
-                                         "Four fifths median"),
-                             "Value" = c(29669 * (2/3), 29669 * 0.8)
-)
-
-```
-
-#### Income just open
-
-The plot below displays the income data for each group with the ASHE percentiles and low-pay thresholds overlaid. The 'two thirds' threshold (`r low_pay_thresholds$Value[1]`) is almost exactly equal to the ASHE 25th percentile (`r ashe_data_2$Value[1]`), and is also close the 25th percentile for each group (closer for the non-outsourced than outsourced group). The 'four fifths' threshold sits closer to the outsourced group's median, at `r low_pay_thresholds$Value[2]`. The ASHE median income is `r ashe_data_2$Value[2]`. Notably, the ASHE median is higher than the median income for both outsourced and non outsourced groups (though more distant from outsourced than non-outsourced median), and the ASHE 75th percentile is quite distant from the 75th percentile for each group. In combination, these facts may be indicative that our sample is somewhat skewed towards the lower end of the income distribution.
-
-Based on this plot, a four-fifths median value would make a good threshold for splitting pay. It sits almost halfway between the ASHE 25th and 50th percentiles and is close to the outsourced group's median value. Examining the density suggests that the non outsourced and outsourced groups have different distributions of income below this threshold. The outsourced group exhibits a linearly depleting density, whereas the non-outsourced group exhibits a sharper drop-off around the ASHE 25th percentile. The pattern suggests that there may be qualitative differences to explore between the two groups in this income range.
-
-```{r income-open}
-income_statistics <- data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) %>%
-  group_by(outsourcing_status) %>%
-  summarise(
-    mean = weighted.mean(income_annual, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(income_annual, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(income_annual, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(income_annual, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(income_annual, w = NatRepemployees, na.rm = T)),
-    n = n()
-  )
-
-# plot the distribution of income for the two groups
-data %>%
-  filter(income_drop == 0 & !is.na(income_annual)) %>%
-  ggplot(., aes(outsourcing_status, income_annual)) + 
-  geom_violin() +
-  geom_boxplot(width = 0.3) +
-  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
-  coord_cartesian(xlim=c(1,2.5)) +
-  theme_minimal() +
-  xlab("Outsourcing status") + ylab("Annual income") +
-  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
-  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000)) +
-  geom_hline(data = ashe_data_2, aes(yintercept = Value)) +
-  geom_text(inherit.aes = F, data = ashe_data_2, aes(x = 1.5, y = Value,label = Label), nudge_y = -2000) +
-  geom_hline(data = low_pay_thresholds, aes(yintercept = Value, colour = Threshold)) +
-  scale_colour_manual(values=colours)
-```
-
-#### Income open + closed
-
-```{r income-open-closed}
-# same as above but for income_annual_all
-income_statistics <- data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
-  group_by(outsourcing_status) %>%
-  summarise(
-    mean = weighted.mean(income_annual_all, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(income_annual_all, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(income_annual_all, w = NatRepemployees, na.rm = T)),
-    n = n()
-  )
-
-# plot the distribution of income for the two groups
-data %>%
-  filter(income_drop_all == 0 & !is.na(income_annual_all)) %>%
-  ggplot(., aes(outsourcing_status, income_annual_all)) + 
-  geom_violin() +
-  geom_boxplot(width = 0.3) +
-  geom_text(inherit.aes=F, data=income_statistics, aes(outsourcing_status, y = 6e+04), label=paste0("Mean = ", round(income_statistics$mean,0),"\n", "Median = ", income_statistics$median), nudge_x = 0.1, hjust=0) +
-  coord_cartesian(xlim=c(1,2.5)) +
-  theme_minimal() +
-  xlab("Outsourcing status") + ylab("Annual income") +
-  coord_cartesian(ylim = c(plyr::round_any(min(income_statistics$min), 5000, f = floor),plyr::round_any(max(income_statistics$max),5000, f = ceiling))) +
-  scale_y_continuous(breaks = seq(plyr::round_any(min(income_statistics$min), 5000, f = ceiling), plyr::round_any(max(income_statistics$max),5000, f = ceiling), 10000)) +
-  geom_hline(data = ashe_data_2, aes(yintercept = Value)) +
-  geom_text(inherit.aes = F, data = ashe_data_2, aes(x = 1.5, y = Value,label = Label), nudge_y = -2000) +
-  geom_hline(data = low_pay_thresholds, aes(yintercept = Value, colour = Threshold)) +
-  scale_colour_manual(values=colours)
-
-```
-
-Including the closed responses paints a similar picture to just considering the open ones, but of course adds greater reliability.
-
-### Revisons on 30/09/2024
-
-After further discussion and consultation with JRF analysts, who felt the 80% threshold was high, we have reverted to use 2/3 ASHE regional weekly pay as the threshold. This is also consistent with what JRF have done in the past and what the OECD uses (see https://data.oecd.org/earnwage/wage-levels.htm). 
+After further discussion and consultation with JRF analysts, who felt the 80% threshold was high, we have reverted to use 2/3 ASHE regional weekly pay as the threshold. This is also consistent with what JRF have done in the past and what the OECD uses (see https://data.oecd.org/earnwage/wage-levels.htm).
 
 I leave the above older thresholding to illustrate our process, including how inclusion of closed income responses affects the figures.
 
@@ -1243,7 +1126,6 @@ ashe_data <- readxl::read_excel(files[1], sheet = 'All', skip = 4) %>%
     Region_median_income = as.numeric(Region_median_income)
     )
 ```
-
 
 ```{r}
 # join to data
@@ -1432,7 +1314,6 @@ data <- data %>%
 Make region a factor and make the reference London.
 
 ```{r}
-
 data <- data %>%
   mutate(
     Region = forcats::fct_relevel(factor(Region), "London")
