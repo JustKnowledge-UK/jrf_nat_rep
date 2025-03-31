@@ -579,11 +579,23 @@ data <- data %>%
                               INCOME_FREQ == 3 ~ INCOME_OPEN_1, # weekly 
                               INCOME_FREQ == 4 ~ INCOME_OPEN_1 * HOURS, # hourly
                               TRUE ~ NA),
+    income_hourly = income_weekly / HOURS,
     income_annual_percentile = ntile(income_annual, 100),
-    income_weekly_percentile = ntile(income_weekly, 100)
+    income_weekly_percentile = ntile(income_weekly, 100),
+    income_hourly_percentile = ntile(income_hourly, 100)
   )
 
 options(scipen = 999)
+
+# Check
+# test <- data %>%
+#   filter(!is.na(INCOME_OPEN_1)) %>%
+#   select(c(INCOME_FREQ,INCOME_OPEN_1, income_annual, income_weekly, HOURS,income_hourly)) %>%
+#   mutate(
+#     INCOME_FREQ = haven::as_factor(INCOME_FREQ)
+#   ) %>%
+#   group_by(INCOME_FREQ) %>%
+#   slice_head(n=2)
 
 ```
 
@@ -870,8 +882,11 @@ data <- data %>%
                               INCOME_FREQ == 3 ~ INCOME_CLOSED_WEEKLY_labelled_midpoint,
                               INCOME_FREQ == 4 ~ INCOME_CLOSED_HOURLY_labelled_midpoint*HOURS,
                               TRUE ~ NA),
+    income_hourly_closed = income_weekly_closed / HOURS,
     income_percentile_closed = ntile(income_annual, 100),
-    income_weekly_closed_percentile = ntile(income_weekly_closed, 100)
+    income_weekly_closed_percentile = ntile(income_weekly_closed, 100),
+    income_hourly_closed_percentile = ntile(income_hourly_closed, 100),
+    
   )
 
 ```
@@ -887,6 +902,10 @@ data <- data %>%
     income_weekly_all = case_when(!is.na(income_weekly) ~ income_weekly,
                                    !is.na(income_weekly_closed) ~ income_weekly_closed,
                                    TRUE ~ NA),
+    income_hourly_all = case_when(!is.na(income_hourly) ~ income_hourly,
+                                   !is.na(income_hourly_closed) ~ income_hourly_closed,
+                                   TRUE ~ NA)
+    
   )
 
 # Double check this leads to what we expect
@@ -897,6 +916,9 @@ sum(is.na(data$income_annual_all))
 
 sum(!is.na(data$income_weekly_all))
 sum(is.na(data$income_weekly_all))
+
+sum(!is.na(data$income_hourly_all))
+sum(is.na(data$income_hourly_all))
 ```
 
 Apply the same outliers removal process as done above for the income_all_subset
