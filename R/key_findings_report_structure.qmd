@@ -72,7 +72,7 @@ extract_lm_coefs <- function(mod, only_sig = F){
 
 ```{r data, output=FALSE}
 #data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
-data <- readRDS("../Data/2024-09-30 - Cleaned_Data.rds") 
+data <- readRDS("../Data/2025-03-31 - Cleaned_Data.rds") 
 
 # Make our disaggregated ethnicity groups identical to the originla census groups
 # as per request in JRF - Outsourced workers - To dos 
@@ -2860,9 +2860,12 @@ data %>%
   kable_styling(full_width = F)
 ```
 
-### Sectoral pay differences^[[outputs/data/sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_weekly.csv)]
+### Sectoral pay differences
 
-```{r sector-bubble}
+
+#### Weekly^[[outputs/data/sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_weekly.csv)]
+
+```{r sector-bubble-weekly}
 sector_summary_pay <- data %>%
   filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
   group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
@@ -2889,6 +2892,14 @@ sector_summary_pay <- data %>%
     SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
     SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
   )
+
+summary_weekly <- sector_summary_pay %>%
+  group_by(SectorName_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup()
 
 write_csv(sector_summary_pay, file="../outputs/data/sector_summary_pay_weekly.csv")
 
@@ -2949,7 +2960,156 @@ sectors_of_interest <- sectors_of_interest[1:13] %>%
   stringr::str_to_title()
 ```
 
-### Occupations^[[outputs/data/occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/occupation_in_sector_summary_pay_weekly.csv)]
+#### Hourly^[[outputs/data/sector_summary_pay_hourly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_pay_hourly.csv)]
+
+```{r sector-bubble-hourly}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+summary_hourly <- sector_summary_pay %>%
+  group_by(SectorName_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup()
+
+write_csv(sector_summary_pay, file="../outputs/data/sector_summary_pay_hourly.csv")
+
+plot_data <- sector_summary_pay %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, N, .desc = FALSE))
+
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+        ) %>%
+  arrange(desc(SectorName_short))
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(SectorName_short, n) %>%
+  group_by(SectorName_short) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=scales::breaks_pretty(n=10)) + # seq(0,max(plot_data$wtd_avg_income, na.rm=T), 100)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_label_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average hourly income") + ylab("Sector") +
+  labs(caption = "Size of bubble represents the size of the respective workforce within the sector")
+
+sectors_of_interest <- unique(plot_data$SectorName_labelled)
+sectors_of_interest <- sectors_of_interest[1:13] %>%
+  stringr::str_to_title()
+```
+
+#### Comparing pay penalty between weekly and hourly
+
+Note only consider n >= 10
+
+```{r}
+# add pay frame flags
+summary_weekly <- summary_weekly %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+summary_hourly <- summary_hourly %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+# combine
+summary_combined <- dplyr::bind_rows(summary_weekly,summary_hourly)
+
+summary_combined2 <- summary_combined %>%
+  filter(!is.na(SectorName_labelled)) %>%
+  pivot_wider(id_cols = c(SectorName_labelled, pay_frame), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_diff = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  )
+
+summary_combined3 <- summary_combined2 %>%
+  pivot_wider(id_cols = sector_name_labelled, names_from = pay_frame, values_from = pay_diff, names_glue = "{pay_frame}_pay_diff") %>%
+  mutate(
+    pattern_reverse = ifelse((weekly_pay_diff < 0 & hourly_pay_diff >= 0 ) |
+                               (weekly_pay_diff >= 0 & hourly_pay_diff < 0), 1, 0 )
+  ) 
+
+```
+
+The table below shows the pay difference between outsourced and non-outsourced workers by sector. Negative values indicate pay penalties for outsourced workers. The 'pattern_reverse' column indicates the `r sum(summary_combined3$pattern_reverse, na.rm=T)` sectors where the direction of the difference is different if you consider hourly versus weekly pay difference. 
+
+For example, per week, outsourced workers in PROFESSIONAL, SCIENTIFIC AND TECHNICAL ACTIVITIES earn £1.77 less than non-outsourced counterparts, but per hour they are paid on average 1.3y more than non-outsourced workers. This suggests that outsourced rates are higher in this occupation, but the amount of work available is not enough for outsourced people to earn more than non-outsourced people on a weekly basis. 
+
+The reverse pattern indicates sectors where outsourced workers are paid less per hour but work more hours and earn more per week than their non-outsourced counterparts.
+
+```{r}
+summary_combined3 %>%
+  filter(!is.na(weekly_pay_diff)) %>%
+  arrange(weekly_pay_diff) %>%
+  kable(caption = "Weekly and hourly pay difference by sector") %>%
+  kable_styling(full_width = F)
+```
+
+### Major group occupations
+
+#### Weekly^[[outputs/data/major_subgroup_occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_occupation_in_sector_summary_pay_weekly.csv)]
 
 Here we look at Major subgroup occupations within sectors. We only consider the down to 'Other services', as the remaining sectors have small n for outsourced group. Note you can find larger images for these plots in [outputs/figures/occupation_pay_plots](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/figures/occupation_pay_plots).
 
@@ -2980,7 +3140,18 @@ occ_in_sect_summary_pay <- data %>%
     
   ) 
 
-write_csv(occ_in_sect_summary_pay, file="../outputs/data/occupation_in_sector_summary_pay_weekly.csv")
+summary_weekly <- occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+write_csv(occ_in_sect_summary_pay, file="../outputs/data/major_subgroup_occupation_in_sector_summary_pay_weekly.csv")
 
 
 for(sector in sectors_of_interest){
@@ -3040,11 +3211,640 @@ for(sector in sectors_of_interest){
     
     show(p)
     
-    ggsave(here('outputs','figures','occupation_pay_plots',paste0('occupation_pay_plot_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+    ggsave(here('outputs','figures','occupation_pay_plots',paste0('major_subgroup_occupation_pay_plot_weekly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
 }
 ```
+#### Hourly^[[outputs/data/major_subgroup_occupation_in_sector_summary_pay_hourly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_occupation_in_sector_summary_pay_hourly.csv)]
 
-### Weekly pay penalty in occupations within sectors
+```{r}
+#| height: 10
+#| width: 10
+occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled, MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  ) 
+
+summary_hourly <- occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+write_csv(occ_in_sect_summary_pay, file="../outputs/data/major_subgroup_occupation_in_sector_summary_pay_hourly.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- occ_in_sect_summary_pay %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+      distinct(MajorsubgroupOccupation_labelled, N) %>%
+      mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
+      group_by(MajorsubgroupOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=scales::breaks_pretty(n=10)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average hourly income") + ylab("Major subgroup occupation") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    ggsave(here('outputs','figures','occupation_pay_plots',paste0('major_subgroup_occupation_pay_plot_hourly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
+#### Comparing pay penalty between weekly and hourly
+
+Note only consider n >= 10
+
+The table below shows the weekly and hourly pay difference between outsourced and non-outsourced workers by major group occupation. As before, negative values indicate pay penalties for outsourced workers, and the 'pattern_reverse' column indicates the occupations where the direction of the difference is different if you consider hourly versus weekly pay difference. 
+
+```{r}
+# combine
+summary_combined <- dplyr::bind_rows(summary_weekly,summary_hourly)
+
+# Function for processing occupations within sectors. Makes a kable table for occupations in each sector (as long as there's both outsourced and non-outsourced entries for the occupation)
+comparison_table <- function(df, within_sectors = TRUE){
+  if(within_sectors){
+    caption_text = "within"
+  }
+  else{
+    caption_text = "across"
+  }
+  sectors <- unique(df[["SectorName_labelled"]])
+  sectors <- sectors[!is.na(sectors)]
+  output_list <- vector('list', length(sectors))
+  
+  for(i in 1:length(sectors)){
+    sector <- sectors[i]
+    this_data <- df %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+
+    if(length(unique(this_data$outsourcing_status)) == 2){
+      this_data <- this_data %>%
+        pivot_wider(id_cols = c(MajorsubgroupOccupation_labelled, pay_frame), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+        janitor::clean_names() %>%
+        mutate(
+          pay_diff = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+        ) %>%
+        pivot_wider(id_cols = majorsubgroup_occupation_labelled, names_from = pay_frame, values_from = pay_diff, names_glue = "{pay_frame}_pay_diff") %>%
+        mutate(
+          pattern_reverse = ifelse((weekly_pay_diff < 0 & hourly_pay_diff >= 0 ) |
+                                     (weekly_pay_diff >= 0 & hourly_pay_diff < 0), 1, 0 )
+        )
+      # output_list[[i]] <- this_data
+    }
+    else{
+      output_list[[i]] <- NA
+      next
+    }
+    
+  # k <- this_data %>%
+  #   filter(!is.na(weekly_pay_diff)) %>%
+  #   arrange(weekly_pay_diff) %>%
+  #   kable(caption = paste("Weekly and hourly pay difference by major group occupations", caption_text, sector, sep = " ")) %>%
+  #   kable_styling(full_width = F)
+  
+  # output_list[[i]] <- k
+  output_list[[i]] <- this_data
+  names(output_list)[i] <- sector
+  }
+
+  return(output_list)
+}
+
+tables <- comparison_table(summary_combined, within_sectors = F)
+
+# Print the kable tables
+# for(i in 1:length(tables)){
+#   if(!is.na(tables[i])){
+#     tables[[i]] %>%
+#     filter(!is.na(weekly_pay_diff)) %>%
+#     arrange(weekly_pay_diff) %>%
+#     kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+#     kable_styling(full_width = F) %>%
+#       print()
+#   }
+# }
+```
+
+
+```{r}
+#| warning: false
+#| error: false
+# there's got to be better way but can't find it
+# this prints the kable tables for the sectors
+i <- 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+i <- i +1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+i <- i + 1
+
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+
+)
+
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+
+try(
+  tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+```
+
+
+### Major group occupations across all sectors
+
+Note I only consider unit occupations where the the minimum n is >= 10.
+
+#### Weekly^[[outputs/data/major_subgroup_across_sectors_occupation_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_across_sectors_occupation_summary_pay_weekly.csv)]
+
+```{r}
+#| height: 20
+#| width: 10
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+write_csv(major_occ_summary_pay, file="../outputs/data/major_subgroup_across_sectors_occupation_summary_pay_weekly.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_weekly <- major_occ_summary_pay %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_weekly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(MajorsubgroupOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+write_csv(paid_less, file="../outputs/data/major_subgroup_occupation_weekly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+  distinct(MajorsubgroupOccupation_labelled, N) %>%
+  mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average weekly income") + ylab("Major sub group occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+ggsave(here('outputs','figures','occupation_pay_plots','major_subgroup_occupation_all_sectors_pay_plot.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+Looking at occupations across all sectors, there are many occupations where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/major_subgroup_occupation_weekly_pay_penalty_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_occupation_weekly_pay_penalty_across_sectors.csv)]
+
+
+```{r}
+paid_less %>%
+  arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = majorsubgroup_occupation_labelled
+  ) %>%
+  kable(caption = "Weekly pay penalty for major subgroup occupations across all sectors") %>%
+  kable_styling()
+
+```
+
+
+
+#### Hourly^[[outputs/data/major_subgroup_occupation_summary_pay_hourly_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_occupation_summary_pay_hourly_across_sectors.csv)]
+
+```{r}
+#| height: 10
+#| width: 10
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+write_csv(major_occ_summary_pay, file="../outputs/data/major_subgroup_occupation_summary_pay_hourly_across_sectors.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+
+unit_subset_hourly <- major_occ_summary_pay %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_hourly
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(MajorsubgroupOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+write_csv(paid_less, file="../outputs/data/major_subgroup_occupation_hourly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+  distinct(MajorsubgroupOccupation_labelled, N) %>%
+  mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average hourly income") + ylab("Major subgroup occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+ggsave(here('outputs','figures','occupation_pay_plots','major_occupation_pay_plot_hourly_all_sectors.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+Looking at occupations across all sectors, there are many occupations where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/major_subgroup_occupation_hourly_pay_penalty_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/major_subgroup_occupation_hourly_pay_penalty_across_sectors.csv)]
+
+
+```{r}
+paid_less %>%
+  arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = majorsubgroup_occupation_labelled
+  ) %>%
+  kable(caption = "Hourly pay penalty for major subgroup occupations across all sectors") %>%
+  kable_styling()
+
+```
+
+#### Comparing pay penalty between weekly and hourly
+
+Note only consider n >= 10
+
+
+```{r}
+# add pay frame flags
+unit_subset_weekly <- unit_subset_weekly %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+unit_subset_hourly <- unit_subset_hourly %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+# combine
+unit_subset_combined <- dplyr::bind_rows(unit_subset_weekly,unit_subset_hourly)
+
+unit_subset_combined2 <- unit_subset_combined %>%
+  pivot_wider(id_cols = c(MajorsubgroupOccupation_labelled, pay_frame), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_diff = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  )
+
+unit_subset_combined3 <- unit_subset_combined2 %>%
+  pivot_wider(id_cols = majorsubgroup_occupation_labelled, names_from = pay_frame, values_from = pay_diff, names_glue = "{pay_frame}_pay_diff") 
+
+
+# pivot again to compare hourly and weekly pay differences
+unit_subset_combined4 <- unit_subset_combined3 %>%
+  mutate(
+    pattern_reverse = ifelse((weekly_pay_diff < 0 & hourly_pay_diff >= 0 ) |
+                               (weekly_pay_diff >= 0 & hourly_pay_diff < 0), 1, 0 )
+  ) 
+
+```
+
+The table below shows the weekly and hourly pay difference between outsourced and non-outsourced workers by major group occupation. As before, negative values indicate pay penalties for outsourced workers, and the 'pattern_reverse' column indicates the occupations where the direction of the difference is different if you consider hourly versus weekly pay difference. 
+
+```{r}
+unit_subset_combined4 %>%
+  filter(!is.na(weekly_pay_diff)) %>%
+  arrange(weekly_pay_diff) %>%
+  kable(caption = "Weekly and hourly pay difference by major sub group occupation") %>%
+  kable_styling(full_width = F)
+```
+
+### Minor group occupations within sectors
+
+#### Weekly^[[outputs/data/minor_group_occupation_in_sector_summary_pay_weekly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_in_sector_summary_pay_weekly.csv)]
 
 Note I only consider unit occupations where the the minimum n is >= 10.
 
@@ -3074,15 +3874,22 @@ unit_occ_in_sect_summary_pay <- data %>%
   )  %>%
   ungroup()
 
-write_csv(unit_occ_in_sect_summary_pay, file="../outputs/data/unit_occupation_in_sector_summary_pay_weekly.csv")
-
-# need to identify the unit occs that have an ok n
-unit_subset <- unit_occ_in_sect_summary_pay %>%
+summary_weekly <- unit_occ_in_sect_summary_pay %>%
   group_by(SectorName_labelled,UnitOccupation_labelled) %>%
   mutate(
-    min_n = min(n, na.rm=TRUE)
+    min_n = min(n, na.rm=TRUE) 
   ) %>%
-  filter(min_n >= 10)
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+write_csv(unit_occ_in_sect_summary_pay, file="../outputs/data/minor_group_occupation_in_sector_summary_pay_weekly.csv")
+
+
+unit_subset <- summary_weekly
+
 
 # create a df with occs where outsourced paid less so we can just list it
 paid_less <- unit_subset %>%
@@ -3095,7 +3902,7 @@ paid_less <- unit_subset %>%
     pay_penalty < 0
   )
 
-write_csv(paid_less, file="../outputs/data/unit_occupation_in_sector_weekly_pay_penalty.csv")
+write_csv(paid_less, file="../outputs/data/minor_group_occupation_in_sector_weekly_pay_penalty.csv")
 
 
 for(sector in sectors_of_interest){
@@ -3157,11 +3964,11 @@ for(sector in sectors_of_interest){
     
     show(p)
     
-    ggsave(here('outputs','figures','occupation_pay_plots',paste0('unit_occupation_pay_plot_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+    ggsave(here('outputs','figures','occupation_pay_plots',paste0('unit_occupation_pay_plot_weekly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
 }
 ```
 
-Many instances where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/unit_occupation_in_sector_weekly_pay_penalty.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/unit_occupation_in_sector_weekly_pay_penalty.csv)]
+Many instances where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/minor_group_occupation_in_sector_weekly_pay_penalty.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_in_sector_weekly_pay_penalty.csv)]
 
 ```{r}
 paid_less %>%
@@ -3174,12 +3981,339 @@ paid_less %>%
 
 ```
 
-### Weekly pay penalty in occupations across all sectors
+#### Hourly^[[outputs/data/minor_group_occupation_in_sector_summary_pay_hourly.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_in_sector_summary_pay_hourly.csv)]
 
 Note I only consider unit occupations where the the minimum n is >= 10.
 
 ```{r}
 #| height: 10
+#| width: 10
+unit_occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled, UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  )  %>%
+  ungroup()
+
+summary_hourly <- unit_occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10) %>%
+  ungroup() %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+write_csv(unit_occ_in_sect_summary_pay, file="../outputs/data/minor_group_occupation_in_sector_summary_pay_hourly.csv")
+
+# need to identify the unit occs that have an ok n
+unit_subset <- summary_hourly 
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(SectorName_labelled, UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+write_csv(paid_less, file="../outputs/data/minor_group_occupation_in_sector_hourly_pay_penalty.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- unit_subset %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(UnitOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+      distinct(UnitOccupation_labelled, N) %>%
+      mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      dplyr::select(UnitOccupation_labelled, n) %>%
+      group_by(UnitOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+      #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average hourly income") + ylab("Unit occupation") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    ggsave(here('outputs','figures','occupation_pay_plots',paste0('unit_occupation_pay_plot_hourly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
+
+Many instances where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/minor_group_occupation_in_sector_hourly_pay_penalty.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_in_sector_hourly_pay_penalty.csv)]
+
+```{r}
+paid_less %>%
+  arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = unit_occupation_labelled
+  ) %>%
+  kable(caption = "Hourly pay penalty for unit occupations within sectors") %>%
+  kable_styling()
+
+```
+
+#### Comparing pay penalty between weekly and hourly
+
+Note only consider n >= 10
+
+```{r}
+# combine
+summary_combined <- dplyr::bind_rows(summary_weekly,summary_hourly)
+
+# Function for processing minor group occupations within sectors. Makes a kable table for occupations in each sector (as long as there's both outsourced and non-outsourced entries for the occupation)
+comparison_table2 <- function(df, within_sectors = TRUE){
+  if(within_sectors){
+    caption_text = "within"
+  }
+  else{
+    caption_text = "across"
+  }
+  sectors <- unique(df[["SectorName_labelled"]])
+  sectors <- sectors[!is.na(sectors)]
+  output_list <- vector('list', length(sectors))
+  
+  for(i in 1:length(sectors)){
+    sector <- sectors[i]
+    this_data <- df %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(UnitOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+
+    if(length(unique(this_data$outsourcing_status)) == 2){
+      this_data <- this_data %>%
+        pivot_wider(id_cols = c(UnitOccupation_labelled, pay_frame), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+        janitor::clean_names() %>%
+        mutate(
+          pay_diff = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+        ) %>%
+        pivot_wider(id_cols = unit_occupation_labelled, names_from = pay_frame, values_from = pay_diff, names_glue = "{pay_frame}_pay_diff") %>%
+        mutate(
+          pattern_reverse = ifelse((weekly_pay_diff < 0 & hourly_pay_diff >= 0 ) |
+                                     (weekly_pay_diff >= 0 & hourly_pay_diff < 0), 1, 0 )
+        )
+      # output_list[[i]] <- this_data
+    }
+    else{
+      output_list[[i]] <- NA
+      next
+    }
+    
+  # k <- this_data %>%
+  #   filter(!is.na(weekly_pay_diff)) %>%
+  #   arrange(weekly_pay_diff) %>%
+  #   kable(caption = paste("Weekly and hourly pay difference by minor group occupations", caption_text, sector, sep = " ")) %>%
+  #   kable_styling(full_width = F)
+  # 
+  # output_list[[i]] <- k
+  output_list[[i]] <- this_data
+  names(output_list)[i] <- sector
+  }
+
+  return(output_list)
+}
+
+tables <- comparison_table2(summary_combined)
+
+# Print the kable tables
+# for(i in 1:length(tables)){
+#   if(!is.na(tables[[i]])){
+#     print(tables[[i]])
+#   }
+# }
+```
+
+```{r}
+#| warning: false
+#| error: false
+# there's got to be better way but can't find it
+# this prints the kable tables for the sectors
+i <- 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+i <- i +1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+i <- i + 1
+
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+
+)
+
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+
+try(
+  tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+i <- i + 1
+try(
+tables[[i]] %>%
+    filter(!is.na(weekly_pay_diff)) %>%
+    arrange(weekly_pay_diff) %>%
+    kable(caption = paste("Weekly and hourly pay difference by major group occupations within", names(tables)[i], sep = " ")) %>%
+    kable_styling(full_width = F)
+)
+
+```
+### Minor group occupations across all sectors
+
+Note I only consider unit occupations where the the minimum n is >= 10.
+
+#### Weekly^[[outputs/data/minor_group_occupation_summary_pay_weekly_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_summary_pay_weekly_across_sectors.csv)]
+
+```{r}
+#| height: 20
 #| width: 10
 unit_occ_summary_pay <- data %>%
   filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
@@ -3202,16 +4336,19 @@ unit_occ_summary_pay <- data %>%
   )  %>%
   ungroup()
 
-write_csv(unit_occ_summary_pay, file="../outputs/data/unit_occupation_summary_pay_weekly.csv")
+write_csv(unit_occ_summary_pay, file="../outputs/data/minor_group_occupation_summary_pay_weekly_across_sectors.csv")
 
 # need to identify the unit occs that have an ok n
 # subste to occs with n>=10
-unit_subset <- unit_occ_summary_pay %>%
+unit_subset_weekly <- unit_occ_summary_pay %>%
   group_by(UnitOccupation_labelled) %>%
   mutate(
     min_n = min(n, na.rm=TRUE)
   ) %>%
   filter(min_n >= 10)
+
+unit_subset <- unit_subset_weekly
+
 
 # create a df with occs where outsourced paid less so we can just list it
 paid_less <- unit_subset %>%
@@ -3224,7 +4361,7 @@ paid_less <- unit_subset %>%
     pay_penalty < 0
   )
 
-write_csv(paid_less, file="../outputs/data/unit_occupation_weekly_pay_penalty.csv")
+write_csv(paid_less, file="../outputs/data/minor_group_occupation_weekly_pay_penalty_across_sectors.csv")
 
 #print(sector)
 # subset to this sector and drop na occupatoins
@@ -3283,10 +4420,11 @@ labs(caption = "Size of bubble represents the size of the respective workforce w
 
 show(p)
 
-ggsave(here('outputs','figures','occupation_pay_plots','unit_occupation_pay_plot.png'), height = 8, width = 8, dpi=800, bg="white")
+ggsave(here('outputs','figures','occupation_pay_plots','unit_occupation_pay_plot_all_sectors.png'), height = 8, width = 8, dpi=800, bg="white")
 
 ```
-Looking at occupations across all sectors, there are many occupations where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/unit_occupation_weekly_pay_penalty.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/unit_occupation_weekly_pay_penalty.csv)]
+
+Looking at occupations across all sectors, there are many occupations where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/minor_group_occupation_weekly_pay_penalty_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_weekly_pay_penalty_across_sectors.csv)]
 
 
 ```{r}
@@ -3299,6 +4437,188 @@ paid_less %>%
   kable_styling()
 
 ```
+
+
+
+#### Hourly^[[outputs/data/minor_group_occupation_summary_pay_hourly_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_summary_pay_hourly_across_sectors.csv)]
+
+```{r}
+#| height: 10
+#| width: 10
+unit_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+write_csv(unit_occ_summary_pay, file="../outputs/data/minor_group_occupation_summary_pay_hourly_across_sectors.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+
+unit_subset_hourly <- unit_occ_summary_pay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_hourly
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+write_csv(paid_less, file="../outputs/data/minor_group_occupation_hourly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(UnitOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+  distinct(UnitOccupation_labelled, N) %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average hourly income") + ylab("Unit occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+ggsave(here('outputs','figures','occupation_pay_plots','unit_occupation_pay_plot_hourly_all_sectors.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+Looking at occupations across all sectors, there are many occupations where outsourced workers within a unit occupation are paid less than their non-outsourced counterparts:^[[outputs/data/minor_group_occupation_hourly_pay_penalty_across_sectors.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/minor_group_occupation_hourly_pay_penalty_across_sectors.csv)]
+
+
+```{r}
+paid_less %>%
+  arrange(pay_penalty) %>%
+  relocate(
+    pay_penalty, .after = unit_occupation_labelled
+  ) %>%
+  kable(caption = "Hourly pay penalty for unit occupations across all sectors") %>%
+  kable_styling()
+
+```
+
+#### Comparing pay penalty between weekly and hourly
+
+Note only consider n >= 10
+
+```{r}
+# add pay frame flags
+unit_subset_weekly <- unit_subset_weekly %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+unit_subset_hourly <- unit_subset_hourly %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+# combine
+unit_subset_combined <- dplyr::bind_rows(unit_subset_weekly,unit_subset_hourly)
+
+unit_subset_combined2 <- unit_subset_combined %>%
+  pivot_wider(id_cols = c(UnitOccupation_labelled, pay_frame), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_diff = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  )
+
+unit_subset_combined3 <- unit_subset_combined2 %>%
+  pivot_wider(id_cols = unit_occupation_labelled, names_from = pay_frame, values_from = pay_diff, names_glue = "{pay_frame}_pay_diff") 
+
+
+# pivot again to compare hourly and weekly pay differences
+unit_subset_combined4 <- unit_subset_combined3 %>%
+  mutate(
+    pattern_reverse = ifelse((weekly_pay_diff < 0 & hourly_pay_diff >= 0 ) |
+                               (weekly_pay_diff >= 0 & hourly_pay_diff < 0), 1, 0 )
+  ) 
+
+```
+
+The table below shows the pay difference between outsourced and non-outsourced workers by minor sub group occupation. Negative values indicate pay penalties for outsourced workers. The 'pattern_reverse' column indicates the four occupations where the direction of the difference is different if you consider hourly versus weekly pay difference. For example, per week, teaching professionals who are outsourced earn £82 less than non-outsourced counterparts, but per hour they are paid on average 16p more than non-outsourced workers. This suggests that outsrouced rates are higher in this occupation, but the amount of work available is not enough for outsrouced people to earn more than non-outsoruced people on a weekly basis. 
+
+The reverse pattern is evident for the other three. For example, outsourced workers in food preparation and hospitality earn on average 40p less an hour than non-outsourced workers, but earn on average £17 more per week than non-outsourced workers. This suggests that outsourced workers in this occupation are paid less but work more hours than their non-outsourced counterparts. 
+
+```{r}
+unit_subset_combined4 %>%
+  filter(!is.na(weekly_pay_diff)) %>%
+  arrange(weekly_pay_diff) %>%
+  kable(caption = "Weekly and hourly pay difference by minor sub group occupation") %>%
+  kable_styling(full_width = F)
+```
+
 
 
 ## London has a disproportionate share of the UK’s outsourced workers, followed by the East and West Midlands
