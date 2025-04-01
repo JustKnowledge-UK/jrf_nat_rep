@@ -1,0 +1,662 @@
+SectorName,SectorName_labelled,MajorsubgroupOccupation_labelled,outsourcing_status,n,Frequency,avg_income,wtd_avg_income,N,Sum,perc
+1,Accommodation And Food Service Activities,Administrative Occupations,Not outsourced,14,14.197207860075606,13.79537039351794,13.905363444760372,19,18.541837861158054,76.56850397670829
+1,Accommodation And Food Service Activities,Administrative Occupations,Outsourced,5,4.344630001082449,14.302281908980804,14.736123499699982,19,18.541837861158054,23.431496023291725
+1,Accommodation And Food Service Activities,Business And Public Service Associate Professionals,Not outsourced,4,4.613251210618015,15.45774171270718,15.691370360843601,5,5.373499388215649,85.85189794075539
+1,Accommodation And Food Service Activities,Business And Public Service Associate Professionals,Outsourced,1,0.760248177597634,23.365561694290975,23.365561694290975,5,5.373499388215649,14.148102059244597
+1,Accommodation And Food Service Activities,"Business, Media And Public Service Professionals",Not outsourced,3,3.323012751331439,12.661005388445535,13.287476245260686,4,4.398137788234067,75.55499421189553
+1,Accommodation And Food Service Activities,"Business, Media And Public Service Professionals",Outsourced,1,1.0751250369026277,17.188459177409452,17.188459177409452,4,4.398137788234067,24.445005788104478
+1,Accommodation And Food Service Activities,Caring Personal Service Occupations,Not outsourced,3,2.5890492817960085,11.598117454471046,11.945188487117044,4,3.2185157342886788,80.44233726165741
+1,Accommodation And Food Service Activities,Caring Personal Service Occupations,Outsourced,1,0.6294664524926704,9.668508287292818,9.668508287292818,4,3.2185157342886788,19.557662738342593
+1,Accommodation And Food Service Activities,Corporate Managers And Directors,Not outsourced,33,33.027966346140744,17.18438482992393,16.20269842879938,34,34.67016954752683,95.26335399330854
+1,Accommodation And Food Service Activities,Corporate Managers And Directors,Outsourced,1,1.6422032013860899,7.734806629834255,7.734806629834255,34,34.67016954752683,4.736646006691465
+1,Accommodation And Food Service Activities,Customer Service Occupations,Not outsourced,10,10.04194632096613,14.490943397711353,12.670601443561432,10,10.04194632096613,100
+1,Accommodation And Food Service Activities,Elementary Administration And Service Occupations,Not outsourced,117,142.8267735884749,11.345352117386575,11.516644190950863,154,195.8931907890649,72.9105350794295
+1,Accommodation And Food Service Activities,Elementary Administration And Service Occupations,Outsourced,37,53.06641720059,10.795365273212358,10.814897385847324,154,195.8931907890649,27.08946492057051
+1,Accommodation And Food Service Activities,Health And Social Care Associate Professionals,Not outsourced,1,2.3230435895352732,14.052547575199506,14.052547575199506,1,2.3230435895352732,100
+1,Accommodation And Food Service Activities,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,32,34.99687202675379,11.141075130675242,10.777923729458333,34,36.776049096097346,95.16213102529179
+1,Accommodation And Food Service Activities,"Leisure, Travel And Related Personal Service Occupations",Outsourced,2,1.7791770693435534,13.014119091467158,13.52774009139249,34,36.776049096097346,4.837868974708212
+1,Accommodation And Food Service Activities,NA,Not outsourced,1,0.5779883482764481,16.527364593662934,16.527364593662934,1,0.5779883482764481,100
+1,Accommodation And Food Service Activities,Other Managers And Proprietors,Not outsourced,39,43.57971573544534,13.400565453314847,13.226057046246542,43,47.92819871104526,90.92708866065146
+1,Accommodation And Food Service Activities,Other Managers And Proprietors,Outsourced,4,4.3484829755999215,14.921500920810313,14.855427552500116,43,47.92819871104526,9.07291133934853
+1,Accommodation And Food Service Activities,"Process, Plant And Machine Operatives",Not outsourced,5,5.173089411546158,11.771566758747698,11.091787159053506,5,5.173089411546158,100
+1,Accommodation And Food Service Activities,Sales Occupations,Not outsourced,31,34.236602615598045,10.245584884309048,10.093443539822102,39,41.57439630371276,82.35020988757107
+1,Accommodation And Food Service Activities,Sales Occupations,Outsourced,8,7.337793688114712,12.182919227201904,11.570980099558538,39,41.57439630371276,17.649790112428928
+1,Accommodation And Food Service Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,1,0.7396020180116426,21.485573971761816,21.485573971761816,1,0.7396020180116426,100
+1,Accommodation And Food Service Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,2,2.2651593408053228,22.73903340495191,22.787105074149054,3,2.8842196470251382,78.53629813324616
+1,Accommodation And Food Service Activities,"Science, Research, Engineering And Technology Professionals",Outsourced,1,0.6190603062198153,27.93124616329036,27.93124616329036,3,2.8842196470251382,21.46370186675383
+1,Accommodation And Food Service Activities,Secretarial And Related Occupations,Not outsourced,9,9.152055821684622,13.111901428422703,12.614648785860977,9,9.152055821684622,100
+1,Accommodation And Food Service Activities,Skilled Agricultural And Related Trades,Not outsourced,2,1.8206141041959811,16.019945505261003,16.019945505261006,2,1.8206141041959811,100
+1,Accommodation And Food Service Activities,Skilled Construction And Building Trades,Not outsourced,2,1.3766316721400709,10.771255371393494,10.533244105356466,2,1.3766316721400709,100
+1,Accommodation And Food Service Activities,"Textiles, Printing And Other Skilled Trades",Not outsourced,51,56.16333967634935,12.66728615968997,12.204165930412495,66,75.95381466794241,73.94406709114774
+1,Accommodation And Food Service Activities,"Textiles, Printing And Other Skilled Trades",Outsourced,15,19.790474991593054,12.032081726556864,11.61472774525549,66,75.95381466794241,26.055932908852252
+1,Accommodation And Food Service Activities,Transport And Mobile Machine Drivers And Operatives,Not outsourced,11,11.248059648013873,15.024481201442526,14.616300530457595,11,11.248059648013873,100
+2,Activities Of Extraterritorial Organisations And Bodies,Administrative Occupations,Not outsourced,1,0.8549391738945257,20.324191594909827,20.324191594909827,1,0.8549391738945257,100
+2,Activities Of Extraterritorial Organisations And Bodies,Business And Public Service Associate Professionals,Not outsourced,1,0.8151521032069263,14.426028238182933,14.426028238182933,1,0.8151521032069263,100
+2,Activities Of Extraterritorial Organisations And Bodies,"Business, Media And Public Service Professionals",Not outsourced,1,0.4877974747728319,18.65852476495105,18.65852476495105,1,0.4877974747728319,100
+2,Activities Of Extraterritorial Organisations And Bodies,Secretarial And Related Occupations,Not outsourced,1,1.490352347678572,20.339676693267855,20.339676693267855,1,1.490352347678572,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Caring Personal Service Occupations,Not outsourced,3,3.53310140153107,15.218214561023329,12.613719971377108,3,3.53310140153107,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Elementary Administration And Service Occupations,Not outsourced,7,9.781794849374172,10.31911857326222,10.319133098329319,14,18.449787248111207,53.018469632356236
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Elementary Administration And Service Occupations,Outsourced,7,8.667992398737036,10.724373394619011,10.269162229922907,14,18.449787248111207,46.98153036764378
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,"Leisure, Travel And Related Personal Service Occupations",Outsourced,2,4.008013894427104,10.15625,10.25483412440261,2,4.008013894427104,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Sales Occupations,Not outsourced,1,2.1838565226459763,12.891344383057088,12.891344383057088,2,3.18491876925026,68.56867257434209
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Sales Occupations,Outsourced,1,1.0010622466042838,37.884438305709025,37.884438305709025,2,3.18491876925026,31.431327425657923
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,"Science, Engineering And Technology Associate Professionals",Not outsourced,1,1.0749702414730204,17.188459177409452,17.188459177409452,1,1.0749702414730204,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Skilled Agricultural And Related Trades,Not outsourced,2,1.3111745114998135,14.106890730509516,14.813587379556909,2,1.3111745114998135,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,Skilled Construction And Building Trades,Not outsourced,1,2.4185358421328944,12.121546961325967,12.121546961325967,1,2.4185358421328944,100
+3,Activities Of Households As Employers; Undifferentiated Goods-And Services-Producing Activities Of Households For Own Us,"Textiles, Printing And Other Skilled Trades",Not outsourced,1,0.597178401904573,8.250460405156538,8.250460405156538,1,0.597178401904573,100
+4,Administrative And Support Service Activities,Administrative Occupations,Not outsourced,34,36.21815583302923,14.831038824339823,14.493816454527616,44,44.32400800017842,81.71227618423731
+4,Administrative And Support Service Activities,Administrative Occupations,Outsourced,10,8.105852167149187,13.684578707271843,14.26552266940773,44,44.32400800017842,18.28772381576269
+4,Administrative And Support Service Activities,Business And Public Service Associate Professionals,Not outsourced,18,20.65626155221943,19.18130458767857,18.54111488270053,23,25.649222652590034,80.5336747705825
+4,Administrative And Support Service Activities,Business And Public Service Associate Professionals,Outsourced,5,4.9929611003706045,12.66761659286846,13.632968842085601,23,25.649222652590034,19.466325229417507
+4,Administrative And Support Service Activities,"Business, Media And Public Service Professionals",Not outsourced,8,6.647821356956883,17.45680504399427,17.50944183093207,10,8.049659107603507,82.58512898611468
+4,Administrative And Support Service Activities,"Business, Media And Public Service Professionals",Outsourced,2,1.401837750646623,14.976070441988949,14.441642576388624,10,8.049659107603507,17.414871013885325
+4,Administrative And Support Service Activities,Caring Personal Service Occupations,Not outsourced,3,2.03613200186177,15.471278808038411,15.095349268938724,4,3.491796675837901,58.31187182092079
+4,Administrative And Support Service Activities,Caring Personal Service Occupations,Outsourced,1,1.4556646739761308,16.11418047882136,16.11418047882136,4,3.491796675837901,41.6881281790792
+4,Administrative And Support Service Activities,Corporate Managers And Directors,Not outsourced,13,13.316195942675524,21.94876900968788,20.91152882703561,16,15.629762563762604,85.19768543092873
+4,Administrative And Support Service Activities,Corporate Managers And Directors,Outsourced,3,2.3135666210870793,22.86291862765159,21.603408959212512,16,15.629762563762604,14.802314569071271
+4,Administrative And Support Service Activities,Customer Service Occupations,Not outsourced,11,9.946978847399853,13.41310512631921,13.555524482400699,22,17.008492726296012,58.48242408935689
+4,Administrative And Support Service Activities,Customer Service Occupations,Outsourced,11,7.061513878896158,10.073298888524645,10.339087163106916,22,17.008492726296012,41.5175759106431
+4,Administrative And Support Service Activities,Elementary Administration And Service Occupations,Not outsourced,26,39.266641598438866,12.958598313977335,12.444326823047389,56,81.39833046569683,48.24010685942355
+4,Administrative And Support Service Activities,Elementary Administration And Service Occupations,Outsourced,30,42.13168886725796,11.56628692960337,11.413187675699318,56,81.39833046569683,51.75989314057644
+4,Administrative And Support Service Activities,Elementary Trades And Related Occupations,Not outsourced,1,0.6190603062198153,11.817065684468998,11.817065684468998,1,0.6190603062198153,100
+4,Administrative And Support Service Activities,Health And Social Care Associate Professionals,Not outsourced,2,1.5603797827940142,16.694871667247355,16.687596290050607,2,1.5603797827940142,100
+4,Administrative And Support Service Activities,Health Professionals,Outsourced,1,0.6324579178166212,15.476190476190476,15.476190476190476,1,0.6324579178166212,100
+4,Administrative And Support Service Activities,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,15,20.45656096425544,15.693551053766038,16.423531408841637,19,25.57593033141348,79.98364360232009
+4,Administrative And Support Service Activities,"Leisure, Travel And Related Personal Service Occupations",Outsourced,4,5.11936936715804,11.722497284790101,11.657718102419304,19,25.57593033141348,20.016356397679914
+4,Administrative And Support Service Activities,Other Managers And Proprietors,Not outsourced,5,4.348514325257699,20.98205037422863,20.42173363233201,8,8.07541646690059,53.848793348074764
+4,Administrative And Support Service Activities,Other Managers And Proprietors,Outsourced,3,3.7269021416428916,14.18030830093445,13.174740140917432,8,8.07541646690059,46.15120665192524
+4,Administrative And Support Service Activities,"Process, Plant And Machine Operatives",Not outsourced,1,1.379606858484692,11.344383057090239,11.344383057090239,3,7.786583122149502,17.717743930072483
+4,Administrative And Support Service Activities,"Process, Plant And Machine Operatives",Outsourced,2,6.40697626366481,13.15991405770411,13.104227779573177,3,7.786583122149502,82.28225606992751
+4,Administrative And Support Service Activities,Protective Service Occupations,Not outsourced,1,1.2562099420627613,30,30,2,2.262290063987905,55.52824379418206
+4,Administrative And Support Service Activities,Protective Service Occupations,Outsourced,1,1.0060801219251434,15.34683855125844,15.34683855125844,2,2.262290063987905,44.471756205817925
+4,Administrative And Support Service Activities,Sales Occupations,Not outsourced,5,6.270118932391654,15.039191733169632,13.89313745754427,6,6.735179581830211,93.09505197614668
+4,Administrative And Support Service Activities,Sales Occupations,Outsourced,1,0.465060649438557,12.246777163904236,12.246777163904236,6,6.735179581830211,6.904948023853313
+4,Administrative And Support Service Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,3,3.3837250141945856,19.720687538367095,19.495398534713747,6,6.4260190847180425,52.65662877101547
+4,Administrative And Support Service Activities,"Science, Engineering And Technology Associate Professionals",Outsourced,3,3.0422940705234573,12.973430293872282,13.201458521698433,6,6.4260190847180425,47.34337122898454
+4,Administrative And Support Service Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,9,9.039110847794518,18.992810760234132,20.229862781053907,10,9.94941789989251,90.85065014599672
+4,Administrative And Support Service Activities,"Science, Research, Engineering And Technology Professionals",Outsourced,1,0.9103070520979906,13.428483732351134,13.428483732351134,10,9.94941789989251,9.14934985400327
+4,Administrative And Support Service Activities,Secretarial And Related Occupations,Not outsourced,4,2.693422091504952,11.876026205763775,11.580921715902168,6,4.652713449604562,57.8892751655245
+4,Administrative And Support Service Activities,Secretarial And Related Occupations,Outsourced,2,1.9592913580996094,6.854256189891549,7.346441905243654,6,4.652713449604562,42.11072483447549
+4,Administrative And Support Service Activities,Skilled Agricultural And Related Trades,Not outsourced,6,6.715384695221577,20.97018572110653,20.650182207668838,10,12.908096968733645,52.02459132037644
+4,Administrative And Support Service Activities,Skilled Agricultural And Related Trades,Outsourced,4,6.1927122735120665,11.701773930106112,12.880846052747954,10,12.908096968733645,47.97540867962356
+4,Administrative And Support Service Activities,Skilled Construction And Building Trades,Not outsourced,1,1.07062479032361,20.67986494782075,20.67986494782075,1,1.07062479032361,100
+4,Administrative And Support Service Activities,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,3,3.329379447295921,16.105228156333126,18.550640250978095,4,4.207863339340878,79.12280363690321
+4,Administrative And Support Service Activities,"Skilled Metal, Electrical And Electronic Trades",Outsourced,1,0.8784838920449567,22.91794556987927,22.917945569879272,4,4.207863339340878,20.877196363096786
+4,Administrative And Support Service Activities,"Textiles, Printing And Other Skilled Trades",Not outsourced,1,1.122157759495573,9.808631595804309,9.808631595804309,1,1.122157759495573,100
+4,Administrative And Support Service Activities,Transport And Mobile Machine Drivers And Operatives,Not outsourced,4,3.465325771795913,15.556739789838588,14.860184323667978,4,3.465325771795913,100
+5,"Agriculture, Forestry And Fishing",Administrative Occupations,Not outsourced,1,0.6581799649640776,9.884615384615385,9.884615384615385,1,0.6581799649640776,100
+5,"Agriculture, Forestry And Fishing",Business And Public Service Associate Professionals,Not outsourced,5,7.026994333603198,12.57032220490784,12.634522277995393,5,7.026994333603198,100
+5,"Agriculture, Forestry And Fishing",Caring Personal Service Occupations,Not outsourced,2,1.8225662693207099,12.330396695037578,12.364266893671035,2,1.8225662693207099,100
+5,"Agriculture, Forestry And Fishing",Corporate Managers And Directors,Not outsourced,3,3.171829532761212,21.891685751837684,22.671011647273055,4,3.758094684534261,84.39993664380745
+5,"Agriculture, Forestry And Fishing",Corporate Managers And Directors,Outsourced,1,0.586265151773049,26.807692307692307,26.807692307692307,4,3.758094684534261,15.600063356192544
+5,"Agriculture, Forestry And Fishing",Elementary Administration And Service Occupations,Not outsourced,1,3.2176263561890845,16.574585635359117,16.574585635359117,1,3.2176263561890845,100
+5,"Agriculture, Forestry And Fishing",Elementary Trades And Related Occupations,Not outsourced,3,3.0266704235371664,14.32602653297865,11.08597293348526,3,3.0266704235371664,100
+5,"Agriculture, Forestry And Fishing",NA,Not outsourced,1,1.0010622466042838,17.536873890465053,17.536873890465053,1,1.0010622466042838,100
+5,"Agriculture, Forestry And Fishing",Other Managers And Proprietors,Outsourced,1,0.5827979776156418,10.142857142857142,10.142857142857142,1,0.5827979776156418,100
+5,"Agriculture, Forestry And Fishing","Science, Engineering And Technology Associate Professionals",Not outsourced,1,0.9953521084264068,20.238095238095237,20.238095238095237,1,0.9953521084264068,100
+5,"Agriculture, Forestry And Fishing","Science, Research, Engineering And Technology Professionals",Not outsourced,2,1.483030726083674,13.637685373655131,13.629106824802594,2,1.483030726083674,100
+5,"Agriculture, Forestry And Fishing",Skilled Agricultural And Related Trades,Not outsourced,3,6.040678701254341,9.197715878862288,9.597492280181813,4,6.621909446500397,91.222611092134
+5,"Agriculture, Forestry And Fishing",Skilled Agricultural And Related Trades,Outsourced,1,0.5812307452460568,10.42,10.42,4,6.621909446500397,8.777388907866001
+5,"Agriculture, Forestry And Fishing",Transport And Mobile Machine Drivers And Operatives,Outsourced,1,0.7190552784798583,18.79987722529159,18.79987722529159,1,0.7190552784798583,100
+6,"Arts, Entertainment And Recreation",Administrative Occupations,Not outsourced,17,16.364222454248342,16.03611732494993,14.085591873348278,20,18.769559363606227,87.18490475582618
+6,"Arts, Entertainment And Recreation",Administrative Occupations,Outsourced,3,2.4053369093578856,14.744203855621903,15.197719572627314,20,18.769559363606227,12.815095244173829
+6,"Arts, Entertainment And Recreation",Business And Public Service Associate Professionals,Not outsourced,17,16.170135951218526,14.393561262269744,14.686181640461577,17,16.170135951218526,100
+6,"Arts, Entertainment And Recreation","Business, Media And Public Service Professionals",Not outsourced,6,5.014702641640503,19.609073730728888,20.373393722930405,8,6.650630444995937,75.40191389545127
+6,"Arts, Entertainment And Recreation","Business, Media And Public Service Professionals",Outsourced,2,1.6359278033554334,18.107564286201487,17.856132341719388,8,6.650630444995937,24.598086104548738
+6,"Arts, Entertainment And Recreation",Caring Personal Service Occupations,Not outsourced,1,1.031857984913014,13.693472478002866,13.693472478002866,2,2.110067958452298,48.901647019457414
+6,"Arts, Entertainment And Recreation",Caring Personal Service Occupations,Outsourced,1,1.0782099735392836,11.786372007366483,11.786372007366483,2,2.110067958452298,51.09835298054257
+6,"Arts, Entertainment And Recreation",Corporate Managers And Directors,Not outsourced,16,14.92490896749175,18.492349554522423,18.60830108151351,20,19.493051869728568,76.56527601339405
+6,"Arts, Entertainment And Recreation",Corporate Managers And Directors,Outsourced,4,4.56814290223682,21.358997969495206,21.824996666135174,20,19.493051869728568,23.43472398660595
+6,"Arts, Entertainment And Recreation","Culture, Media And Sports Occupations",Not outsourced,16,15.097267080404745,14.676865246680237,13.985622777228604,16,15.097267080404745,100
+6,"Arts, Entertainment And Recreation",Customer Service Occupations,Not outsourced,2,2.139855036082326,13.213762277470842,13.307082768070094,2,2.139855036082326,100
+6,"Arts, Entertainment And Recreation",Elementary Administration And Service Occupations,Not outsourced,9,12.51983117749727,11.976163063001614,11.873307161303915,11,14.217751153645711,88.05774585727603
+6,"Arts, Entertainment And Recreation",Elementary Administration And Service Occupations,Outsourced,2,1.6979199761484414,12.411141804788215,12.66424344965416,11,14.217751153645711,11.942254142723979
+6,"Arts, Entertainment And Recreation",Health And Social Care Associate Professionals,Not outsourced,3,2.6078893471237885,15.431416683718709,15.252483668908146,3,2.6078893471237885,100
+6,"Arts, Entertainment And Recreation",Health Professionals,Outsourced,1,0.8082897802811799,25.78268876611418,25.78268876611418,1,0.8082897802811799,100
+6,"Arts, Entertainment And Recreation","Leisure, Travel And Related Personal Service Occupations",Not outsourced,10,9.330435850430947,10.235461612343263,10.712389541098666,10,9.330435850430947,100
+6,"Arts, Entertainment And Recreation",Other Managers And Proprietors,Not outsourced,7,8.541461309100173,13.680009919892235,13.221977831022253,8,11.154432541034911,76.57459290446069
+6,"Arts, Entertainment And Recreation",Other Managers And Proprietors,Outsourced,1,2.612971231934737,18.928571428571427,18.928571428571427,8,11.154432541034911,23.425407095539306
+6,"Arts, Entertainment And Recreation","Process, Plant And Machine Operatives",Not outsourced,1,1.379606858484692,12.053406998158378,12.05340699815838,1,1.379606858484692,100
+6,"Arts, Entertainment And Recreation",Sales Occupations,Not outsourced,7,6.226515063988569,12.243620907702036,10.939535699957085,10,11.395479253424725,54.640221139600534
+6,"Arts, Entertainment And Recreation",Sales Occupations,Outsourced,3,5.168964189436156,14.327007025441647,13.095146815865274,10,11.395479253424725,45.35977886039947
+6,"Arts, Entertainment And Recreation","Science, Engineering And Technology Associate Professionals",Not outsourced,5,4.370161927937088,17.134861196371325,17.02282764723938,6,5.129216748793871,85.20135026395064
+6,"Arts, Entertainment And Recreation","Science, Engineering And Technology Associate Professionals",Outsourced,1,0.7590548208567837,14.78207489257213,14.78207489257213,6,5.129216748793871,14.798649736049358
+6,"Arts, Entertainment And Recreation","Science, Research, Engineering And Technology Professionals",Not outsourced,5,3.398643176200003,20.49485028306391,19.948998205029294,6,4.056823141164081,83.77597587911566
+6,"Arts, Entertainment And Recreation","Science, Research, Engineering And Technology Professionals",Outsourced,1,0.6581799649640776,22.977627719800832,22.977627719800832,6,4.056823141164081,16.224024120884323
+6,"Arts, Entertainment And Recreation",Secretarial And Related Occupations,Not outsourced,6,4.775399244104197,16.0097708205443,15.786917726818775,7,5.366930227560443,88.97822482545801
+6,"Arts, Entertainment And Recreation",Secretarial And Related Occupations,Outsourced,1,0.5915309834562463,14.825046040515653,14.825046040515653,7,5.366930227560443,11.021775174541979
+6,"Arts, Entertainment And Recreation",Skilled Agricultural And Related Trades,Not outsourced,3,2.686509775370843,12.348505657284047,12.75099456768312,4,4.435197732467875,60.57249163220485
+6,"Arts, Entertainment And Recreation",Skilled Agricultural And Related Trades,Outsourced,1,1.748687957097032,14.54487415592388,14.54487415592388,4,4.435197732467875,39.42750836779514
+6,"Arts, Entertainment And Recreation",Skilled Construction And Building Trades,Outsourced,1,1.07062479032361,11.049723756906078,11.049723756906078,1,1.07062479032361,100
+6,"Arts, Entertainment And Recreation","Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,0.7796497191404208,9.222916166226279,9.222916166226279,1,0.7796497191404208,100
+6,"Arts, Entertainment And Recreation","Textiles, Printing And Other Skilled Trades",Not outsourced,4,6.257271948127279,16.785478821362798,17.1632208201904,4,6.257271948127279,100
+7,Construction,Administrative Occupations,Not outsourced,26,21.50367302146145,16.61989895118794,16.626099685053013,36,28.571964495553054,75.2614438702956
+7,Construction,Administrative Occupations,Outsourced,10,7.068291474091605,16.236863706410343,16.279155284505535,36,28.571964495553054,24.7385561297044
+7,Construction,Business And Public Service Associate Professionals,Not outsourced,16,14.985458984305462,19.573348715988878,19.85614834712575,21,19.400655141422106,77.24202546289372
+7,Construction,Business And Public Service Associate Professionals,Outsourced,5,4.415196157116646,20.27792986356522,19.89887546947058,21,19.400655141422106,22.757974537106293
+7,Construction,"Business, Media And Public Service Professionals",Not outsourced,31,24.03549376539563,21.184963350655146,21.60607478489779,36,27.1093381836876,88.66130778455674
+7,Construction,"Business, Media And Public Service Professionals",Outsourced,5,3.073844418291972,16.24357456401655,15.23521070313988,36,27.1093381836876,11.338692215443254
+7,Construction,Corporate Managers And Directors,Not outsourced,20,17.16669584840592,22.262400826695423,22.302164670376687,30,24.307847279998125,70.62203267391617
+7,Construction,Corporate Managers And Directors,Outsourced,10,7.141151431592206,19.356843581611077,19.217771578002992,30,24.307847279998125,29.37796732608383
+7,Construction,"Culture, Media And Sports Occupations",Not outsourced,4,4.753361522924365,16.288772602274825,15.509363898716188,5,6.132968381409057,77.50507139957364
+7,Construction,"Culture, Media And Sports Occupations",Outsourced,1,1.379606858484692,19.050542254962146,19.050542254962146,5,6.132968381409057,22.494928600426363
+7,Construction,Customer Service Occupations,Not outsourced,2,1.4792279644343478,14.48129759593848,14.599224245962787,4,4.008530082063777,36.90200482848249
+7,Construction,Customer Service Occupations,Outsourced,2,2.5293021176294284,10.924166155105382,9.88280231879706,4,4.008530082063777,63.09799517151751
+7,Construction,Elementary Administration And Service Occupations,Not outsourced,4,4.233341534123573,14.298073971761816,14.834471545408391,4,4.233341534123573,100
+7,Construction,Elementary Trades And Related Occupations,Not outsourced,8,11.03803757940191,26.7831069674647,20.848450301178413,11,14.670945951020254,75.23739516356338
+7,Construction,Elementary Trades And Related Occupations,Outsourced,3,3.632908371618344,17.333333333333332,16.794491850445038,11,14.670945951020254,24.762604836436623
+7,Construction,Health And Social Care Associate Professionals,Not outsourced,2,1.5391996690894882,17.815575506445672,17.86234236656718,2,1.5391996690894882,100
+7,Construction,NA,Not outsourced,3,3.73783551522116,19.297932215437307,17.623195665022195,3,3.73783551522116,100
+7,Construction,Other Managers And Proprietors,Not outsourced,3,4.6709259198685995,24.72341586522065,26.075966386840467,3,4.6709259198685995,100
+7,Construction,"Process, Plant And Machine Operatives",Not outsourced,7,7.271379762867719,17.058581075155658,15.813940779530112,8,7.834051412554219,92.81761607046887
+7,Construction,"Process, Plant And Machine Operatives",Outsourced,1,0.5626716496864999,18.334356455903418,18.334356455903418,8,7.834051412554219,7.182383929531119
+7,Construction,Sales Occupations,Not outsourced,2,2.0490613139977296,13.751020113386055,12.963175696126681,2,2.0490613139977296,100
+7,Construction,"Science, Engineering And Technology Associate Professionals",Not outsourced,4,2.1681332681215584,15.638617623148008,15.60842693011078,5,4.264103237613311,50.84617203909675
+7,Construction,"Science, Engineering And Technology Associate Professionals",Outsourced,1,2.095969969491752,11.612523020257827,11.612523020257827,5,4.264103237613311,49.15382796090324
+7,Construction,"Science, Research, Engineering And Technology Professionals",Not outsourced,8,6.699872463924504,18.647433205474545,18.461390819431482,11,9.545304443778047,70.1902438354568
+7,Construction,"Science, Research, Engineering And Technology Professionals",Outsourced,3,2.845431979853542,22.953754859832205,22.953754859832205,11,9.545304443778047,29.809756164543195
+7,Construction,Secretarial And Related Occupations,Not outsourced,2,1.416511171139152,19.12409647216277,18.467462682348348,2,1.416511171139152,100
+7,Construction,Skilled Agricultural And Related Trades,Not outsourced,2,2.0528430758807037,11.978207489257212,12.135447335830673,2,2.0528430758807037,100
+7,Construction,Skilled Construction And Building Trades,Not outsourced,44,54.79717046475984,17.495965109899977,15.836834259904212,57,68.21665337501673,80.32814240170339
+7,Construction,Skilled Construction And Building Trades,Outsourced,13,13.419482910256901,16.600322695051517,16.908175432854385,57,68.21665337501673,19.671857598296626
+7,Construction,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,6,6.81916710403333,17.177875229805096,17.62297895370721,9,9.559539755221277,71.33363403095639
+7,Construction,"Skilled Metal, Electrical And Electronic Trades",Outsourced,3,2.740372651187948,16.067821578871303,15.080142443547391,9,9.559539755221277,28.66636596904362
+7,Construction,Teaching And Other Educational Professionals,Not outsourced,1,0.5608027664528057,22.91794556987927,22.91794556987927,1,0.5608027664528057,100
+7,Construction,"Textiles, Printing And Other Skilled Trades",Outsourced,1,0.7256884745947377,19.337016574585636,19.337016574585636,1,0.7256884745947377,100
+7,Construction,Transport And Mobile Machine Drivers And Operatives,Not outsourced,5,8.330042208848075,15.92384677675363,14.315681070737341,7,9.338611734069078,89.20000580448651
+7,Construction,Transport And Mobile Machine Drivers And Operatives,Outsourced,2,1.008569525221003,17.188459177409452,16.560415675316612,7,9.338611734069078,10.7999941955135
+8,Education,Administrative Occupations,Not outsourced,69,61.5890167335203,15.284819194563845,15.894243890161317,76,67.08645259020214,91.80544559381765
+8,Education,Administrative Occupations,Outsourced,7,5.497435856681836,20.291016445349097,19.239251230326538,76,67.08645259020214,8.19455440618234
+8,Education,Business And Public Service Associate Professionals,Not outsourced,35,32.55072657387776,20.170851260518617,20.548288958640267,36,33.00612023172193,98.62027510459562
+8,Education,Business And Public Service Associate Professionals,Outsourced,1,0.4553936578441689,21.485573971761816,21.485573971761816,36,33.00612023172193,1.3797248954043788
+8,Education,"Business, Media And Public Service Professionals",Not outsourced,20,15.390858422383388,19.23307716604166,19.581028090605887,22,17.070138374131805,90.16247018657324
+8,Education,"Business, Media And Public Service Professionals",Outsourced,2,1.6792799517484154,25.830980980980982,25.35221786337743,22,17.070138374131805,9.837529813426743
+8,Education,Caring Personal Service Occupations,Not outsourced,145,132.59828954221376,12.106092865949348,12.217226963272902,172,158.6327824212171,83.58820132784784
+8,Education,Caring Personal Service Occupations,Outsourced,27,26.034492879003324,11.229034240028499,10.919396092233207,172,158.6327824212171,16.411798672152155
+8,Education,Corporate Managers And Directors,Not outsourced,32,27.22630719571355,23.38560701471276,22.423037503534857,35,31.959094748432697,85.19110885344695
+8,Education,Corporate Managers And Directors,Outsourced,3,4.7327875527191505,17.96681564399225,19.389117834514625,35,31.959094748432697,14.80889114655305
+8,Education,"Culture, Media And Sports Occupations",Not outsourced,9,7.325430526200448,14.330854517988902,13.62965917452055,13,10.906810283555512,67.1638209132985
+8,Education,"Culture, Media And Sports Occupations",Outsourced,4,3.581379757355064,28.302472406464567,25.172365247825745,13,10.906810283555512,32.836179086701506
+8,Education,Customer Service Occupations,Not outsourced,3,2.684473564321357,17.637633092109745,18.07962412906665,3,2.684473564321357,100
+8,Education,Elementary Administration And Service Occupations,Not outsourced,52,59.520396898350896,12.447232747649581,12.27661537015895,63,75.99798659068179,78.31838653689907
+8,Education,Elementary Administration And Service Occupations,Outsourced,11,16.47758969233089,13.268876677919872,12.582676972276435,63,75.99798659068179,21.681613463100916
+8,Education,Health And Social Care Associate Professionals,Not outsourced,33,28.61119765460581,13.342742884690582,13.143645299442547,36,31.070188432897975,92.08569081065335
+8,Education,Health And Social Care Associate Professionals,Outsourced,3,2.458990778292164,18.405736307209605,17.39696559791751,36,31.070188432897975,7.91430918934665
+8,Education,Health Professionals,Not outsourced,2,1.5977261938849405,27.501534683855123,27.501534683855123,3,2.4259351462517587,65.86021874300889
+8,Education,Health Professionals,Outsourced,1,0.8282089523668182,21.199099652138326,21.199099652138326,3,2.4259351462517587,34.13978125699113
+8,Education,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,7,10.891055903515953,13.611480498220828,13.38312971489106,9,15.239855879721874,71.46429723136407
+8,Education,"Leisure, Travel And Related Personal Service Occupations",Outsourced,2,4.348799976205921,11.059999999999999,11.461584203426172,9,15.239855879721874,28.535702768635936
+8,Education,Other Managers And Proprietors,Not outsourced,10,9.437159559935239,17.3307174268064,17.033998328831757,11,10.196214380792023,92.55552313330409
+8,Education,Other Managers And Proprietors,Outsourced,1,0.7590548208567837,7.734806629834255,7.734806629834255,11,10.196214380792023,7.44447686669591
+8,Education,"Process, Plant And Machine Operatives",Not outsourced,2,1.501623059805349,12.83609576427256,13.331178298694894,2,1.501623059805349,100
+8,Education,Protective Service Occupations,Not outsourced,1,0.8644568102230458,14.57767159424618,14.57767159424618,1,0.8644568102230458,100
+8,Education,Sales Occupations,Not outsourced,2,1.5206530413608064,11.904169362732897,11.923864052851284,3,2.369312171413612,64.18120244803086
+8,Education,Sales Occupations,Outsourced,1,0.8486591300528055,10.119705340699815,10.119705340699815,3,2.369312171413612,35.818797551969126
+8,Education,"Science, Engineering And Technology Associate Professionals",Not outsourced,18,18.123663622942793,17.691937561842526,17.065680884652703,19,18.93881572614972,95.69586549130732
+8,Education,"Science, Engineering And Technology Associate Professionals",Outsourced,1,0.8151521032069263,13.750767341927562,13.750767341927562,19,18.93881572614972,4.30413450869268
+8,Education,"Science, Research, Engineering And Technology Professionals",Not outsourced,21,17.969579336516322,24.999758081148013,24.83595593871095,22,18.659819088039033,96.30093009869985
+8,Education,"Science, Research, Engineering And Technology Professionals",Outsourced,1,0.6902397515227108,20.90488278333582,20.90488278333582,22,18.659819088039033,3.6990699013001436
+8,Education,Secretarial And Related Occupations,Not outsourced,10,13.451142278130044,16.38669827735364,14.372440077443633,10,13.451142278130044,100
+8,Education,Skilled Agricultural And Related Trades,Not outsourced,1,0.5803183910329621,14.063284781516826,14.063284781516824,1,0.5803183910329621,100
+8,Education,Skilled Construction And Building Trades,Not outsourced,2,1.5623663623141044,16.354226201816218,16.581911061408228,2,1.5623663623141044,100
+8,Education,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,2,1.5570365473793335,19.007764670748095,19.643867638606025,3,2.3961514861560307,64.98072247832597
+8,Education,"Skilled Metal, Electrical And Electronic Trades",Outsourced,1,0.8391149387766974,18.79987722529159,18.79987722529159,3,2.3961514861560307,35.01927752167405
+8,Education,Teaching And Other Educational Professionals,Not outsourced,346,292.36967622322,20.102538458552168,20.101918039424334,387,325.4486774860464,89.83587780465182
+8,Education,Teaching And Other Educational Professionals,Outsourced,41,33.07900126282641,20.10723682755169,21.094162693655136,387,325.4486774860464,10.164122195348197
+8,Education,"Textiles, Printing And Other Skilled Trades",Not outsourced,5,7.415677829908587,14.88752720575925,14.188966276153229,5,7.415677829908587,100
+8,Education,Transport And Mobile Machine Drivers And Operatives,Not outsourced,3,5.483742555171614,12.69439328831594,10.43820460011838,4,7.897077271682006,69.44015319231676
+8,Education,Transport And Mobile Machine Drivers And Operatives,Outsourced,1,2.4133347165103927,8.25,8.25,4,7.897077271682006,30.559846807683243
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Administrative Occupations,Not outsourced,10,7.802506175469077,15.408990297848492,15.656532809063561,12,9.47887023537578,82.31472719554279
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Administrative Occupations,Outsourced,2,1.676364059906704,21.540739634662284,21.295646096358652,12,9.47887023537578,17.685272804457234
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Business And Public Service Associate Professionals,Not outsourced,14,13.358127774757925,21.11408543253134,23.15384873310593,15,14.11658244274928,94.62720760447992
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Business And Public Service Associate Professionals,Outsourced,1,0.7584546679913542,26.666666666666668,26.666666666666668,15,14.11658244274928,5.372792395520067
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Business, Media And Public Service Professionals",Not outsourced,5,4.494459473802446,22.09766119710871,21.702917683328977,5,4.494459473802446,100
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Corporate Managers And Directors,Not outsourced,10,9.62019873154045,21.39329362511683,22.738053742768294,11,10.568676058158298,91.02558048521425
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Corporate Managers And Directors,Outsourced,1,0.9484773266178472,16.11418047882136,16.11418047882136,11,10.568676058158298,8.974419514785746
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Customer Service Occupations,Not outsourced,10,12.326307494827578,14.624019256825886,14.244647262199358,11,12.899266686617972,95.55820337922933
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Customer Service Occupations,Outsourced,1,0.5729591917903935,20,20,11,12.899266686617972,4.441796620770667
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Elementary Administration And Service Occupations,Not outsourced,3,2.94865181295941,10.4085328422345,9.602340205601676,5,5.193313754663139,56.77784844622145
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Elementary Administration And Service Occupations,Outsourced,2,2.2446619417037295,17.96191661274534,14.711783820994295,5,5.193313754663139,43.22215155377856
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Other Managers And Proprietors,Not outsourced,1,0.7656957272156861,33.05472918732587,33.05472918732587,1,0.7656957272156861,100
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Process, Plant And Machine Operatives",Outsourced,1,0.5723997211031482,25.782688766114177,25.782688766114177,1,0.5723997211031482,100
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Science, Engineering And Technology Associate Professionals",Not outsourced,6,6.110956067005194,26.12830189887474,24.238096451102184,6,6.110956067005194,100
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Science, Research, Engineering And Technology Professionals",Not outsourced,6,4.384766684500773,21.68861435099925,22.56825181322285,9,7.609035816999752,57.625785841414135
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Science, Research, Engineering And Technology Professionals",Outsourced,3,3.224269132498979,21.83430871018348,22.70642932037423,9,7.609035816999752,42.37421415858587
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Skilled Construction And Building Trades,Not outsourced,4,4.211777086732738,19.84463545741964,20.910769352172924,5,6.592733025972988,63.88514551006171
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Skilled Construction And Building Trades,Outsourced,1,2.3809559392402506,10.31307550644567,10.31307550644567,5,6.592733025972988,36.114854489938296
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Skilled Metal, Electrical And Electronic Trades",Not outsourced,6,8.709066118045065,13.398644788895709,11.379439117699247,8,10.315699437289632,84.42535739809517
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Skilled Metal, Electrical And Electronic Trades",Outsourced,2,1.6066333192445672,19.16206261510129,19.01082071670492,8,10.315699437289632,15.574642601904824
+9,"Electricity, Gas, Steam And Air Conditioning Supply","Textiles, Printing And Other Skilled Trades",Not outsourced,1,0.8093020451354916,31.512175158583997,31.512175158583997,1,0.8093020451354916,100
+9,"Electricity, Gas, Steam And Air Conditioning Supply",Transport And Mobile Machine Drivers And Operatives,Not outsourced,4,4.694144807307034,17.999930317057387,15.59713834137165,4,4.694144807307034,100
+10,Financial And Insurance Activities,Administrative Occupations,Not outsourced,66,60.73389636736265,17.619500962336826,17.5122211975652,79,72.86573111964292,83.35042472522477
+10,Financial And Insurance Activities,Administrative Occupations,Outsourced,13,12.131834752280271,17.588201736701972,17.824137385405336,79,72.86573111964292,16.649575274775234
+10,Financial And Insurance Activities,Business And Public Service Associate Professionals,Not outsourced,74,71.12654139829495,21.443628033221156,20.495507291400333,85,80.12913569243749,88.76489279917168
+10,Financial And Insurance Activities,Business And Public Service Associate Professionals,Outsourced,11,9.002594294142543,21.951081840908888,20.68313052697647,85,80.12913569243749,11.235107200828324
+10,Financial And Insurance Activities,"Business, Media And Public Service Professionals",Not outsourced,58,52.69360225230846,23.24062731292324,23.605264979188846,70,63.71867976749741,82.69725996298374
+10,Financial And Insurance Activities,"Business, Media And Public Service Professionals",Outsourced,12,11.025077515188952,21.371750777411943,20.161548167542954,70,63.71867976749741,17.302740037016257
+10,Financial And Insurance Activities,Corporate Managers And Directors,Not outsourced,40,34.90233791657337,22.72762849420594,22.806123831207195,52,44.002824619067056,79.31840334961062
+10,Financial And Insurance Activities,Corporate Managers And Directors,Outsourced,12,9.100486702493681,22.667229123412177,23.513768376107443,52,44.002824619067056,20.68159665038937
+10,Financial And Insurance Activities,"Culture, Media And Sports Occupations",Not outsourced,2,1.5296692450646439,16.89161901069432,16.906039584372813,2,1.5296692450646439,100
+10,Financial And Insurance Activities,Customer Service Occupations,Not outsourced,33,33.4015544176494,14.772286679984566,15.628512478586604,39,38.53629607592044,86.6755703553993
+10,Financial And Insurance Activities,Customer Service Occupations,Outsourced,6,5.134741658271041,12.898378350726416,13.401271855116018,39,38.53629607592044,13.324429644600706
+10,Financial And Insurance Activities,Elementary Administration And Service Occupations,Outsourced,1,0.6581799649640776,12.857142857142858,12.857142857142858,1,0.6581799649640776,100
+10,Financial And Insurance Activities,Health And Social Care Associate Professionals,Not outsourced,2,1.6275604804203219,13.441940486575554,13.17781883332597,2,1.6275604804203219,100
+10,Financial And Insurance Activities,NA,Not outsourced,1,0.8087309930258724,19.920196439533456,19.920196439533456,2,1.5201228722435922,53.20168571848692
+10,Financial And Insurance Activities,NA,Outsourced,1,0.7113918792177198,29.793329240843054,29.793329240843054,2,1.5201228722435922,46.79831428151308
+10,Financial And Insurance Activities,Other Managers And Proprietors,Not outsourced,2,1.7620345644481727,20.666436464088395,17.460106466180132,2,1.7620345644481727,100
+10,Financial And Insurance Activities,"Process, Plant And Machine Operatives",Not outsourced,1,0.8063821864076481,27.05524861878453,27.05524861878453,2,1.3894647255284278,58.03545578323139
+10,Financial And Insurance Activities,"Process, Plant And Machine Operatives",Outsourced,1,0.5830825391207797,17.761407816656433,17.761407816656433,2,1.3894647255284278,41.96454421676861
+10,Financial And Insurance Activities,Protective Service Occupations,Not outsourced,11,9.351650951888494,19.56977312287466,19.587210717536,11,9.351650951888494,100
+10,Financial And Insurance Activities,Sales Occupations,Not outsourced,11,11.429376089660252,14.111596935973296,14.137628976071683,14,13.985722987352418,81.72173937662055
+10,Financial And Insurance Activities,Sales Occupations,Outsourced,3,2.556346897692165,23.269285860446082,22.986318240340797,14,13.985722987352418,18.27826062337945
+10,Financial And Insurance Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,6,5.9021671421722735,20.979128299570288,19.845869812823604,7,6.241139943294565,94.56873577259742
+10,Financial And Insurance Activities,"Science, Engineering And Technology Associate Professionals",Outsourced,1,0.3389728011222908,22.02271332105586,22.02271332105586,7,6.241139943294565,5.43126422740257
+10,Financial And Insurance Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,23,20.832474636665303,26.905308396295833,26.814375941243902,27,23.72362895019906,87.81318693019983
+10,Financial And Insurance Activities,"Science, Research, Engineering And Technology Professionals",Outsourced,4,2.8911543135337583,15.659215354933586,15.208449727712868,27,23.72362895019906,12.18681306980018
+10,Financial And Insurance Activities,Secretarial And Related Occupations,Not outsourced,6,4.2423630848531,19.194466953140985,20.098244048545105,6,4.2423630848531,100
+11,Human Health And Social Work Activities,Administrative Occupations,Not outsourced,148,137.84764658805344,14.694860902323006,14.710870927301933,169,158.68690685623403,86.86768764920197
+11,Human Health And Social Work Activities,Administrative Occupations,Outsourced,21,20.83926026818059,15.217942181149992,14.370496082640592,169,158.68690685623403,13.132312350798031
+11,Human Health And Social Work Activities,Business And Public Service Associate Professionals,Not outsourced,42,40.825023566099674,17.81127597885133,17.658332493530487,46,43.592463782247094,93.65156273347768
+11,Human Health And Social Work Activities,Business And Public Service Associate Professionals,Outsourced,4,2.767440216147423,16.711622672396153,18.84808674381555,46,43.592463782247094,6.348437266522327
+11,Human Health And Social Work Activities,"Business, Media And Public Service Professionals",Not outsourced,61,52.54142694627835,20.75986704122826,20.825025058721234,66,56.95742520096182,92.24684360449477
+11,Human Health And Social Work Activities,"Business, Media And Public Service Professionals",Outsourced,5,4.415998254683476,20.836128946626182,20.21254546314333,66,56.95742520096182,7.753156395505225
+11,Human Health And Social Work Activities,Caring Personal Service Occupations,Not outsourced,314,307.6643684899258,13.06076038412779,12.991057649265622,396,386.23617655339126,79.65705626940304
+11,Human Health And Social Work Activities,Caring Personal Service Occupations,Outsourced,82,78.57180806346551,12.794456576937295,12.549866614242285,396,386.23617655339126,20.34294373059696
+11,Human Health And Social Work Activities,Corporate Managers And Directors,Not outsourced,78,63.99085564924584,20.729177734154447,20.78551745888766,91,77.09110260286111,83.00679778689651
+11,Human Health And Social Work Activities,Corporate Managers And Directors,Outsourced,13,13.10024695361527,16.837459378205235,16.557021925602626,91,77.09110260286111,16.99320221310348
+11,Human Health And Social Work Activities,"Culture, Media And Sports Occupations",Not outsourced,2,1.565464829359354,13.928578988590418,14.108206052702194,2,1.565464829359354,100
+11,Human Health And Social Work Activities,Customer Service Occupations,Not outsourced,20,21.2940547717894,15.232284053286786,14.827741841630484,22,23.48259204927505,90.68017162290562
+11,Human Health And Social Work Activities,Customer Service Occupations,Outsourced,2,2.188537277485647,11.156721915285452,11.201781855705361,22,23.48259204927505,9.31982837709439
+11,Human Health And Social Work Activities,Elementary Administration And Service Occupations,Not outsourced,29,41.80098378747386,11.348248961343764,11.498178814267135,35,50.862912766369554,82.18362164880297
+11,Human Health And Social Work Activities,Elementary Administration And Service Occupations,Outsourced,6,9.061928978895693,10.692408430529976,10.707549792060993,35,50.862912766369554,17.816378351197027
+11,Human Health And Social Work Activities,Elementary Trades And Related Occupations,Not outsourced,1,1.1136487009940381,13.750767341927563,13.750767341927563,2,1.8960543711155693,58.73506150241925
+11,Human Health And Social Work Activities,Elementary Trades And Related Occupations,Outsourced,1,0.7824056701215312,20.626151012891345,20.626151012891345,2,1.8960543711155693,41.26493849758075
+11,Human Health And Social Work Activities,Health And Social Care Associate Professionals,Not outsourced,70,56.536410420709366,17.262400111308477,17.16571336997934,84,70.75100354525073,79.90898727613096
+11,Human Health And Social Work Activities,Health And Social Care Associate Professionals,Outsourced,14,14.21459312454136,17.95109173222663,16.891440361689284,84,70.75100354525073,20.09101272386904
+11,Human Health And Social Work Activities,Health Professionals,Not outsourced,283,245.32775750808665,21.443092737396945,21.3971194385127,338,296.2739469281798,82.8043640190735
+11,Human Health And Social Work Activities,Health Professionals,Outsourced,55,50.946189420093155,17.755683492554386,17.600599619999308,338,296.2739469281798,17.195635980926497
+11,Human Health And Social Work Activities,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,10,9.960543731161147,13.306938206161963,12.992952542669128,13,12.165583434950006,81.8747722574974
+11,Human Health And Social Work Activities,"Leisure, Travel And Related Personal Service Occupations",Outsourced,3,2.20503970378886,9.893155992087852,9.223398255161564,13,12.165583434950006,18.125227742502602
+11,Human Health And Social Work Activities,NA,Not outsourced,1,2.363178741266957,15.811090648659707,15.811090648659707,2,3.1913876936337755,74.04862611900957
+11,Human Health And Social Work Activities,NA,Outsourced,1,0.8282089523668182,13.750767341927562,13.750767341927563,2,3.1913876936337755,25.95137388099042
+11,Human Health And Social Work Activities,Other Managers And Proprietors,Not outsourced,28,20.321546367620396,17.154904153539118,17.23397698526895,34,25.357375954068374,80.14057292217564
+11,Human Health And Social Work Activities,Other Managers And Proprietors,Outsourced,6,5.035829586447976,22.73895027624309,22.721036753983384,34,25.357375954068374,19.859427077824353
+11,Human Health And Social Work Activities,"Process, Plant And Machine Operatives",Not outsourced,6,7.224181748759594,15.634796398608552,14.75473922807239,6,7.224181748759594,100
+11,Human Health And Social Work Activities,Protective Service Occupations,Not outsourced,6,5.8852573057891835,19.3199645317509,17.67852728244922,7,6.626347752537202,88.8160043145297
+11,Human Health And Social Work Activities,Protective Service Occupations,Outsourced,1,0.741090446748019,27.470595457335786,27.470595457335786,7,6.626347752537202,11.183995685470302
+11,Human Health And Social Work Activities,Sales Occupations,Not outsourced,16,19.997330329933867,14.217598376534097,12.421021837560227,22,24.56919300884813,81.39188911386795
+11,Human Health And Social Work Activities,Sales Occupations,Outsourced,6,4.571862678914266,11.261680220961203,11.087369995869937,22,24.56919300884813,18.608110886132057
+11,Human Health And Social Work Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,30,34.94346490131211,18.388478677491747,16.66223254013266,36,39.56209147172108,88.32562587417716
+11,Human Health And Social Work Activities,"Science, Engineering And Technology Associate Professionals",Outsourced,6,4.618626570408971,14.864649409999318,14.884407938845829,36,39.56209147172108,11.67437412582284
+11,Human Health And Social Work Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,26,24.58242523264388,24.228686905198867,24.198018751339927,27,25.317436356701933,97.09681851786908
+11,Human Health And Social Work Activities,"Science, Research, Engineering And Technology Professionals",Outsourced,1,0.7350111240580521,19.25107427869859,19.25107427869859,27,25.317436356701933,2.9031814821309223
+11,Human Health And Social Work Activities,Secretarial And Related Occupations,Not outsourced,56,57.98822372424794,14.098048933728677,14.010443409855595,62,64.43373884353818,89.99667684201653
+11,Human Health And Social Work Activities,Secretarial And Related Occupations,Outsourced,6,6.445515119290247,12.611665457521811,12.748418764834145,62,64.43373884353818,10.003323157983473
+11,Human Health And Social Work Activities,Skilled Agricultural And Related Trades,Not outsourced,2,2.205743012219796,7.70147730002402,7.699508475809178,2,2.205743012219796,100
+11,Human Health And Social Work Activities,Skilled Construction And Building Trades,Not outsourced,1,0.5064002516981503,20.85561694290976,20.85561694290976,1,0.5064002516981503,100
+11,Human Health And Social Work Activities,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,2.4185358421328944,26.666666666666668,26.666666666666668,1,2.4185358421328944,100
+11,Human Health And Social Work Activities,Teaching And Other Educational Professionals,Not outsourced,8,8.13151575452082,20.612994199205062,18.90753202946923,8,8.13151575452082,100
+11,Human Health And Social Work Activities,"Textiles, Printing And Other Skilled Trades",Not outsourced,13,14.750637667779039,14.881510286316916,13.37178848107476,14,17.896767048641156,82.42068317528337
+11,Human Health And Social Work Activities,"Textiles, Printing And Other Skilled Trades",Outsourced,1,3.146129380862117,11.544330439358063,11.544330439358063,14,17.896767048641156,17.579316824716635
+11,Human Health And Social Work Activities,Transport And Mobile Machine Drivers And Operatives,Not outsourced,4,4.655595914804518,11.550871700429711,12.276726270290336,4,4.655595914804518,100
+12,Information And Communication,Administrative Occupations,Not outsourced,25,29.228796495971824,16.95233296743794,17.31704652613603,29,32.62889195979351,89.57949455344236
+12,Information And Communication,Administrative Occupations,Outsourced,4,3.4000954638216916,15.263729463967866,15.722614867812185,29,32.62889195979351,10.420505446557641
+12,Information And Communication,Business And Public Service Associate Professionals,Not outsourced,34,30.342709357721624,21.21306311198781,21.62108266728752,39,35.743892333457715,84.8892142877222
+12,Information And Communication,Business And Public Service Associate Professionals,Outsourced,5,5.401182975736094,10.578488697504785,10.840489471670454,39,35.743892333457715,15.110785712277815
+12,Information And Communication,"Business, Media And Public Service Professionals",Not outsourced,44,37.34882655510422,23.076020569797954,23.78615262798249,49,42.8599891275598,87.1414746372117
+12,Information And Communication,"Business, Media And Public Service Professionals",Outsourced,5,5.511162572455579,25.887862281414083,24.98428858758431,49,42.8599891275598,12.858525362788287
+12,Information And Communication,Corporate Managers And Directors,Not outsourced,37,34.097601131123575,28.81228959903818,28.470677897258568,49,44.595180413077415,76.4602829617089
+12,Information And Communication,Corporate Managers And Directors,Outsourced,12,10.497579281953838,22.691127060861177,22.93906325159565,49,44.595180413077415,23.539717038291098
+12,Information And Communication,"Culture, Media And Sports Occupations",Not outsourced,10,7.537564429012104,20.365057033134892,19.869263011756008,11,8.543644550937247,88.22422777625066
+12,Information And Communication,"Culture, Media And Sports Occupations",Outsourced,1,1.0060801219251434,8.333333333333334,8.333333333333334,11,8.543644550937247,11.775772223749353
+12,Information And Communication,Customer Service Occupations,Not outsourced,13,13.687807491827567,15.685513262465438,14.488775258358142,17,17.806424675533894,76.87004966603249
+12,Information And Communication,Customer Service Occupations,Outsourced,4,4.118617183706327,10.49050030693677,10.060957476748483,17,17.806424675533894,23.12995033396752
+12,Information And Communication,Elementary Administration And Service Occupations,Not outsourced,4,6.169351739903819,17.10010925289931,15.007927013748139,5,6.793142101801785,90.81735149140316
+12,Information And Communication,Elementary Administration And Service Occupations,Outsourced,1,0.6237903618979663,6.756756756756757,6.756756756756757,5,6.793142101801785,9.18264850859685
+12,Information And Communication,Health And Social Care Associate Professionals,Not outsourced,1,0.8087309930258724,16.08839779005525,16.08839779005525,1,0.8087309930258724,100
+12,Information And Communication,Other Managers And Proprietors,Not outsourced,1,1.0595008234505991,21.485573971761816,21.485573971761816,1,1.0595008234505991,100
+12,Information And Communication,"Process, Plant And Machine Operatives",Not outsourced,3,1.8850322665040835,21.306527521997133,21.778077805890327,4,2.444211273104851,77.12231292140105
+12,Information And Communication,"Process, Plant And Machine Operatives",Outsourced,1,0.5591790066007672,18,18,4,2.444211273104851,22.877687078598946
+12,Information And Communication,Protective Service Occupations,Not outsourced,1,0.8282089523668182,22.34499693063229,22.34499693063229,1,0.8282089523668182,100
+12,Information And Communication,Sales Occupations,Not outsourced,5,4.802309500237492,13.686756596517185,13.426285605180034,5,4.802309500237492,100
+12,Information And Communication,"Science, Engineering And Technology Associate Professionals",Not outsourced,20,18.322482292876426,22.58931663363911,22.095288861776563,32,28.087400903592922,65.23381197059292
+12,Information And Communication,"Science, Engineering And Technology Associate Professionals",Outsourced,12,9.764918610716498,17.924584843657126,17.23661002557891,32,28.087400903592922,34.766188029407076
+12,Information And Communication,"Science, Research, Engineering And Technology Professionals",Not outsourced,90,90.64032831197531,24.37655691083844,24.468203369649192,119,113.51332356375674,79.84994665499823
+12,Information And Communication,"Science, Research, Engineering And Technology Professionals",Outsourced,29,22.872995251781433,22.706836678890337,22.240179154330985,119,113.51332356375674,20.150053345001755
+12,Information And Communication,Secretarial And Related Occupations,Not outsourced,3,1.867520727438952,21.591838565273818,20.034809806246482,3,1.867520727438952,100
+12,Information And Communication,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,4,6.360990027153063,19.64933752813587,19.68927082394909,8,9.377913399039997,67.82948142605186
+12,Information And Communication,"Skilled Metal, Electrical And Electronic Trades",Outsourced,4,3.0169233718869344,25.119265397994678,24.09112367463632,8,9.377913399039997,32.17051857394815
+12,Information And Communication,Teaching And Other Educational Professionals,Not outsourced,1,0.7656957272156861,22.61639365448612,22.61639365448612,2,1.508944800698479,50.743786443430636
+12,Information And Communication,Teaching And Other Educational Professionals,Outsourced,1,0.7432490734827928,16.11418047882136,16.11418047882136,2,1.508944800698479,49.256213556569364
+13,Manufacturing,Administrative Occupations,Not outsourced,48,44.20035855994056,15.660036674788781,16.27533299911373,55,48.92331189043967,90.34621094116476
+13,Manufacturing,Administrative Occupations,Outsourced,7,4.722953330499111,15.272665512286354,13.983027915497443,55,48.92331189043967,9.653789058835253
+13,Manufacturing,Business And Public Service Associate Professionals,Not outsourced,43,45.1695176212481,18.19527974865808,17.685177986464193,47,47.62241704778272,94.8492756592479
+13,Manufacturing,Business And Public Service Associate Professionals,Outsourced,4,2.4528994265346205,21.45449662369552,21.680686931167045,47,47.62241704778272,5.150724340752096
+13,Manufacturing,"Business, Media And Public Service Professionals",Not outsourced,22,18.103652244481168,24.4390795910655,24.22312349278761,26,21.80987694784411,83.00666843638795
+13,Manufacturing,"Business, Media And Public Service Professionals",Outsourced,4,3.7062247033629414,18.015736731206342,18.042000003799632,26,21.80987694784411,16.99333156361205
+13,Manufacturing,Corporate Managers And Directors,Not outsourced,68,67.18899780807949,21.78042258377535,21.031616720833615,87,89.43081446686223,75.12958280501377
+13,Manufacturing,Corporate Managers And Directors,Outsourced,19,22.241816658782735,16.43228892641283,17.080871993753206,87,89.43081446686223,24.870417194986228
+13,Manufacturing,"Culture, Media And Sports Occupations",Not outsourced,3,3.843904858448523,15.740488370506787,13.076868946847107,3,3.843904858448523,100
+13,Manufacturing,Customer Service Occupations,Not outsourced,10,11.168126987050455,12.986317788783257,13.302884929797044,10,11.168126987050455,100
+13,Manufacturing,Elementary Administration And Service Occupations,Not outsourced,32,40.7517221932644,13.846037193108598,13.264711923766749,43,54.75997336448945,74.41881302975747
+13,Manufacturing,Elementary Administration And Service Occupations,Outsourced,11,14.008251171225048,11.929644006777544,11.931660540406616,43,54.75997336448945,25.58118697024252
+13,Manufacturing,Elementary Trades And Related Occupations,Not outsourced,14,18.4403963678726,13.037226479315507,12.848523545988442,18,23.93892361827212,77.03101719158919
+13,Manufacturing,Elementary Trades And Related Occupations,Outsourced,4,5.49852725039952,12.239256811073108,11.603888139276721,18,23.93892361827212,22.968982808410818
+13,Manufacturing,Health And Social Care Associate Professionals,Not outsourced,3,4.044597623759452,17.546552076938816,18.05005083519145,3,4.044597623759452,100
+13,Manufacturing,"Leisure, Travel And Related Personal Service Occupations",Outsourced,1,1.408887558345226,16.75874769797422,16.75874769797422,1,1.408887558345226,100
+13,Manufacturing,NA,Not outsourced,7,6.56346795684872,16.490298118729033,17.69604759393598,8,7.696592146480542,85.27758561105553
+13,Manufacturing,NA,Outsourced,1,1.1331241896318218,11.466328206659698,11.466328206659698,8,7.696592146480542,14.722414388944477
+13,Manufacturing,Other Managers And Proprietors,Not outsourced,9,9.144784993404976,23.20319932222617,23.072100259268478,11,10.204559092319286,89.61469976971395
+13,Manufacturing,Other Managers And Proprietors,Outsourced,2,1.0597740989143105,20.67341927562922,21.763905978433097,11,10.204559092319286,10.385300230286045
+13,Manufacturing,"Process, Plant And Machine Operatives",Not outsourced,93,110.05086122214188,14.5525577839048,14.042902537854879,112,136.21725729947013,80.79068937660217
+13,Manufacturing,"Process, Plant And Machine Operatives",Outsourced,19,26.166396077328262,14.634046256116479,13.787770500657542,112,136.21725729947013,19.209310623397823
+13,Manufacturing,Protective Service Occupations,Outsourced,2,2.502458010957092,20.142725598526702,16.71198435775634,2,2.502458010957092,100
+13,Manufacturing,Sales Occupations,Not outsourced,35,33.51359938625925,14.490348603359442,14.613185360562731,41,40.01791014215758,83.74650067234208
+13,Manufacturing,Sales Occupations,Outsourced,6,6.504310755898333,9.778084907701233,8.806549437323508,41,40.01791014215758,16.25349932765792
+13,Manufacturing,"Science, Engineering And Technology Associate Professionals",Not outsourced,25,31.503973800550767,20.655066011599683,18.593545039327136,27,32.826894769988236,95.97000880312645
+13,Manufacturing,"Science, Engineering And Technology Associate Professionals",Outsourced,2,1.3229209694374657,13.804341760142865,13.712704284849961,27,32.826894769988236,4.029991196873538
+13,Manufacturing,"Science, Research, Engineering And Technology Professionals",Not outsourced,68,59.59969047732593,20.137830721398732,19.560865745544344,77,66.97907471066779,88.98255273722594
+13,Manufacturing,"Science, Research, Engineering And Technology Professionals",Outsourced,9,7.379384233341854,17.165099838754028,16.87474852435161,77,66.97907471066779,11.017447262774049
+13,Manufacturing,Secretarial And Related Occupations,Not outsourced,3,2.7810144754294623,14.699248633144146,13.516782652263455,4,3.541262653027096,78.5317201211334
+13,Manufacturing,Secretarial And Related Occupations,Outsourced,1,0.760248177597634,10.313075506445673,10.313075506445673,4,3.541262653027096,21.46827987886661
+13,Manufacturing,Skilled Construction And Building Trades,Not outsourced,4,3.7528666002109583,13.795528954368732,14.501571443470716,4,3.7528666002109583,100
+13,Manufacturing,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,45,50.15052559310147,17.437669263176442,16.629332260329853,48,51.60127424181122,97.18854103890666
+13,Manufacturing,"Skilled Metal, Electrical And Electronic Trades",Outsourced,3,1.4507486487097463,17.051360753018212,17.87312353653457,48,51.60127424181122,2.811458961093331
+13,Manufacturing,"Textiles, Printing And Other Skilled Trades",Not outsourced,14,17.90904440101053,13.482156165398354,13.514085535943702,16,19.30638424460988,92.762291344173
+13,Manufacturing,"Textiles, Printing And Other Skilled Trades",Outsourced,2,1.3973398435993527,17.928885111205553,18.37465236243319,16,19.30638424460988,7.237708655827017
+13,Manufacturing,Transport And Mobile Machine Drivers And Operatives,Not outsourced,13,14.744060920775038,15.973646651101143,16.92646898546081,19,19.178290329812853,76.87891186971572
+13,Manufacturing,Transport And Mobile Machine Drivers And Operatives,Outsourced,6,4.434229409037816,11.798132309719172,12.287781818003332,19,19.178290329812853,23.121088130284274
+14,Mining And Quarrying,Administrative Occupations,Not outsourced,1,0.4845673139486677,15.525641025641026,15.525641025641026,1,0.4845673139486677,100
+14,Mining And Quarrying,"Business, Media And Public Service Professionals",Not outsourced,1,0.7333103703659596,18.334356455903418,18.334356455903418,1,0.7333103703659596,100
+14,Mining And Quarrying,Corporate Managers And Directors,Not outsourced,1,1.8905629818681124,25.753683241252297,25.753683241252297,1,1.8905629818681124,100
+14,Mining And Quarrying,Elementary Administration And Service Occupations,Not outsourced,1,1.8905629818681124,15.770411295273172,15.770411295273172,1,1.8905629818681124,100
+15,Na,Administrative Occupations,Not outsourced,10,13.979922174715202,15.641266476866344,17.03958827234396,10,13.979922174715202,100
+15,Na,Business And Public Service Associate Professionals,Not outsourced,2,3.4615738382123524,30.106660527931247,33.044492564535794,3,4.6455962276922556,74.51301552162492
+15,Na,Business And Public Service Associate Professionals,Outsourced,1,1.1840223894799036,14.771332105586248,14.771332105586247,3,4.6455962276922556,25.486984478375085
+15,Na,"Business, Media And Public Service Professionals",Not outsourced,5,4.1465098295390925,20.02216765568515,20.44061955568183,6,5.22163486644172,79.4101835076172
+15,Na,"Business, Media And Public Service Professionals",Outsourced,1,1.0751250369026277,35.52281563331287,35.52281563331287,6,5.22163486644172,20.5898164923828
+15,Na,Community And Civil Enforcement Occupations,Outsourced,1,1.7858020138347086,13.428483732351134,13.428483732351133,1,1.7858020138347086,100
+15,Na,Corporate Managers And Directors,Not outsourced,5,5.436771050554495,19.93963576836505,19.112084133571603,5,5.436771050554495,100
+15,Na,Customer Service Occupations,Not outsourced,3,2.835237489968796,12.440161653366072,11.651616538057857,3,2.835237489968796,100
+15,Na,Elementary Administration And Service Occupations,Not outsourced,5,10.550062434462289,8.962058351258058,9.164587352802817,8,13.895327669589417,75.92525117310907
+15,Na,Elementary Administration And Service Occupations,Outsourced,3,3.345265235127129,10.917536320851239,11.892918251278482,8,13.895327669589417,24.07474882689093
+15,Na,Health And Social Care Associate Professionals,Not outsourced,1,1.0219596233728818,17.42073565277985,17.42073565277985,1,1.0219596233728818,100
+15,Na,Health Professionals,Not outsourced,1,0.5608027664528057,32.22836095764272,32.22836095764272,1,0.5608027664528057,100
+15,Na,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,2,2.992075969961295,12.498819473957594,12.736442885718523,2,2.992075969961295,100
+15,Na,NA,Not outsourced,1,0.8082897802811799,13.750767341927562,13.750767341927562,1,0.8082897802811799,100
+15,Na,Other Managers And Proprietors,Outsourced,1,0.6237903618979663,20.324191594909827,20.324191594909827,1,0.6237903618979663,100
+15,Na,"Process, Plant And Machine Operatives",Not outsourced,3,5.591267813845944,11.535365936839233,11.063284193505453,4,6.164227005636337,90.70509260501761
+15,Na,"Process, Plant And Machine Operatives",Outsourced,1,0.5729591917903935,10,10,4,6.164227005636337,9.29490739498239
+15,Na,Sales Occupations,Not outsourced,8,12.64351432097642,11.025717208921629,10.983947746843912,8,12.64351432097642,100
+15,Na,"Science, Engineering And Technology Associate Professionals",Not outsourced,3,2.6007864517492405,15.484741647725071,15.57396678840338,3,2.6007864517492405,100
+15,Na,"Science, Research, Engineering And Technology Professionals",Not outsourced,6,5.715284091194274,20.424350317167995,19.93624222538674,6,5.715284091194274,100
+15,Na,Secretarial And Related Occupations,Not outsourced,1,1.0219596233728818,12.375690607734807,12.375690607734807,1,1.0219596233728818,100
+15,Na,Skilled Agricultural And Related Trades,Not outsourced,1,1.408887558345226,12.604870063433598,12.604870063433596,1,1.408887558345226,100
+15,Na,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,2,1.4304329129171383,11.817065684468998,11.144573888854609,2,1.4304329129171383,100
+15,Na,"Textiles, Printing And Other Skilled Trades",Not outsourced,1,3.0881370390790854,16.968369772237175,16.968369772237175,1,3.0881370390790854,100
+15,Na,Transport And Mobile Machine Drivers And Operatives,Not outsourced,1,1.7327039769606112,12.25,12.25,1,1.7327039769606112,100
+16,Not Found,Administrative Occupations,Not outsourced,3,2.4126140310296336,16.084478458263938,15.809687573865187,6,5.709574923938032,42.2555805496917
+16,Not Found,Administrative Occupations,Outsourced,3,3.2969608929083987,27.078254260574703,29.036556500531415,6,5.709574923938032,57.74441945030831
+16,Not Found,Business And Public Service Associate Professionals,Not outsourced,1,0.8100176644276368,18.735420503376304,18.735420503376304,1,0.8100176644276368,100
+16,Not Found,"Business, Media And Public Service Professionals",Not outsourced,1,1.043037996079458,11.786372007366483,11.786372007366483,1,1.043037996079458,100
+16,Not Found,Corporate Managers And Directors,Not outsourced,2,3.8333492751457867,23.777368528749744,21.10379656994985,4,5.18363559530832,73.95097908918076
+16,Not Found,Corporate Managers And Directors,Outsourced,2,1.350286320162533,29.00552486187845,29.461262628811305,4,5.18363559530832,26.049020910819227
+16,Not Found,Elementary Administration And Service Occupations,Not outsourced,3,5.9795836370995,16.580967971391544,15.108329789251345,4,8.592554869034238,69.59028750166802
+16,Not Found,Elementary Administration And Service Occupations,Outsourced,1,2.612971231934737,10.5,10.5,4,8.592554869034238,30.40971249833197
+16,Not Found,Health Professionals,Not outsourced,1,2.1838565226459763,25.5780642520974,25.5780642520974,1,2.1838565226459763,100
+16,Not Found,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,1,1.1459743738809554,10.60635359116022,10.60635359116022,2,2.295286708643312,49.9272866246114
+16,Not Found,"Leisure, Travel And Related Personal Service Occupations",Outsourced,1,1.1493123347623564,11.466328206659698,11.466328206659698,2,2.295286708643312,50.0727133753886
+16,Not Found,Other Managers And Proprietors,Not outsourced,1,0.5006556533915657,24.493554327808468,24.493554327808468,1,0.5006556533915657,100
+16,Not Found,Sales Occupations,Outsourced,2,1.97854072381945,7.829450583179866,7.886620564253229,2,1.97854072381945,100
+16,Not Found,Skilled Agricultural And Related Trades,Not outsourced,2,1.5865113564546185,13.201732639432551,13.268079201215917,2,1.5865113564546185,100
+16,Not Found,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,1.4556646739761308,14.54487415592388,14.54487415592388,1,1.4556646739761308,100
+16,Not Found,Transport And Mobile Machine Drivers And Operatives,Outsourced,2,1.281970326862044,14.931786462282886,14.87026966922188,2,1.281970326862044,100
+17,Other Service Activities,Administrative Occupations,Not outsourced,22,22.197818955609613,13.703121068777245,13.149132996218826,26,25.475417534209146,87.13426944151837
+17,Other Service Activities,Administrative Occupations,Outsourced,4,3.2775985785995334,16.340863231248434,17.823076490536298,26,25.475417534209146,12.86573055848163
+17,Other Service Activities,Business And Public Service Associate Professionals,Not outsourced,18,15.842133795691195,16.347609674443486,16.520487121631703,19,16.59892779465915,95.44070551827173
+17,Other Service Activities,Business And Public Service Associate Professionals,Outsourced,1,0.7567939989679572,11.005,11.005,19,16.59892779465915,4.559294481728285
+17,Other Service Activities,"Business, Media And Public Service Professionals",Not outsourced,11,9.107302056533708,17.256072347349566,16.921659515201668,12,10.291324446013611,88.4949464406543
+17,Other Service Activities,"Business, Media And Public Service Professionals",Outsourced,1,1.1840223894799036,12.523020257826888,12.523020257826888,12,10.291324446013611,11.505053559345704
+17,Other Service Activities,Caring Personal Service Occupations,Not outsourced,17,21.29710928019658,12.009009560906787,12.220633502608369,18,22.410757981190617,95.03074058481769
+17,Other Service Activities,Caring Personal Service Occupations,Outsourced,1,1.1136487009940381,7.446572639942805,7.446572639942805,18,22.410757981190617,4.969259415182321
+17,Other Service Activities,Corporate Managers And Directors,Not outsourced,16,16.608403798800378,21.478019714853943,21.512913789506722,18,19.431661980117767,85.47083525739532
+17,Other Service Activities,Corporate Managers And Directors,Outsourced,2,2.8232581813173887,15.761868221812973,15.429212837108382,18,19.431661980117767,14.529164742604678
+17,Other Service Activities,"Culture, Media And Sports Occupations",Not outsourced,2,1.9655878080466447,15.899036985880908,15.165150251595138,2,1.9655878080466447,100
+17,Other Service Activities,Customer Service Occupations,Not outsourced,11,11.518378023998704,14.541682633579502,14.20289822642482,11,11.518378023998704,100
+17,Other Service Activities,Elementary Administration And Service Occupations,Not outsourced,19,23.649975052357956,10.814651384001523,11.065297637755837,31,39.13545486544309,60.4310723707496
+17,Other Service Activities,Elementary Administration And Service Occupations,Outsourced,12,15.485479813085131,13.208314505871922,12.4021748757982,31,39.13545486544309,39.5689276292504
+17,Other Service Activities,Elementary Trades And Related Occupations,Not outsourced,1,0.651955664713763,18.016524812104922,18.016524812104922,2,2.093854356015081,31.136629099386475
+17,Other Service Activities,Elementary Trades And Related Occupations,Outsourced,1,1.4418986913013179,12,12,2,2.093854356015081,68.86337090061352
+17,Other Service Activities,Health And Social Care Associate Professionals,Not outsourced,5,5.033454624919125,15.715873869057933,17.897870904738664,5,5.033454624919125,100
+17,Other Service Activities,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,10,9.857455047101277,11.110195421951264,11.023981397738929,13,12.313512536299884,80.05396525192776
+17,Other Service Activities,"Leisure, Travel And Related Personal Service Occupations",Outsourced,3,2.456057489198606,12.30304890525885,12.25851475036369,13,12.313512536299884,19.94603474807224
+17,Other Service Activities,NA,Not outsourced,4,3.9856716185691354,21.885283073128374,20.688435517795178,4,3.9856716185691354,100
+17,Other Service Activities,Other Managers And Proprietors,Not outsourced,3,2.5621375165565023,10.303727397068485,9.47551802030703,3,2.5621375165565023,100
+17,Other Service Activities,"Process, Plant And Machine Operatives",Not outsourced,4,3.578829942675542,13.187751845555713,12.54682639380557,4,3.578829942675542,100
+17,Other Service Activities,Protective Service Occupations,Not outsourced,1,0.6460589780780498,28.576081952117864,28.576081952117864,2,1.454789971103922,44.40908934695282
+17,Other Service Activities,Protective Service Occupations,Outsourced,1,0.8087309930258724,20.65920574207867,20.65920574207867,2,1.454789971103922,55.59091065304719
+17,Other Service Activities,Sales Occupations,Not outsourced,10,7.456942818582862,13.96846828027189,13.41106006344495,17,15.097873183779665,49.39068389178282
+17,Other Service Activities,Sales Occupations,Outsourced,7,7.6409303651968035,10.99158839394373,11.676134762567774,17,15.097873183779665,50.60931610821717
+17,Other Service Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,7,4.84594265970536,22.21693113896516,22.886508946089183,11,7.567872945659298,64.03308689907176
+17,Other Service Activities,"Science, Engineering And Technology Associate Professionals",Outsourced,4,2.721930285953938,24.35514545392538,23.78694796204325,11,7.567872945659298,35.96691310092824
+17,Other Service Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,14,12.575769094616126,20.741093779525187,20.799515946988187,17,16.771378914386112,74.98351303618162
+17,Other Service Activities,"Science, Research, Engineering And Technology Professionals",Outsourced,3,4.195609819769985,17.640787050499174,19.984001350435772,17,16.771378914386112,25.016486963818373
+17,Other Service Activities,Secretarial And Related Occupations,Not outsourced,5,4.65009803657389,12.20581815701521,11.124087782268038,5,4.65009803657389,100
+17,Other Service Activities,Skilled Agricultural And Related Trades,Not outsourced,3,3.142278504920679,10.540614245586621,10.909121343392451,4,3.760367076105555,83.56307885173267
+17,Other Service Activities,Skilled Agricultural And Related Trades,Outsourced,1,0.6180885711848763,13.96562308164518,13.965623081645182,4,3.760367076105555,16.43692114826734
+17,Other Service Activities,Skilled Construction And Building Trades,Not outsourced,2,1.6542670419836236,24.663648455084918,24.534618249454756,2,1.6542670419836236,100
+17,Other Service Activities,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,4,5.733819379441055,17.82056846028931,18.62782080494437,5,6.504433803648915,88.15247495061669
+17,Other Service Activities,"Skilled Metal, Electrical And Electronic Trades",Outsourced,1,0.7706144242078602,27.139672385383346,27.139672385383346,5,6.504433803648915,11.8475250493833
+17,Other Service Activities,Teaching And Other Educational Professionals,Not outsourced,1,1.0036688243360112,15.166287509478927,15.166287509478927,1,1.0036688243360112,100
+17,Other Service Activities,"Textiles, Printing And Other Skilled Trades",Not outsourced,2,1.9652786149848138,12.375,12.324502382516465,3,2.7783554725881765,70.73531930577836
+17,Other Service Activities,"Textiles, Printing And Other Skilled Trades",Outsourced,1,0.8130768576033626,32.22836095764272,32.22836095764272,3,2.7783554725881765,29.264680694221646
+17,Other Service Activities,Transport And Mobile Machine Drivers And Operatives,Not outsourced,8,12.632623355128953,18.959151486749896,18.556810880777483,11,15.029763342001175,84.05071369172305
+17,Other Service Activities,Transport And Mobile Machine Drivers And Operatives,Outsourced,3,2.3971399868722223,15.98128515255587,15.797121133442594,11,15.029763342001175,15.949286308276955
+18,"Professional, Scientific And Technical Activities",Administrative Occupations,Not outsourced,40,34.577675666049245,16.910182671840566,15.969647966869978,45,39.735453938334906,87.0197071857038
+18,"Professional, Scientific And Technical Activities",Administrative Occupations,Outsourced,5,5.157778272285658,24.126095074895854,33.16978368340466,45,39.735453938334906,12.98029281429619
+18,"Professional, Scientific And Technical Activities",Business And Public Service Associate Professionals,Not outsourced,30,24.53594644956809,22.14519819492583,22.541050644993803,42,34.19834133198668,71.74601309280143
+18,"Professional, Scientific And Technical Activities",Business And Public Service Associate Professionals,Outsourced,12,9.662394882418592,19.796131394499202,19.875425268730517,42,34.19834133198668,28.253986907198563
+18,"Professional, Scientific And Technical Activities","Business, Media And Public Service Professionals",Not outsourced,76,66.20037025040537,22.324804885522607,22.364026334538465,88,77.493450411386,85.4270520914612
+18,"Professional, Scientific And Technical Activities","Business, Media And Public Service Professionals",Outsourced,12,11.29308016098063,18.13548319207062,19.365565930730092,88,77.493450411386,14.572947908538803
+18,"Professional, Scientific And Technical Activities",Caring Personal Service Occupations,Not outsourced,2,1.5919255184490015,11.738428483732351,11.74630124512978,2,1.5919255184490015,100
+18,"Professional, Scientific And Technical Activities",Corporate Managers And Directors,Not outsourced,28,24.04469446246091,25.530663758426556,26.40059407091616,36,33.09145102978411,72.6613482159467
+18,"Professional, Scientific And Technical Activities",Corporate Managers And Directors,Outsourced,8,9.046756567323204,29.90880361011879,32.560645466169966,36,33.09145102978411,27.33865178405332
+18,"Professional, Scientific And Technical Activities","Culture, Media And Sports Occupations",Not outsourced,3,1.9491726565080516,21.72668985744492,21.987131781463653,4,2.73148841599211,71.35936016042332
+18,"Professional, Scientific And Technical Activities","Culture, Media And Sports Occupations",Outsourced,1,0.7823157594840583,17.88557894911486,17.88557894911486,4,2.73148841599211,28.640639839576682
+18,"Professional, Scientific And Technical Activities",Customer Service Occupations,Not outsourced,2,1.588698318410874,13.882390677970788,13.678226098142579,2,1.588698318410874,100
+18,"Professional, Scientific And Technical Activities",Elementary Administration And Service Occupations,Not outsourced,2,2.4010648556808407,8.15940249641907,8.019079000624735,3,3.814056180797153,62.953054225305316
+18,"Professional, Scientific And Technical Activities",Elementary Administration And Service Occupations,Outsourced,1,1.4129913251163122,6.445672191528544,6.445672191528545,3,3.814056180797153,37.04694577469468
+18,"Professional, Scientific And Technical Activities",Elementary Trades And Related Occupations,Not outsourced,1,0.7432490734827928,14.502762430939224,14.502762430939224,1,0.7432490734827928,100
+18,"Professional, Scientific And Technical Activities",Health And Social Care Associate Professionals,Not outsourced,4,3.4954196075542807,14.719293533865358,14.471278148260309,5,4.609068308548319,75.83787814711744
+18,"Professional, Scientific And Technical Activities",Health And Social Care Associate Professionals,Outsourced,1,1.1136487009940381,15.95,15.949999999999998,5,4.609068308548319,24.162121852882564
+18,"Professional, Scientific And Technical Activities",Health Professionals,Not outsourced,5,4.1163986943892725,21.14138871836846,20.984645386162477,6,4.900993160502012,83.9911128128901
+18,"Professional, Scientific And Technical Activities",Health Professionals,Outsourced,1,0.7845944661127395,8.75,8.75,6,4.900993160502012,16.008887187109906
+18,"Professional, Scientific And Technical Activities",NA,Not outsourced,3,5.156930166541211,16.57081491335635,15.404362987715803,3,5.156930166541211,100
+18,"Professional, Scientific And Technical Activities",Other Managers And Proprietors,Not outsourced,5,4.369152618774357,23.70479572574416,23.884342125452115,6,5.12820743963114,85.19843766477238
+18,"Professional, Scientific And Technical Activities",Other Managers And Proprietors,Outsourced,1,0.7590548208567837,11.00061387354205,11.00061387354205,6,5.12820743963114,14.801562335227622
+18,"Professional, Scientific And Technical Activities","Process, Plant And Machine Operatives",Outsourced,1,1.3691456239847926,17.776304481276856,17.776304481276856,1,1.3691456239847926,100
+18,"Professional, Scientific And Technical Activities",Protective Service Occupations,Not outsourced,1,0.5812307452460568,27.098922126546437,27.098922126546437,1,0.5812307452460568,100
+18,"Professional, Scientific And Technical Activities",Sales Occupations,Not outsourced,1,0.720140474476511,17.64710456312666,17.64710456312666,1,0.720140474476511,100
+18,"Professional, Scientific And Technical Activities","Science, Engineering And Technology Associate Professionals",Not outsourced,2,1.287418153427284,16.42005149716936,16.64061187557632,7,7.406753410082341,17.38167969349167
+18,"Professional, Scientific And Technical Activities","Science, Engineering And Technology Associate Professionals",Outsourced,5,6.119335256655057,14.003572633406886,10.248464732034343,7,7.406753410082341,82.61832030650834
+18,"Professional, Scientific And Technical Activities","Science, Research, Engineering And Technology Professionals",Not outsourced,50,42.059086301708795,21.46423604527969,20.97098695786418,60,51.88556424823008,81.06124875213922
+18,"Professional, Scientific And Technical Activities","Science, Research, Engineering And Technology Professionals",Outsourced,10,9.826477946521285,26.82812001688613,26.538395972575156,60,51.88556424823008,18.938751247860786
+18,"Professional, Scientific And Technical Activities",Secretarial And Related Occupations,Not outsourced,20,20.99799092580878,16.083983680981508,15.305709653247225,25,26.840457840778353,78.2326108234518
+18,"Professional, Scientific And Technical Activities",Secretarial And Related Occupations,Outsourced,5,5.842466914969575,17.308692458330192,17.816542368539704,25,26.840457840778353,21.767389176548217
+18,"Professional, Scientific And Technical Activities","Skilled Metal, Electrical And Electronic Trades",Not outsourced,2,1.3568795759809094,23.490894209126253,22.634628602928487,4,2.7999073710592888,48.46158805130618
+18,"Professional, Scientific And Technical Activities","Skilled Metal, Electrical And Electronic Trades",Outsourced,2,1.4430277950783794,18.57252987279969,19.009058474526313,4,2.7999073710592888,51.53841194869382
+18,"Professional, Scientific And Technical Activities",Transport And Mobile Machine Drivers And Operatives,Not outsourced,1,0.8923046683004615,35,35,1,0.8923046683004615,100
+19,Public Administration And Defence; Compulsory Social Security,Administrative Occupations,Not outsourced,213,184.82816073612292,17.767662952500554,17.57834166239297,228,196.80212682162318,93.91573339227519
+19,Public Administration And Defence; Compulsory Social Security,Administrative Occupations,Outsourced,15,11.973966085500239,16.806884121910397,16.001745838812603,228,196.80212682162318,6.084266607724804
+19,Public Administration And Defence; Compulsory Social Security,Business And Public Service Associate Professionals,Not outsourced,57,47.79983013276296,20.75218502262276,20.447531378843408,60,49.768238040506915,96.04485112343771
+19,Public Administration And Defence; Compulsory Social Security,Business And Public Service Associate Professionals,Outsourced,3,1.9684079077439556,22.037875813198095,21.736896934373373,60,49.768238040506915,3.95514887656229
+19,Public Administration And Defence; Compulsory Social Security,"Business, Media And Public Service Professionals",Not outsourced,66,54.49173534720565,22.71661174098956,23.006965056909955,73,60.55228191039225,89.99121689227955
+19,Public Administration And Defence; Compulsory Social Security,"Business, Media And Public Service Professionals",Outsourced,7,6.060546563186605,22.823236779147326,23.039708109221827,73,60.55228191039225,10.008783107720449
+19,Public Administration And Defence; Compulsory Social Security,Caring Personal Service Occupations,Not outsourced,9,6.392143376007763,17.07230692515932,17.340044483738506,11,8.494627868211937,75.24924546639694
+19,Public Administration And Defence; Compulsory Social Security,Caring Personal Service Occupations,Outsourced,2,2.102484492204175,18.8500102312257,18.987509256996308,11,8.494627868211937,24.75075453360306
+19,Public Administration And Defence; Compulsory Social Security,Community And Civil Enforcement Occupations,Not outsourced,6,6.601298513006972,17.975233797333242,17.293537618660196,8,8.527474004393342,77.41212121674006
+19,Public Administration And Defence; Compulsory Social Security,Community And Civil Enforcement Occupations,Outsourced,2,1.92617549138637,11.04644976468181,10.510606287744643,8,8.527474004393342,22.58787878325993
+19,Public Administration And Defence; Compulsory Social Security,Corporate Managers And Directors,Not outsourced,54,50.10835175633187,23.53809935292751,23.50107221545342,55,51.05682908294972,98.1423105514898
+19,Public Administration And Defence; Compulsory Social Security,Corporate Managers And Directors,Outsourced,1,0.9484773266178472,21.485573971761816,21.485573971761816,55,51.05682908294972,1.8576894485102062
+19,Public Administration And Defence; Compulsory Social Security,"Culture, Media And Sports Occupations",Not outsourced,4,2.974719147081119,17.890270315814675,18.04671960156801,4,2.974719147081119,100
+19,Public Administration And Defence; Compulsory Social Security,Customer Service Occupations,Not outsourced,21,20.82434320343979,17.878640314283132,18.654596587350195,23,22.830473518124748,91.21292726104728
+19,Public Administration And Defence; Compulsory Social Security,Customer Service Occupations,Outsourced,2,2.006130314684958,13.992722003771727,13.659692603959286,23,22.830473518124748,8.78707273895271
+19,Public Administration And Defence; Compulsory Social Security,Elementary Administration And Service Occupations,Not outsourced,17,17.340041471570995,15.134158532923562,15.117655310815543,22,25.336517803747967,68.4389291609991
+19,Public Administration And Defence; Compulsory Social Security,Elementary Administration And Service Occupations,Outsourced,5,7.99647633217697,16.811517130390058,12.874765343747763,22,25.336517803747967,31.561070839000898
+19,Public Administration And Defence; Compulsory Social Security,Elementary Trades And Related Occupations,Not outsourced,1,0.7722766992973323,17.446932247746435,17.446932247746435,1,0.7722766992973323,100
+19,Public Administration And Defence; Compulsory Social Security,Health And Social Care Associate Professionals,Not outsourced,23,21.180214815892786,17.96380442353678,17.788358015759613,25,23.331432724025444,90.77974364635803
+19,Public Administration And Defence; Compulsory Social Security,Health And Social Care Associate Professionals,Outsourced,2,2.151217908132657,16.718462246777165,18.01866113337613,25,23.331432724025444,9.220256353641968
+19,Public Administration And Defence; Compulsory Social Security,Health Professionals,Not outsourced,1,0.7823157594840583,20.626151012891345,20.626151012891345,1,0.7823157594840583,100
+19,Public Administration And Defence; Compulsory Social Security,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,3,3.3559307908192415,18.6871721969134,20.489263591907648,7,6.373395184787795,52.655306842250646
+19,Public Administration And Defence; Compulsory Social Security,"Leisure, Travel And Related Personal Service Occupations",Outsourced,4,3.0174643939685537,13.856182511648502,14.151025979715202,7,6.373395184787795,47.34469315774935
+19,Public Administration And Defence; Compulsory Social Security,NA,Not outsourced,1,2.4934609383806987,16.832495478904317,16.832495478904317,1,2.4934609383806987,100
+19,Public Administration And Defence; Compulsory Social Security,Other Managers And Proprietors,Not outsourced,5,3.5721973949129753,22.52757409925191,22.307223666827493,6,4.390126988668813,81.36888532229332
+19,Public Administration And Defence; Compulsory Social Security,Other Managers And Proprietors,Outsourced,1,0.8179295937558378,28.409001773412452,28.409001773412452,6,4.390126988668813,18.631114677706687
+19,Public Administration And Defence; Compulsory Social Security,"Process, Plant And Machine Operatives",Not outsourced,3,2.470776556388369,29.71203247446341,29.65213513642092,3,2.470776556388369,100
+19,Public Administration And Defence; Compulsory Social Security,Protective Service Occupations,Not outsourced,64,66.99113852965971,21.16619996175491,21.054293420297594,69,72.50225404861843,92.39869768012579
+19,Public Administration And Defence; Compulsory Social Security,Protective Service Occupations,Outsourced,5,5.511115518958713,13.949855490849966,14.2526354420316,69,72.50225404861843,7.6013023198741925
+19,Public Administration And Defence; Compulsory Social Security,Sales Occupations,Not outsourced,5,6.791590863362806,14.216299172100276,14.300227187225154,5,6.791590863362806,100
+19,Public Administration And Defence; Compulsory Social Security,"Science, Engineering And Technology Associate Professionals",Not outsourced,12,11.03210089810396,22.437617400768026,21.794588541154596,12,11.03210089810396,100
+19,Public Administration And Defence; Compulsory Social Security,"Science, Research, Engineering And Technology Professionals",Not outsourced,23,16.94495492917744,25.135326171934388,25.065681795388905,28,20.479846647507095,82.73965728761969
+19,Public Administration And Defence; Compulsory Social Security,"Science, Research, Engineering And Technology Professionals",Outsourced,5,3.5348917183296553,24.40585292474795,23.968525950931493,28,20.479846647507095,17.260342712380318
+19,Public Administration And Defence; Compulsory Social Security,Secretarial And Related Occupations,Not outsourced,10,8.67122017512744,13.326253991883332,12.838988280031248,11,9.390275453607298,92.3425539321785
+19,Public Administration And Defence; Compulsory Social Security,Secretarial And Related Occupations,Outsourced,1,0.7190552784798583,11.783783783783784,11.783783783783784,11,9.390275453607298,7.6574460678214855
+19,Public Administration And Defence; Compulsory Social Security,Skilled Agricultural And Related Trades,Not outsourced,1,0.8644568102230458,13.936588522223879,13.936588522223877,1,0.8644568102230458,100
+19,Public Administration And Defence; Compulsory Social Security,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,2.539264476154157,18.048240229179456,18.048240229179456,1,2.539264476154157,100
+19,Public Administration And Defence; Compulsory Social Security,Teaching And Other Educational Professionals,Not outsourced,4,3.237947612088468,24.270641497851443,24.23189282504391,4,3.237947612088468,100
+19,Public Administration And Defence; Compulsory Social Security,"Textiles, Printing And Other Skilled Trades",Not outsourced,2,1.5353378526884038,12.215419839729233,12.364982011525651,2,1.5353378526884038,100
+19,Public Administration And Defence; Compulsory Social Security,Transport And Mobile Machine Drivers And Operatives,Not outsourced,10,12.488240428519676,20.877296685440363,18.98918249193527,12,15.76951415484992,79.19229664205547
+19,Public Administration And Defence; Compulsory Social Security,Transport And Mobile Machine Drivers And Operatives,Outsourced,2,3.281273726330245,13.577689107155036,14.157797376597946,12,15.76951415484992,20.80770335794453
+20,Real Estate Activities,Administrative Occupations,Not outsourced,11,7.806599953547625,12.834212494182594,12.778478071800528,14,11.262128238541528,69.31727101838257
+20,Real Estate Activities,Administrative Occupations,Outsourced,3,3.455528284993904,16.197940113225563,17.85645192344036,14,11.262128238541528,30.682728981617448
+20,Real Estate Activities,Business And Public Service Associate Professionals,Not outsourced,17,19.173692963878025,16.61121676693323,18.389460462515242,23,24.35636785048719,78.72147884108469
+20,Real Estate Activities,Business And Public Service Associate Professionals,Outsourced,6,5.182674886609164,16.63159591465468,17.473348681645902,23,24.35636785048719,21.278521158915318
+20,Real Estate Activities,"Business, Media And Public Service Professionals",Not outsourced,9,6.984182901152507,20.466024342328822,20.7868389951229,10,8.672542293764424,80.53212846450053
+20,Real Estate Activities,"Business, Media And Public Service Professionals",Outsourced,1,1.688359392611918,13.812154696132596,13.812154696132595,10,8.672542293764424,19.46787153549948
+20,Real Estate Activities,Caring Personal Service Occupations,Not outsourced,1,1.1840223894799036,14.851903007980354,14.851903007980354,1,1.1840223894799036,100
+20,Real Estate Activities,Corporate Managers And Directors,Not outsourced,7,6.748710783492144,21.621953840185885,20.95860989390741,7,6.748710783492144,100
+20,Real Estate Activities,Customer Service Occupations,Not outsourced,2,2.40994980494951,15.678330263965622,15.526660870068971,3,3.1012747248127,77.70836248939725
+20,Real Estate Activities,Customer Service Occupations,Outsourced,1,0.6913249198631904,14.896664620421525,14.896664620421525,3,3.1012747248127,22.29163751060276
+20,Real Estate Activities,Elementary Administration And Service Occupations,Not outsourced,1,2.612971231934737,13.693472478002866,13.693472478002866,2,3.354061678682756,77.90468638492456
+20,Real Estate Activities,Elementary Administration And Service Occupations,Outsourced,1,0.741090446748019,12.986494782074894,12.986494782074894,2,3.354061678682756,22.095313615075447
+20,Real Estate Activities,Health And Social Care Associate Professionals,Not outsourced,7,6.4284760680111335,19.82195297112424,19.997104051393226,7,6.4284760680111335,100
+20,Real Estate Activities,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,2,3.017985593368679,16.51239055280928,15.076227396834359,3,5.39894153260893,55.89957911454355
+20,Real Estate Activities,"Leisure, Travel And Related Personal Service Occupations",Outsourced,1,2.3809559392402506,12,12,3,5.39894153260893,44.100420885456444
+20,Real Estate Activities,Other Managers And Proprietors,Not outsourced,15,15.81272319716679,19.89657769213357,18.735920002914288,16,16.298701944717493,97.01829784237381
+20,Real Estate Activities,Other Managers And Proprietors,Outsourced,1,0.48597874755070214,18.29281767955801,18.29281767955801,16,16.298701944717493,2.981702157626183
+20,Real Estate Activities,Protective Service Occupations,Not outsourced,1,1.031857984913014,14.968283200327399,14.968283200327399,1,1.031857984913014,100
+20,Real Estate Activities,Sales Occupations,Not outsourced,2,6.791842642988592,11.637854645421303,12.303898690103672,2,6.791842642988592,100
+20,Real Estate Activities,"Science, Engineering And Technology Associate Professionals",Not outsourced,1,0.7280602441057761,29.197152954059028,29.197152954059032,2,1.8740346179867315,38.84988234037686
+20,Real Estate Activities,"Science, Engineering And Technology Associate Professionals",Outsourced,1,1.1459743738809554,16.027076800557463,16.027076800557463,2,1.8740346179867315,61.150117659623135
+20,Real Estate Activities,"Science, Research, Engineering And Technology Professionals",Not outsourced,2,2.315991864890868,22.8321968377217,18.049279835673243,2,2.315991864890868,100
+20,Real Estate Activities,Secretarial And Related Occupations,Not outsourced,3,6.432646196025692,15.23012072846327,16.72413447751164,3,6.432646196025692,100
+20,Real Estate Activities,Skilled Agricultural And Related Trades,Not outsourced,1,0.6581799649640776,14.119091467157764,14.119091467157766,1,0.6581799649640776,100
+20,Real Estate Activities,Skilled Construction And Building Trades,Not outsourced,1,0.6331886360119569,16.382750153468386,16.382750153468386,2,1.3742790827599758,46.0742395016534
+20,Real Estate Activities,Skilled Construction And Building Trades,Outsourced,1,0.741090446748019,17.776304481276856,17.776304481276856,2,1.3742790827599758,53.925760498346605
+20,Real Estate Activities,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,0.6581799649640776,24.171270718232044,24.171270718232044,1,0.6581799649640776,100
+21,Transportation And Storage,Administrative Occupations,Not outsourced,32,29.477460215223488,14.286472114884468,14.36107157263011,40,38.04345581684078,77.48365542063776
+21,Transportation And Storage,Administrative Occupations,Outsourced,8,8.565995601617297,15.466323540391219,14.371829367316632,40,38.04345581684078,22.516344579362237
+21,Transportation And Storage,Business And Public Service Associate Professionals,Not outsourced,12,10.488129024290002,23.798027645387947,23.060750208312616,18,14.30753991517743,73.30490836628177
+21,Transportation And Storage,Business And Public Service Associate Professionals,Outsourced,6,3.8194108908874282,16.29537233733847,17.03090523425752,18,14.30753991517743,26.695091633718242
+21,Transportation And Storage,"Business, Media And Public Service Professionals",Not outsourced,9,7.137496571980185,25.160901281236647,25.02060162266027,13,11.088572883298795,64.36803587890397
+21,Transportation And Storage,"Business, Media And Public Service Professionals",Outsourced,4,3.95107631131861,20.936314555099088,19.544230694034496,13,11.088572883298795,35.631964121096026
+21,Transportation And Storage,Caring Personal Service Occupations,Not outsourced,1,2.4133347165103927,11.172498465316146,11.172498465316146,2,4.146038693471004,58.20820534817497
+21,Transportation And Storage,Caring Personal Service Occupations,Outsourced,1,1.7327039769606112,10.42,10.42,2,4.146038693471004,41.79179465182503
+21,Transportation And Storage,Community And Civil Enforcement Occupations,Not outsourced,1,2.2851373684953313,10.12891344383057,10.12891344383057,1,2.2851373684953313,100
+21,Transportation And Storage,Corporate Managers And Directors,Not outsourced,28,25.019938625192175,19.670218970550366,19.362331175832015,34,30.097369570678794,83.12998438762864
+21,Transportation And Storage,Corporate Managers And Directors,Outsourced,6,5.077430945486618,26.578166564354408,27.003385175617083,34,30.097369570678794,16.870015612371354
+21,Transportation And Storage,Customer Service Occupations,Not outsourced,4,8.555130600191607,20.352038256374893,22.965488679650978,5,10.740051351710704,79.65632863411702
+21,Transportation And Storage,Customer Service Occupations,Outsourced,1,2.184920751519097,20,20,5,10.740051351710704,20.34367136588297
+21,Transportation And Storage,Elementary Administration And Service Occupations,Not outsourced,59,63.76002150657385,14.277848598607699,14.124654615771542,76,82.20792436811638,77.55945913567258
+21,Transportation And Storage,Elementary Administration And Service Occupations,Outsourced,17,18.44790286154253,14.37725728483772,14.961280464918618,76,82.20792436811638,22.440540864327417
+21,Transportation And Storage,Elementary Trades And Related Occupations,Not outsourced,3,2.3188854002835124,9.910839983630037,10.326621475044027,3,2.3188854002835124,100
+21,Transportation And Storage,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,13,16.2973432494416,18.92255513056618,18.37030672963021,13,16.2973432494416,100
+21,Transportation And Storage,Other Managers And Proprietors,Not outsourced,13,14.652224332598326,20.661011446577742,19.594984825327295,16,20.34504523196686,72.01863729246583
+21,Transportation And Storage,Other Managers And Proprietors,Outsourced,3,5.692820899368535,17.813505217925105,13.726384131837694,16,20.34504523196686,27.98136270753418
+21,Transportation And Storage,"Process, Plant And Machine Operatives",Not outsourced,5,4.8356090451852,15.192257450820986,14.925520590018083,5,4.8356090451852,100
+21,Transportation And Storage,Sales Occupations,Not outsourced,4,3.6722205605620806,12.705817369679366,12.535877649867052,10,8.218789214999317,44.68079743254963
+21,Transportation And Storage,Sales Occupations,Outsourced,6,4.546568654437237,12.423656725325694,11.45848171499876,10,8.218789214999317,55.319202567450375
+21,Transportation And Storage,"Science, Engineering And Technology Associate Professionals",Not outsourced,6,4.8952795710830195,24.21623047060756,25.215569210433692,6,4.8952795710830195,100
+21,Transportation And Storage,"Science, Research, Engineering And Technology Professionals",Not outsourced,7,5.074748868020409,24.430820759695433,24.414682893454412,7,5.074748868020409,100
+21,Transportation And Storage,Secretarial And Related Occupations,Not outsourced,3,5.5935887299718345,18.76406793533865,21.687177205047217,4,9.132371041750119,61.25012556322815
+21,Transportation And Storage,Secretarial And Related Occupations,Outsourced,1,3.5387823117782844,10.436470588235293,10.436470588235295,4,9.132371041750119,38.74987443677185
+21,Transportation And Storage,Skilled Construction And Building Trades,Outsourced,1,0.465060649438557,14.825046040515652,14.825046040515652,1,0.465060649438557,100
+21,Transportation And Storage,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,6,5.057386433332626,18.344749676011187,18.930199772594978,6,5.057386433332626,100
+21,Transportation And Storage,Teaching And Other Educational Professionals,Not outsourced,1,0.7845652283868396,17.188459177409452,17.188459177409452,1,0.7845652283868396,100
+21,Transportation And Storage,Transport And Mobile Machine Drivers And Operatives,Not outsourced,96,120.08575357370377,17.43171098365662,17.511649648922937,120,150.01534812130623,80.04897837293247
+21,Transportation And Storage,Transport And Mobile Machine Drivers And Operatives,Outsourced,24,29.929594547602473,15.310754187432213,13.298624115717885,120,150.01534812130623,19.951021627067544
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Administrative Occupations,Not outsourced,8,6.552766353674834,18.532190514434625,20.53271290435822,10,8.690446718030309,75.40195074298805
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Administrative Occupations,Outsourced,2,2.137680364355475,12.715699815837937,13.669228239993942,10,8.690446718030309,24.598049257011965
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Business And Public Service Associate Professionals,Not outsourced,7,5.542524326842252,19.681157370867314,19.441032398100557,7,5.542524326842252,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Business, Media And Public Service Professionals",Not outsourced,1,2.9972368434023564,17.77777777777778,17.77777777777778,2,4.100472421116287,73.09491530701254
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Business, Media And Public Service Professionals",Outsourced,1,1.1032355777139302,22.613136893799876,22.613136893799876,2,4.100472421116287,26.905084692987458
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Corporate Managers And Directors,Not outsourced,3,2.232285241752019,19.25018941593527,20.12212050223856,3,2.232285241752019,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Customer Service Occupations,Not outsourced,1,0.7145495906949046,22.91794556987927,22.91794556987927,2,1.3143937464489965,54.3634350532595
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Customer Service Occupations,Outsourced,1,0.5998441557540919,10.313075506445673,10.313075506445673,2,1.3143937464489965,45.63656494674049
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Elementary Administration And Service Occupations,Not outsourced,3,2.8560388959744696,13.837729507484955,14.007325886730998,6,6.350625850379961,44.97255803227002
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Elementary Administration And Service Occupations,Outsourced,3,3.4945869544054915,11.688773197336733,10.951766481366228,6,6.350625850379961,55.02744196772997
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Elementary Trades And Related Occupations,Not outsourced,3,2.1014440073834195,16.334671262848058,17.735028349051703,3,2.1014440073834195,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Leisure, Travel And Related Personal Service Occupations",Outsourced,1,2.699725676412903,16.11418047882136,16.11418047882136,1,2.699725676412903,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",NA,Not outsourced,1,1.5278930534129942,16.527364593662934,16.527364593662934,2,3.0557861068259884,50
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",NA,Outsourced,1,1.5278930534129942,16.527364593662934,16.527364593662934,2,3.0557861068259884,50
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Other Managers And Proprietors,Not outsourced,2,2.2952576813381462,16.90745856353591,14.99137337985326,3,2.828123037595688,81.15833896991434
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Other Managers And Proprietors,Outsourced,1,0.53286535625754194,13.635819521178638,13.635819521178638,3,2.828123037595688,18.841661030085675
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Process, Plant And Machine Operatives",Not outsourced,3,2.962279426979894,13.600545665370712,14.98211789992145,4,5.776947050814876,51.277593526879315
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Process, Plant And Machine Operatives",Outsourced,1,2.814667623834981,11.975,11.974999999999998,4,5.776947050814876,48.72240647312068
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Protective Service Occupations,Outsourced,1,0.8087309930258724,12.891344383057088,12.89134438305709,1,0.8087309930258724,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Sales Occupations,Not outsourced,2,1.4304329129171383,12.334164001163128,12.733582261351552,3,3.1004353883564173,46.13651741587913
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Sales Occupations,Outsourced,1,1.670002475439279,22.91794556987927,22.91794556987927,3,3.1004353883564173,53.86348258412087
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Science, Engineering And Technology Associate Professionals",Not outsourced,3,2.1304816182979405,13.700763378479769,13.632563756353685,4,2.8889362862892947,73.74623069428942
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Science, Engineering And Technology Associate Professionals",Outsourced,1,0.7584546679913542,26.64211172498465,26.64211172498465,4,2.8889362862892947,26.253769305710588
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Science, Research, Engineering And Technology Professionals",Not outsourced,10,9.517726338278582,22.33368285201456,22.81788558106153,12,10.693738073517475,89.00280026353713
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Science, Research, Engineering And Technology Professionals",Outsourced,2,1.1760117352388921,17.90677417749241,19.34402191853426,12,10.693738073517475,10.997199736462859
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Skilled Construction And Building Trades,Outsourced,1,1.07062479032361,13.607530182115818,13.607530182115818,1,1.07062479032361,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Skilled Metal, Electrical And Electronic Trades",Not outsourced,1,2.814667623834981,15.2051754261699,15.205175426169902,2,4.693094892802238,59.9746582612641
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities","Skilled Metal, Electrical And Electronic Trades",Outsourced,1,1.8784272689672568,12.5,12.5,2,4.693094892802238,40.0253417387359
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Teaching And Other Educational Professionals,Not outsourced,1,0.9103070520979906,23.829454768681288,23.82945476868129,1,0.9103070520979906,100
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Transport And Mobile Machine Drivers And Operatives,Not outsourced,5,9.071343039975853,14.20352177250985,14.258399247061613,6,10.916436277443172,83.09802585226583
+22,"Water Supply; Sewerage, Waste Management And Remediation Activities",Transport And Mobile Machine Drivers And Operatives,Outsourced,1,1.8450932374673183,18.262737875997544,18.262737875997544,6,10.916436277443172,16.901974147734162
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Administrative Occupations,Not outsourced,86,83.13810088783485,13.27416853863795,13.53235923022365,99,95.23541159960561,87.29746581803941
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Administrative Occupations,Outsourced,13,12.097310711770765,12.943063626232107,14.301147190505828,99,95.23541159960561,12.702534181960592
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Business And Public Service Associate Professionals,Not outsourced,57,57.65109548515271,17.105882679015878,17.08835060995442,66,66.65529056744083,86.49140224934162
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Business And Public Service Associate Professionals,Outsourced,9,9.004195082288117,14.752159098815673,15.419126484581858,66,66.65529056744083,13.508597750658376
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Business, Media And Public Service Professionals",Not outsourced,20,18.63385343835785,23.939744895056748,24.37354219853358,24,22.427732406763774,83.083983259664
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Business, Media And Public Service Professionals",Outsourced,4,3.7938789684059246,21.743221812973193,18.433297251916336,24,22.427732406763774,16.916016740336012
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Caring Personal Service Occupations,Not outsourced,1,0.6118950290889793,12.375690607734807,12.375690607734807,2,1.3331361529394143,45.898914956272094
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Caring Personal Service Occupations,Outsourced,1,0.721241123850435,13,13.000000000000002,2,1.3331361529394143,54.101085043727906
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Corporate Managers And Directors,Not outsourced,106,110.20886392113916,18.792338204925713,18.321581276564636,131,133.0237372330051,82.84902094435725
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Corporate Managers And Directors,Outsourced,25,22.814873311865956,17.33042132296769,16.58786761689799,131,133.0237372330051,17.15097905564275
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Culture, Media And Sports Occupations",Not outsourced,5,4.3063633449399585,14.765807243707794,15.879486065621938,5,4.3063633449399585,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Customer Service Occupations,Not outsourced,27,28.933922401565056,13.045987668060395,13.032890356606716,31,32.4290261607895,89.22229812916666
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Customer Service Occupations,Outsourced,4,3.495103759224445,26.627186924493554,30.585946623124688,31,32.4290261607895,10.777701870833347
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Elementary Administration And Service Occupations,Not outsourced,89,97.97012894115743,11.780173849494949,11.69945187276066,111,128.2306724028565,76.40147798131254
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Elementary Administration And Service Occupations,Outsourced,22,30.260543461699065,12.799970375760816,11.971506022980403,111,128.2306724028565,23.59852201868745
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Elementary Trades And Related Occupations,Not outsourced,4,4.334599226558644,11.873279336579333,12.384758290038265,6,6.029020282763801,71.89558208902879
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Elementary Trades And Related Occupations,Outsourced,2,1.6944210562051567,16.82049723756906,18.815217735457168,6,6.029020282763801,28.104417910971208
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Health And Social Care Associate Professionals,Not outsourced,3,4.177841606338598,13.275015346838549,11.391890671168515,3,4.177841606338598,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Health Professionals,Not outsourced,10,9.214107304591963,19.852426471639465,18.91610790430409,13,11.551102846228224,79.76820419013619
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Health Professionals,Outsourced,3,2.3369955416362616,22.42644551170171,23.474958387096176,13,11.551102846228224,20.231795809863815
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Leisure, Travel And Related Personal Service Occupations",Not outsourced,4,3.261458765038199,16.008840418457133,16.017322323628818,5,4.670346323383425,69.83333866931393
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Leisure, Travel And Related Personal Service Occupations",Outsourced,1,1.408887558345226,11.85,11.850000000000001,5,4.670346323383425,30.16666133068606
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,NA,Not outsourced,3,2.6108237456975463,18.23886501602892,18.853596636657123,4,3.3814381699054064,77.21045349679075
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,NA,Outsourced,1,0.7706144242078602,32.82518245685833,32.82518245685833,4,3.3814381699054064,22.789546503209245
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Other Managers And Proprietors,Not outsourced,13,11.003511862855026,16.47501340637874,16.339340694651916,16,16.057933697218655,68.52383420141354
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Other Managers And Proprietors,Outsourced,3,5.054421834363629,11.802465448874289,11.73108256988129,16,16.057933697218655,31.476165798586464
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Process, Plant And Machine Operatives",Not outsourced,17,23.31112409973827,13.324826088507383,13.392246892322017,23,29.016024520900636,80.33879376875682
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Process, Plant And Machine Operatives",Outsourced,6,5.704900421162368,13.493963467517522,12.980914453963965,23,29.016024520900636,19.66120623124319
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Sales Occupations,Not outsourced,452,516.9680524671672,12.672211838271753,12.780919003027932,538,605.2384212000773,85.41560389410078
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Sales Occupations,Outsourced,86,88.27036873290996,13.448504603023625,13.417370939286087,538,605.2384212000773,14.584396105899216
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Science, Engineering And Technology Associate Professionals",Not outsourced,14,12.019501240929207,18.718331675340806,18.91011913668954,14,12.019501240929207,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Science, Research, Engineering And Technology Professionals",Not outsourced,25,19.948790465511482,19.758558879027923,19.585652072252312,34,28.625990419970172,69.68768651440172
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Science, Research, Engineering And Technology Professionals",Outsourced,9,8.67719995445869,20.155363056938665,22.323486416447437,34,28.625990419970172,30.31231348559828
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Secretarial And Related Occupations,Not outsourced,4,5.135625851900309,11.16769060445206,12.095490462255567,4,5.135625851900309,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Skilled Agricultural And Related Trades,Not outsourced,1,2.9093717356473894,10,10,1,2.9093717356473894,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Skilled Construction And Building Trades,Not outsourced,1,1.4556646739761308,10.42,10.42,1,1.4556646739761308,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Skilled Metal, Electrical And Electronic Trades",Not outsourced,22,21.623936917215598,15.214090855520244,14.869113511530651,24,22.955049711556814,94.20122016258993
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Skilled Metal, Electrical And Electronic Trades",Outsourced,2,1.3311127943412164,14.126764886433394,14.034891202246007,24,22.955049711556814,5.798779837410076
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Teaching And Other Educational Professionals,Not outsourced,1,1.1136487009940381,34.09080212809494,34.09080212809494,1,1.1136487009940381,100
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Textiles, Printing And Other Skilled Trades",Not outsourced,20,23.405882701193555,14.595963844827315,14.824771315970125,24,28.62119973615698,81.77813270219086
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,"Textiles, Printing And Other Skilled Trades",Outsourced,4,5.215317034963426,13.338448016072325,14.82316852007643,24,28.62119973615698,18.221867297809144
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Transport And Mobile Machine Drivers And Operatives,Not outsourced,42,47.96597274892864,14.054083906367635,14.057514215013489,54,58.64011198143734,81.79720523745311
+23,Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Transport And Mobile Machine Drivers And Operatives,Outsourced,12,10.674139232508704,13.010875271809551,13.029973548207453,54,58.64011198143734,18.202794762546883
+NA,NA,NA,Not outsourced,1,0.8331552475741444,10.313075506445673,10.313075506445673,1,0.8331552475741444,100

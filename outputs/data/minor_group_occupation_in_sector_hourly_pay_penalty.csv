@@ -1,0 +1,18 @@
+sector_name_labelled,unit_occupation_labelled,wtd_avg_income_not_outsourced,wtd_avg_income_outsourced,n_not_outsourced,n_outsourced,pay_penalty
+Accommodation And Food Service Activities,Food Preparation And Hospitality Trades,12.145062200745967,11.61472774525549,50,15,-0.5303344554904772
+Accommodation And Food Service Activities,Other Elementary Services Occupations,11.70754196954539,10.771047721932925,94,32,-0.9364942476124654
+Administrative And Support Service Activities,Customer Service Occupations,13.555524482400699,10.107020694026543,11,10,-3.448503788374156
+Administrative And Support Service Activities,Elementary Cleaning Occupations,12.436822412243227,10.039798596262443,15,16,-2.397023815980784
+Education,Teaching And Childcare Support Occupations,12.22188494135859,10.853845385380426,137,26,-1.3680395559781644
+Human Health And Social Work Activities,Caring Personal Services,12.996527813681356,12.55699238554772,301,81,-0.43953542813363633
+Human Health And Social Work Activities,Nursing Professionals,20.781653345319153,17.750548191638025,177,35,-3.0311051536811284
+Human Health And Social Work Activities,Other Health Professionals,19.269769708505258,17.61120332546665,50,13,-1.6585663830386075
+Information And Communication,Functional Managers And Directors,27.91172428268638,22.203122811002785,28,11,-5.708601471683593
+Information And Communication,Information Technology Professionals,25.279900955615933,22.016983516350273,79,26,-3.26291743926566
+Information And Communication,Information Technology Technicians,22.786475012286367,17.244462253499616,16,11,-5.5420127587867505
+Manufacturing,Functional Managers And Directors,20.271831794966925,14.620987822746967,35,14,-5.650843972219958
+Transportation And Storage,Road Transport Drivers,15.420848861594397,14.822315909625667,71,19,-0.5985329519687301
+Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Elementary Storage Occupations,12.775123671885552,12.61004991557549,53,14,-0.16507375631006305
+Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Functional Managers And Directors,20.374125632340434,15.938815477754437,50,12,-4.435310154585997
+Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Road Transport Drivers,14.20517602107825,12.967648905219967,37,11,-1.237527115858283
+Wholesale And Retail Trade; Repair Of Motor Vehicles And Motorcycles,Shopkeepers And Sales Supervisors,13.481548500153325,12.35590854079342,55,20,-1.125639959359905
