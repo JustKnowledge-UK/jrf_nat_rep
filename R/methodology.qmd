@@ -179,7 +179,7 @@ tab <- data %>%
     Percentage = 100 * (Frequency / Sum)
   )
 
-write_csv(tab, file="../outputs/methodology/data/status_by_ethnicity_full.csv")
+write_csv(tab, file="../outputs/methodology/data/ethnicity_statistics_census.csv")
 
 tab %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
@@ -200,6 +200,8 @@ ethnicity_cat <- data %>%
   distinct() %>%
   arrange(Ethnicity) %>%
   dplyr::select(-c(1:2,Ethnicity_collapsed_disaggregated, Ethnicity_binary))
+
+write_csv(ethnicity_cat, file="../outputs/methodology/data/ethnicity_aggregation_mapping.csv")
 
 ethn_colnames = c(
   "Census categories",
@@ -227,7 +229,7 @@ tab <- data %>%
     Ethnicity_short = Ethnicity_collapsed
   )
 
-write_csv(tab, file="../outputs/methodology/data/status_by_ethnicity.csv")
+write_csv(tab, file="../outputs/methodology/data/ethnicity_statistics_aggregated.csv")
 
 tab %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
