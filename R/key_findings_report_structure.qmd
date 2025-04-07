@@ -71,69 +71,9 @@ extract_lm_coefs <- function(mod, only_sig = F){
 ```
 
 ```{r data, output=FALSE}
-#data <- haven::read_sav("../Data/2024-04-25 - Cleaned_Data.sav")
-data <- readRDS("../Data/2025-03-31 - Cleaned_Data.rds") 
+data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
 
-# Make our disaggregated ethnicity groups identical to the originla census groups
-# as per request in JRF - Outsourced workers - To dos 
-
-data$Ethnicity_collapsed_disaggregated <- data$Ethnicity_labelled
-
-data <- data %>%
-  mutate(
-    Ethnicity_collapsed = case_when(
-      # Grouping White ethnicities
-      Ethnicity %in% c(1) ~ "White British", # Just white british as reference
-      Ethnicity %in% c(2, 3, 4, 5) ~ "White other", # Gyspy, Irish traveller, Roma, Irish and White other grouped together
-      # Grouping Asian ethnicities
-      Ethnicity %in% c(10,11,12,13,14) ~ "Asian/Asian British",
-      # Grouping Black ethnicities
-      Ethnicity %in% c(15,16,17) ~ "Black/African/Caribbean/Black British",
-      # Grouping Mixed ethnicities
-      Ethnicity %in% c(6,7,8,9) ~ "Mixed/Multiple ethnic group",
-      # Grouping Other ethnicities
-      Ethnicity %in% c(18) ~ "Arab/British Arab",
-      # Handling missing or ambiguous categories
-      Ethnicity %in% c(19)  ~ "Other ethnic group",
-      #prefer not to say
-      Ethnicity %in% c(20,21) ~ "Prefer not to say",
-      # Default case for any unmatched entries
-      TRUE ~ "Prefer not to say"
-    )
-  )
-
-#make white the reference category
-data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "White British")
-
-data <- data %>%
-  mutate(
-    Has_Degree = factor(Has_Degree, levels = c("No", "Yes", "Don't know"))
-  )
-
-# make binary born uk var
-categories <- as.vector(unique(data$BORNUK_labelled))
-non_categories <- categories[!(categories %in% "I was born in the UK")]
-
-# Will throw NA warning. I think this OK but investigate how to avoid the problem
-data <- data %>%
-  mutate(
-    BORNUK_binary = forcats::fct_collapse(BORNUK_labelled,
-                                      "Born in UK" = "I was born in the UK",
-                                      "Not born in UK" = non_categories)
-  ) 
-
-# make binary ethnicity var
-ethnicities <- as.vector(unique(data$Ethnicity_collapsed))
-non_white_ethnicities <- ethnicities[!(ethnicities %in% "White British")]
-
-# Will throw NA warning. I think this OK but investigate how to avoid the problem
-data <- data %>%
-  mutate(
-    Ethnicity_binary = forcats::fct_collapse(Ethnicity_collapsed,
-                                      "White British" = c("White British"),
-                                      "Non-White British" = non_white_ethnicities)
-  )
-  
+# Specify data to be used in income analysis
 income_data <- filter(data, income_drop_all==0)
 ```
 
