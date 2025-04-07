@@ -1,0 +1,242 @@
+---
+title: "Methodology"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    self-contained: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code"
+    toc: true
+    toc-depth: 5
+execute: 
+  echo: false
+  warning: false
+number-sections: true
+---
+
+```{r packages}
+library(haven)
+library(poLCA)
+library(Hmisc)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(kableExtra)
+#library(MASS)
+library(wesanderson)
+library(ggrepel)
+library(here)
+library(emmeans)
+#library(devtools)
+#install_version("sjstats", version = "0.18.2")
+library(sjstats)
+library(readr)
+library(sjPlot)
+library(nnet)
+```
+
+```{r palette}
+rm(list = ls())
+options(scipen = 999)
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+better_colours <- c('#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462')
+many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f')
+```
+
+```{r functions}
+extract_glm_coefs <- function(mod, only_sig=F, decimal_places = 3){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") %>% # specify new variable to add rownames to 
+    mutate(
+    or = round(exp(Estimate), decimal_places), .after=Estimate
+    )
+}
+
+extract_lm_coefs <- function(mod, only_sig = F){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") # specify new variable to add rownames to 
+}
+
+```
+
+```{r data, output=FALSE}
+data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
+
+# Specify data to be used in income analysis
+income_data <- filter(data, income_drop_all==0)
+```
+
+# Sample descriptives
+
+In this section we present descriptive statistics on the sample. All statistics are weighted estimates based on [**INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM**]
+
+
+The total size of the sample is `r nrow(data)`.
+
+# Age
+
+```{r}
+age_statistics <- data %>%
+  summarise(
+    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),
+    N = n()
+  )
+
+readr::write_csv(age_statistics, file = "../outputs/methodology/data/age_stats.csv")
+
+```
+
+The table below shows weighted descriptive statistics of the sample, and the figure below shows the frequency of respondents at each single year of age.
+
+```{r}
+knitr::kable(age_statistics,
+             digits = 2,
+             col.names = c("Mean",
+                           "Median",
+                           "Min",
+                           "Max",
+                           "Standard dev.",
+                           "N")) %>%
+  kable_styling(full_width = F)
+
+age_range <- max(data$Age) - min(data$Age)
+interval <- 1
+n_bins <- (age_range / interval) + 1
+
+data %>%
+  ggplot(.,aes(Age)) +
+  geom_histogram(colour="black",alpha = .7, bins = n_bins) +
+  geom_vline(data =age_statistics, aes(xintercept=median), colour="red") +
+  scale_x_continuous(breaks = seq(16, 80, 4)) +
+  theme_minimal() +
+  scale_colour_manual(values=colours, name = "Outsourcing status") +
+  scale_fill_manual(values=colours, name = "Outsourcing status") +
+  ylab("Count")
+  
+
+```
+# Gender
+
+```{r}
+gender_statistics <- data %>%
+  group_by(Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(gender_statistics, file="../outputs/methodology/data/gender_statistics.csv")
+```
+
+The table below shows the weighted gender breakdown of the sample
+
+```{r}
+gender_statistics %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
+  dplyr::select(-c(n, N, Sum)) %>%
+  kable(col.names = c(
+    "Gender",
+    "Weighted frequency",
+    "Weighted percentage"
+  )) %>%
+  kable_styling(full_width = F)
+```
+
+# Ethnicity 
+
+The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that 'NA' indicates non-responses.
+
+```{r}
+tab <- data %>%
+  group_by(Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+write_csv(tab, file="../outputs/methodology/data/status_by_ethnicity_full.csv")
+
+tab %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
+  dplyr::select(-c(n, N, Sum)) %>%
+  kable(col.names = c(
+    "Ethnicity",
+    "Weighted frequency",
+    "Weighted percentage"
+  )) %>%
+  kable_styling(full_width = F)
+```
+
+We also make use of an aggregated ethnicity variable that groups ethnicities into fewer categories. The table below shows how the Census categories map onto the aggregated categories.
+
+```{r}
+ethnicity_cat <- data %>%
+  dplyr::select(contains("ethnicity")) %>%
+  distinct() %>%
+  arrange(Ethnicity) %>%
+  dplyr::select(-c(1:2,Ethnicity_collapsed_disaggregated, Ethnicity_binary))
+
+ethn_colnames = c(
+  "Census categories",
+  "Aggregated categories"
+)
+ethnicity_cat %>%
+  kable(col.names = ethn_colnames) %>%
+  kable_styling(full_width=FALSE)
+```
+
+
+The table below shows the weighted ethnicity breakdown using the aggregated set of categories
+
+```{r}
+tab <- data %>%
+  group_by(Ethnicity_collapsed) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum),
+    Ethnicity_short = Ethnicity_collapsed
+  )
+
+write_csv(tab, file="../outputs/methodology/data/status_by_ethnicity.csv")
+
+tab %>%
+  mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
+  dplyr::select(-c(n, N, Sum, Ethnicity_short)) %>%
+  kable(col.names = c(
+    "Ethnicity",
+    "Weighted frequency",
+    "Weighted percentage"
+  )) %>%
+  kable_styling(full_width = F)
+```
+
