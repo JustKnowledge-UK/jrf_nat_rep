@@ -3328,7 +3328,7 @@ border: 0;
   <li><a href="#reproducibility" id="toc-reproducibility" class="nav-link" data-scroll-target="#reproducibility"><span class="header-section-number">6</span> Reproducibility</a></li>
   <li><a href="#age" id="toc-age" class="nav-link" data-scroll-target="#age"><span class="header-section-number">7</span> Age</a></li>
   <li><a href="#gender" id="toc-gender" class="nav-link" data-scroll-target="#gender"><span class="header-section-number">8</span> Gender</a></li>
-  <li><a href="#ethnicity" id="toc-ethnicity" class="nav-link" data-scroll-target="#ethnicity"><span class="header-section-number">9</span> Ethnicity</a></li>
+  <li><a href="#sec-ethnicity" id="toc-sec-ethnicity" class="nav-link" data-scroll-target="#sec-ethnicity"><span class="header-section-number">9</span> Ethnicity</a></li>
   </ul>
 </nav>
 </div>
@@ -3368,7 +3368,7 @@ border: 0;
 
 <section id="participants-and-design" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Participants and Design</h1>
-<p>[<strong>Insert Name of Report</strong>] contains data from two studies. The first of these studies was a nationally representative survey of [<strong>Workers?</strong>] conducted by Opinium Research between [<strong>Month Year</strong>]. The total size of the sample is 10155. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER</p>
+<p>[<strong>Insert Name of Report</strong>] contains data from two studies. The first of these studies was a nationally representative survey of 10155 [<strong>Workers?</strong>] conducted by Opinium Research between [<strong>Month Year</strong>]. This sample had median age 42 (min = 16, max = 80). 51% of respondents identified as female, 48% as male, 0.14% as other, and 0.65% preferred not to identify a gender. 76% of respondents identified as ‘English / Welsh / Scottish / Northern Irish / British’ (see <a href="#sec-ethnicity" class="quarto-xref">Section 9</a> for a detailed breakdown of ethnicity). [<strong>ADD POTENTIALLY POWER</strong>]</p>
 <p>The second study was a follow-up survey of [<strong>Outsourced Workers - need to check if they were from the original survey or not, but think they were not</strong>] conducted by Opinium Research between [<strong>Month Year</strong>] with a total sample of [<strong>INSERT SAMPLE</strong>]. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.</p>
 <p>[In both surveys??] All statistics are weighted estimates based on [<strong>INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM</strong>]</p>
 <ul>
@@ -3401,7 +3401,7 @@ border: 0;
 <section id="analysis---study-1" class="level1" data-number="3">
 <h1 data-number="3"><span class="header-section-number">3</span> Analysis - Study 1</h1>
 <ul class="task-list">
-<li><label><input type="checkbox">Determining if the worker is outsourced</label></li>
+<li><label><input type="checkbox" checked>Determining if the worker is outsourced</label></li>
 <li><label><input type="checkbox">Calculating Low/Not Low pay</label></li>
 <li><label><input type="checkbox">Explain the analyses (e.g. any models that actually appear in the final output)</label></li>
 </ul>
@@ -3483,7 +3483,6 @@ border: 0;
 <th style="text-align: right;" data-quarto-table-cell-role="th">Min</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">Max</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">Standard dev.</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">N</th>
 </tr>
 </thead>
 <tbody>
@@ -3493,7 +3492,6 @@ border: 0;
 <td style="text-align: right;">16</td>
 <td style="text-align: right;">80</td>
 <td style="text-align: right;">13.17</td>
-<td style="text-align: right;">10155</td>
 </tr>
 </tbody>
 </table>
@@ -3550,7 +3548,7 @@ border: 0;
 </div>
 </div>
 </section>
-<section id="ethnicity" class="level1" data-number="9">
+<section id="sec-ethnicity" class="level1" data-number="9">
 <h1 data-number="9"><span class="header-section-number">9</span> Ethnicity</h1>
 <p>The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that ‘NA’ indicates non-responses.</p>
 <div class="cell">
@@ -4399,260 +4397,274 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="in">income_data &lt;- filter(data, income_drop_all==0)</span></span>
 <span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="fu"># Participants and Design</span></span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>**Insert Name of Report**\] contains data from two studies. The first of these studies was a nationally representative survey of \[**Workers?**\] conducted by Opinium Research between \[**Month Year**<span class="sc">\]</span>. The total size of the sample is <span class="in">`r nrow(data)`</span>. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER</span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>The second study was a follow-up survey of <span class="sc">\[</span>**Outsourced Workers - need to check if they were from the original survey or not, but think they were not**\] conducted by Opinium Research between \[**Month Year**\] with a total sample of \[**INSERT SAMPLE**<span class="sc">\]</span>. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.</span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>In both surveys??<span class="sc">\]</span> All statistics are weighted estimates based on <span class="sc">\[</span>**INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM**<span class="sc">\]</span></span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>How were the survey&#39;s administered?</span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>**POTENTIALLY ADD A TABLE HERE WITH CROSSTABS FOR THE TWO SAMPLES OR TABBED VISUALISATIONS**<span class="sc">\]</span></span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a><span class="fu"># Measures</span></span>
-<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a><span class="fu">## Study 1- Nationally representative survey</span></span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="in">```{r age_stats}</span></span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="in">age_statistics &lt;- data %&gt;%</span></span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a><span class="in">    mean = mean(Age, na.rm=T),</span></span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a><span class="in">    median = median(Age, na.rm=T),</span></span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="in">    min = min(Age,na.rm=T),</span></span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="in">    max = max(Age,na.rm=T),</span></span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="in">    stdev = sd(Age, na.rm=T),</span></span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),</span></span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),</span></span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),</span></span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),</span></span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),</span></span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a><span class="in">    N = n()</span></span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a><span class="in">  )</span></span>
 <span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>    Explain the contents of the survey</span>
-<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>   I believe some questions were replicated from national survey&#39;s so lets explicate that</span>
-<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)</span>
-<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))</span>
-<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  link to the data dictionary</span>
-<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a><span class="fu">## Study 2 - Outsourced workers survey</span></span>
-<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Explain the contents of the survey and how the focus differeces from the first study</span>
-<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Outline the key areas e.g. Rights Violations etc</span>
-<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  If there is any variable that is constructed then refer to it here briefly with a more verborse explanation in the relevant section</span>
-<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Link to data dictionary</span>
-<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a><span class="fu"># Analysis - Study 1</span></span>
-<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Determining if the worker is outsourced</span>
-<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Calculating Low/Not Low pay</span>
-<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Explain the analyses (e.g. any models that actually appear in the final output)</span>
-<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a><span class="fu">## Defining outsourcing</span></span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a><span class="in">readr::write_csv(age_statistics, file = &quot;../outputs/methodology/data/age_stats.csv&quot;)</span></span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a><span class="in">```{r gender_stats}</span></span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a><span class="in">gender_statistics &lt;- data %&gt;%</span></span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(Gender) %&gt;%</span></span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(</span></span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a><span class="in">    n = n(),</span></span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a><span class="in">    Frequency = sum(NatRepemployees)</span></span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a><span class="in">  ) %&gt;%</span></span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(</span></span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a><span class="in">    N = sum(n),</span></span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a><span class="in">    Sum = sum(Frequency),</span></span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a><span class="in">    percentage = 100 * (n / N),</span></span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_percentage = 100 * (Frequency / Sum)</span></span>
+<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a><span class="in">  )</span></span>
+<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a><span class="in">readr::write_csv(gender_statistics, file=&quot;../outputs/methodology/data/gender_statistics.csv&quot;)</span></span>
+<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>Workers were defined as outsourced based on responses to a set of diagnostic questions. Three questions asked respondents directly about whether they considered themselves outsourced and/or agency workers.</span>
-<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a>The first of these questions asked respondents to indicate directly whether they considered themselves outsourced by selecting one of the following options:</span>
-<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure I’m an outsourced worker</span>
-<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might be an outsourced worker</span>
-<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an outsourced worker</span>
-<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a>The second question asked respondents to indicate whether they considered themselves an agency worker by selecting from three options. For respondents who responded 1 or 2 to question 1, the options were:</span>
-<span id="cb1-126"><a href="#cb1-126" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-127"><a href="#cb1-127" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure that I’m also an agency worker</span>
-<span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might also be an agency worker</span>
-<span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an agency worker</span>
+<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a><span class="in">```{r ethnicity_stats}</span></span>
+<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a><span class="in">ethnicity_statistics &lt;- data %&gt;%</span></span>
+<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a><span class="in">  group_by(Ethnicity_labelled) %&gt;%</span></span>
+<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a><span class="in">  summarise(</span></span>
+<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a><span class="in">    n = n(), # count cases</span></span>
+<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a><span class="in">    Frequency = sum(NatRepemployees) # count weighted cases</span></span>
+<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a><span class="in">  ) %&gt;%</span></span>
+<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a><span class="in">  mutate(</span></span>
+<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a><span class="in">    N = sum(n),</span></span>
+<span id="cb1-126"><a href="#cb1-126" aria-hidden="true" tabindex="-1"></a><span class="in">    Sum = sum(Frequency),</span></span>
+<span id="cb1-127"><a href="#cb1-127" aria-hidden="true" tabindex="-1"></a><span class="in">    percentage = 100 * (n / N),</span></span>
+<span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a><span class="in">    wtd_percentage = 100 * (Frequency / Sum)</span></span>
+<span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a><span class="in">  )</span></span>
 <span id="cb1-130"><a href="#cb1-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a>For respondents who responded 3 to question 1, the options were:</span>
-<span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure that I’m an agency worker</span>
-<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might be an agency worker</span>
-<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an agency worker</span>
+<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a><span class="in">write_csv(ethnicity_statistics, file=&quot;../outputs/methodology/data/ethnicity_statistics_census.csv&quot;)</span></span>
+<span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a><span class="fu"># Participants and Design</span></span>
 <span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>Respondents were also asked whether the work they do was long- or short-term by selecting one of:</span>
+<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>**Insert Name of Report**\] contains data from two studies. The first of these studies was a nationally representative survey of `r nrow(data)` \[**Workers?**\] conducted by Opinium Research between \[**Month Year**\].   This sample had median age `r age_statistics$median` (min = `r age_statistics$min`, max = `r age_statistics$max`).  `r round(gender_statistics$percentage[which(gender_statistics$Gender == &quot;Female&quot;)],0)`% of respondents identified as female, `r round(gender_statistics$percentage[which(gender_statistics$Gender == &quot;Male&quot;)],0)`% as male, `r round(gender_statistics$percentage[which(gender_statistics$Gender == &quot;Other&quot;)],2)`% as other, and `r round(gender_statistics$percentage[which(gender_statistics$Gender == &quot;Prefer not to say&quot;)],2)`% preferred not to identify a gender. `r round(ethnicity_statistics$percentage[which(ethnicity_statistics$Ethnicity_labelled == &quot;English / Welsh / Scottish / Northern Irish / British&quot;)],0)`% of respondents identified as &#39;English / Welsh / Scottish / Northern Irish / British&#39; (see @sec-ethnicity for a detailed breakdown of ethnicity). [**ADD POTENTIALLY POWER**]</span>
 <span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.</span>
-<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I’m hired to do work which an organisation needs doing on a short-term or temporary basis.</span>
-<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Other (please specify)</span>
+<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>The second study was a follow-up survey of <span class="sc">\[</span>**Outsourced Workers - need to check if they were from the original survey or not, but think they were not**\] conducted by Opinium Research between \[**Month Year**\] with a total sample of \[**INSERT SAMPLE**<span class="sc">\]</span>. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.</span>
+<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>In both surveys??<span class="sc">\]</span> All statistics are weighted estimates based on <span class="sc">\[</span>**INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM**<span class="sc">\]</span></span>
 <span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>Finally, respondents were asked about aspects of their work that might indicate that the work they do is outsourced work. Respondents were asked: &quot;Please read each of the following statements and tell us whether or not they are true for you and your work.&quot; The statements were:</span>
+<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a><span class="ss">-   </span>How were the survey&#39;s administered?</span>
 <span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am paid by one organisation but I do work for a different organisation.</span>
-<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>The organisation I’m paid by is a ‘third party’ organisation which other organisations hire to do work for them, rather than doing that w <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
-<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>My employer / agency provides people to do work for other organisations (i.e. they might provide people to do cleaning, security, administratio <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
-<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>On a day-to-day basis, I’m paid by one organisation but I get given tasks or instructions by people who are paid by a different organisation.</span>
-<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>I am paid by one organisation, but I work in a space which has the logo or branding of a different organisation.</span>
-<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>I wear a uniform which has the logo or branding of my employer / agency, and which marks me out as being paid by a different organisation to so <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
-<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a>Workers were categorised into three mutually exclusive sub groups based on their responses to the above questions.</span>
-<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>A respondent was categorised as &#39;**pure outsourced**&#39; if they responded &#39;I am sure I&#39;m an outsourced worker&#39; or &#39;I think I might be an outsourced worker&#39; **and** &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.&#39;.</span>
-<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>A respondent was categorised as &#39;**likely agency**&#39; if they responded &#39;I am sure that I&#39;m an agency worker&#39; **and** &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis&#39;, **excluding** those people who are already defined as being &#39;pure outsourced&#39;.</span>
-<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>A respondent was categorised as belonging to the &#39;**high indicators**&#39; group if they responded TRUE to five or six of the outsourcing indicators, as well as responding &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis&#39;, **excluding** those people who were already defined as &#39;pure outsourced&#39; or &#39;likely agency&#39;.</span>
-<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>Together, these three sub groups form the classification of &#39;outsourced workers&#39; considered in this report. Throughout the report, the term &#39;outsourced&#39; refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as &#39;pure outsourced&#39;, &#39;likely agency&#39;, or &#39;high indicators&#39;. </span>
-<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a><span class="fu"># Analysis - Study 2</span></span>
+<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span>**POTENTIALLY ADD A TABLE HERE WITH CROSSTABS FOR THE TWO SAMPLES OR TABBED VISUALISATIONS**<span class="sc">\]</span></span>
+<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a><span class="fu"># Measures</span></span>
+<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a><span class="fu">## Study 1- Nationally representative survey</span></span>
+<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>    Explain the contents of the survey</span>
+<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>   I believe some questions were replicated from national survey&#39;s so lets explicate that</span>
+<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)</span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))</span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  link to the data dictionary</span>
+<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## Study 2 - Outsourced workers survey</span></span>
+<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Explain the contents of the survey and how the focus differeces from the first study</span>
+<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Outline the key areas e.g. Rights Violations etc</span>
+<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  If there is any variable that is constructed then refer to it here briefly with a more verborse explanation in the relevant section</span>
+<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Link to data dictionary</span>
 <span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span> Explain the analyses (e.g. any models that actually appear in the final output)</span>
+<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a><span class="fu"># Analysis - Study 1</span></span>
 <span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a><span class="fu"># Limitations and Future Research?</span></span>
-<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Discuss the limitations of the data and the analysis</span>
-<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  If something is really burning we can suggest some futher analysis that people can do</span>
-<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a><span class="fu"># Reproducibility</span></span>
-<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span> maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....</span>
-<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>------------------------------------------------------------------------</span>
-<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a><span class="fu"># Age</span></span>
-<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a>age_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">weighted.mean</span>(Age, <span class="at">w =</span> NatRepemployees, <span class="at">na.rm =</span> T),</span>
-<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a>    <span class="at">median =</span> <span class="fu">wtd.quantile</span>(Age, <span class="at">w =</span> NatRepemployees, <span class="at">probs =</span> <span class="fu">c</span>(.<span class="dv">5</span>), <span class="at">na.rm =</span> T),</span>
-<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">min =</span> <span class="fu">wtd.quantile</span>(Age, <span class="at">w =</span> NatRepemployees, <span class="at">probs =</span> <span class="fu">c</span>(<span class="dv">0</span>), <span class="at">na.rm =</span> T),</span>
-<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a>    <span class="at">max =</span> <span class="fu">wtd.quantile</span>(Age, <span class="at">w =</span> NatRepemployees, <span class="at">probs =</span> <span class="fu">c</span>(<span class="dv">1</span>), <span class="at">na.rm =</span> T),</span>
-<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a>    <span class="at">stdev =</span> <span class="fu">sqrt</span>(<span class="fu">wtd.var</span>(Age, <span class="at">w =</span> NatRepemployees, <span class="at">na.rm =</span> T)),</span>
-<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">N =</span> <span class="fu">n</span>()</span>
-<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[x]</span>  Determining if the worker is outsourced</span>
+<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Calculating Low/Not Low pay</span>
+<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Explain the analyses (e.g. any models that actually appear in the final output)</span>
+<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a><span class="fu">## Defining outsourcing</span></span>
+<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a>Workers were defined as outsourced based on responses to a set of diagnostic questions. Three questions asked respondents directly about whether they considered themselves outsourced and/or agency workers.</span>
+<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a>The first of these questions asked respondents to indicate directly whether they considered themselves outsourced by selecting one of the following options:</span>
+<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure I’m an outsourced worker</span>
+<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might be an outsourced worker</span>
+<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an outsourced worker</span>
+<span id="cb1-179"><a href="#cb1-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-180"><a href="#cb1-180" aria-hidden="true" tabindex="-1"></a>The second question asked respondents to indicate whether they considered themselves an agency worker by selecting from three options. For respondents who responded 1 or 2 to question 1, the options were:</span>
+<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure that I’m also an agency worker</span>
+<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might also be an agency worker</span>
+<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an agency worker</span>
+<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>For respondents who responded 3 to question 1, the options were:</span>
+<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am sure that I’m an agency worker</span>
+<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I think I might be an agency worker</span>
+<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>I am not an agency worker</span>
 <span id="cb1-191"><a href="#cb1-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a>readr<span class="sc">::</span><span class="fu">write_csv</span>(age_statistics, <span class="at">file =</span> <span class="st">&quot;../outputs/methodology/data/age_stats.csv&quot;</span>)</span>
+<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a>Respondents were also asked whether the work they do was long- or short-term by selecting one of:</span>
 <span id="cb1-193"><a href="#cb1-193" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a>The table below shows weighted descriptive statistics of the sample, and the figure below shows the frequency of respondents at each single year of age.</span>
+<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.</span>
+<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>I’m hired to do work which an organisation needs doing on a short-term or temporary basis.</span>
+<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Other (please specify)</span>
 <span id="cb1-197"><a href="#cb1-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(age_statistics,</span>
-<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a>             <span class="at">digits =</span> <span class="dv">2</span>,</span>
-<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Mean&quot;</span>,</span>
-<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Median&quot;</span>,</span>
-<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Min&quot;</span>,</span>
-<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Max&quot;</span>,</span>
-<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Standard dev.&quot;</span>,</span>
-<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;N&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
+<span id="cb1-198"><a href="#cb1-198" aria-hidden="true" tabindex="-1"></a>Finally, respondents were asked about aspects of their work that might indicate that the work they do is outsourced work. Respondents were asked: &quot;Please read each of the following statements and tell us whether or not they are true for you and your work.&quot; The statements were:</span>
+<span id="cb1-199"><a href="#cb1-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>I am paid by one organisation but I do work for a different organisation.</span>
+<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>The organisation I’m paid by is a ‘third party’ organisation which other organisations hire to do work for them, rather than doing that w <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
+<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>My employer / agency provides people to do work for other organisations (i.e. they might provide people to do cleaning, security, administratio <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
+<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>On a day-to-day basis, I’m paid by one organisation but I get given tasks or instructions by people who are paid by a different organisation.</span>
+<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>I am paid by one organisation, but I work in a space which has the logo or branding of a different organisation.</span>
+<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>I wear a uniform which has the logo or branding of my employer / agency, and which marks me out as being paid by a different organisation to so <span class="co">[</span><span class="ot">**FIND QUESTION IN DATA DICT**</span><span class="co">]</span></span>
+<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a>Workers were categorised into three mutually exclusive sub groups based on their responses to the above questions.</span>
+<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>A respondent was categorised as &#39;**pure outsourced**&#39; if they responded &#39;I am sure I&#39;m an outsourced worker&#39; or &#39;I think I might be an outsourced worker&#39; **and** &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.&#39;.</span>
 <span id="cb1-210"><a href="#cb1-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a>age_range <span class="ot">&lt;-</span> <span class="fu">max</span>(data<span class="sc">$</span>Age) <span class="sc">-</span> <span class="fu">min</span>(data<span class="sc">$</span>Age)</span>
-<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a>interval <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a>n_bins <span class="ot">&lt;-</span> (age_range <span class="sc">/</span> interval) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>A respondent was categorised as &#39;**likely agency**&#39; if they responded &#39;I am sure that I&#39;m an agency worker&#39; **and** &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis&#39;, **excluding** those people who are already defined as being &#39;pure outsourced&#39;.</span>
+<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>A respondent was categorised as belonging to the &#39;**high indicators**&#39; group if they responded TRUE to five or six of the outsourcing indicators, as well as responding &#39;I’m hired to do work which an organisation needs doing on a long-term or ongoing basis&#39;, **excluding** those people who were already defined as &#39;pure outsourced&#39; or &#39;likely agency&#39;.</span>
 <span id="cb1-214"><a href="#cb1-214" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
-<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(.,<span class="fu">aes</span>(Age)) <span class="sc">+</span></span>
-<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">colour=</span><span class="st">&quot;black&quot;</span>,<span class="at">alpha =</span> .<span class="dv">7</span>, <span class="at">bins =</span> n_bins) <span class="sc">+</span></span>
-<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">data =</span>age_statistics, <span class="fu">aes</span>(<span class="at">xintercept=</span>median), <span class="at">colour=</span><span class="st">&quot;red&quot;</span>) <span class="sc">+</span></span>
-<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">16</span>, <span class="dv">80</span>, <span class="dv">4</span>)) <span class="sc">+</span></span>
-<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
-<span id="cb1-221"><a href="#cb1-221" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values=</span>colours, <span class="at">name =</span> <span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span></span>
-<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours, <span class="at">name =</span> <span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span></span>
-<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;Count&quot;</span>)</span>
-<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>Together, these three sub groups form the classification of &#39;outsourced workers&#39; considered in this report. Throughout the report, the term &#39;outsourced&#39; refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as &#39;pure outsourced&#39;, &#39;likely agency&#39;, or &#39;high indicators&#39;. </span>
+<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a><span class="fu"># Analysis - Study 2</span></span>
+<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span> Explain the analyses (e.g. any models that actually appear in the final output)</span>
+<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-221"><a href="#cb1-221" aria-hidden="true" tabindex="-1"></a><span class="fu"># Limitations and Future Research?</span></span>
+<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  Discuss the limitations of the data and the analysis</span>
+<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span>  If something is really burning we can suggest some futher analysis that people can do</span>
 <span id="cb1-225"><a href="#cb1-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a><span class="fu"># Reproducibility</span></span>
 <span id="cb1-227"><a href="#cb1-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a><span class="fu"># Gender</span></span>
+<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="va">[ ]</span> maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....</span>
 <span id="cb1-229"><a href="#cb1-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a>gender_statistics <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Gender) <span class="sc">%&gt;%</span></span>
-<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb1-236"><a href="#cb1-236" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
-<span id="cb1-237"><a href="#cb1-237" aria-hidden="true" tabindex="-1"></a>    <span class="at">Frequency =</span> <span class="fu">sum</span>(NatRepemployees)</span>
-<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>    <span class="at">N =</span> <span class="fu">sum</span>(n),</span>
-<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sum =</span> <span class="fu">sum</span>(Frequency),</span>
-<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a>    <span class="at">Percentage =</span> <span class="dv">100</span> <span class="sc">*</span> (Frequency <span class="sc">/</span> Sum)</span>
-<span id="cb1-243"><a href="#cb1-243" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb1-244"><a href="#cb1-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-245"><a href="#cb1-245" aria-hidden="true" tabindex="-1"></a>readr<span class="sc">::</span><span class="fu">write_csv</span>(gender_statistics, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/gender_statistics.csv&quot;</span>)</span>
-<span id="cb1-246"><a href="#cb1-246" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb1-247"><a href="#cb1-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-248"><a href="#cb1-248" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted gender breakdown of the sample</span>
+<span id="cb1-230"><a href="#cb1-230" aria-hidden="true" tabindex="-1"></a>------------------------------------------------------------------------</span>
+<span id="cb1-231"><a href="#cb1-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a><span class="fu"># Age</span></span>
+<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>The table below shows weighted descriptive statistics of the sample, and the figure below shows the frequency of respondents at each single year of age.</span>
+<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>age_statistics <span class="sc">%&gt;%</span></span>
+<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">contains</span>(<span class="st">&#39;wtd&#39;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a>             <span class="at">digits =</span> <span class="dv">2</span>,</span>
+<span id="cb1-243"><a href="#cb1-243" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Mean&quot;</span>,</span>
+<span id="cb1-244"><a href="#cb1-244" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Median&quot;</span>,</span>
+<span id="cb1-245"><a href="#cb1-245" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Min&quot;</span>,</span>
+<span id="cb1-246"><a href="#cb1-246" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Max&quot;</span>,</span>
+<span id="cb1-247"><a href="#cb1-247" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Standard dev.&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-248"><a href="#cb1-248" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
 <span id="cb1-249"><a href="#cb1-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-252"><a href="#cb1-252" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-253"><a href="#cb1-253" aria-hidden="true" tabindex="-1"></a>gender_statistics <span class="sc">%&gt;%</span></span>
-<span id="cb1-254"><a href="#cb1-254" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb1-255"><a href="#cb1-255" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-256"><a href="#cb1-256" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
-<span id="cb1-257"><a href="#cb1-257" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Gender&quot;</span>,</span>
-<span id="cb1-258"><a href="#cb1-258" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
-<span id="cb1-259"><a href="#cb1-259" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
-<span id="cb1-260"><a href="#cb1-260" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb1-261"><a href="#cb1-261" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
-<span id="cb1-262"><a href="#cb1-262" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb1-263"><a href="#cb1-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-264"><a href="#cb1-264" aria-hidden="true" tabindex="-1"></a><span class="fu"># Ethnicity</span></span>
-<span id="cb1-265"><a href="#cb1-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-266"><a href="#cb1-266" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that &#39;NA&#39; indicates non-responses.</span>
-<span id="cb1-267"><a href="#cb1-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-270"><a href="#cb1-270" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-271"><a href="#cb1-271" aria-hidden="true" tabindex="-1"></a>tab <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb1-272"><a href="#cb1-272" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Ethnicity_labelled) <span class="sc">%&gt;%</span></span>
-<span id="cb1-273"><a href="#cb1-273" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb1-274"><a href="#cb1-274" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(), <span class="co"># count cases</span></span>
-<span id="cb1-275"><a href="#cb1-275" aria-hidden="true" tabindex="-1"></a>    <span class="at">Frequency =</span> <span class="fu">sum</span>(NatRepemployees) <span class="co"># count weighted cases</span></span>
-<span id="cb1-276"><a href="#cb1-276" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-277"><a href="#cb1-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb1-278"><a href="#cb1-278" aria-hidden="true" tabindex="-1"></a>    <span class="at">N =</span> <span class="fu">sum</span>(n),</span>
-<span id="cb1-279"><a href="#cb1-279" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sum =</span> <span class="fu">sum</span>(Frequency),</span>
-<span id="cb1-280"><a href="#cb1-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">Percentage =</span> <span class="dv">100</span> <span class="sc">*</span> (Frequency <span class="sc">/</span> Sum)</span>
-<span id="cb1-281"><a href="#cb1-281" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb1-282"><a href="#cb1-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-283"><a href="#cb1-283" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(tab, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/ethnicity_statistics_census.csv&quot;</span>)</span>
-<span id="cb1-284"><a href="#cb1-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-285"><a href="#cb1-285" aria-hidden="true" tabindex="-1"></a>tab <span class="sc">%&gt;%</span></span>
-<span id="cb1-286"><a href="#cb1-286" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb1-287"><a href="#cb1-287" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-288"><a href="#cb1-288" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
-<span id="cb1-289"><a href="#cb1-289" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Ethnicity&quot;</span>,</span>
-<span id="cb1-290"><a href="#cb1-290" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
-<span id="cb1-291"><a href="#cb1-291" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
-<span id="cb1-292"><a href="#cb1-292" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb1-293"><a href="#cb1-293" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
-<span id="cb1-294"><a href="#cb1-294" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb1-295"><a href="#cb1-295" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-296"><a href="#cb1-296" aria-hidden="true" tabindex="-1"></a>We also make use of an aggregated ethnicity variable that groups ethnicities into fewer categories. The table below shows how the Census categories map onto the aggregated categories.</span>
-<span id="cb1-297"><a href="#cb1-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-300"><a href="#cb1-300" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-301"><a href="#cb1-301" aria-hidden="true" tabindex="-1"></a>ethnicity_cat <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb1-302"><a href="#cb1-302" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">contains</span>(<span class="st">&quot;ethnicity&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-303"><a href="#cb1-303" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb1-304"><a href="#cb1-304" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Ethnicity) <span class="sc">%&gt;%</span></span>
-<span id="cb1-305"><a href="#cb1-305" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,Ethnicity_collapsed_disaggregated, Ethnicity_binary))</span>
-<span id="cb1-306"><a href="#cb1-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-307"><a href="#cb1-307" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(ethnicity_cat, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/ethnicity_aggregation_mapping.csv&quot;</span>)</span>
-<span id="cb1-308"><a href="#cb1-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-309"><a href="#cb1-309" aria-hidden="true" tabindex="-1"></a>ethn_colnames <span class="ot">=</span> <span class="fu">c</span>(</span>
-<span id="cb1-310"><a href="#cb1-310" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Census categories&quot;</span>,</span>
-<span id="cb1-311"><a href="#cb1-311" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Aggregated categories&quot;</span></span>
-<span id="cb1-312"><a href="#cb1-312" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-313"><a href="#cb1-313" aria-hidden="true" tabindex="-1"></a>ethnicity_cat <span class="sc">%&gt;%</span></span>
-<span id="cb1-314"><a href="#cb1-314" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> ethn_colnames) <span class="sc">%&gt;%</span></span>
-<span id="cb1-315"><a href="#cb1-315" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width=</span><span class="cn">FALSE</span>)</span>
-<span id="cb1-316"><a href="#cb1-316" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb1-317"><a href="#cb1-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-318"><a href="#cb1-318" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted ethnicity breakdown using the aggregated set of categories</span>
-<span id="cb1-319"><a href="#cb1-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-322"><a href="#cb1-322" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb1-323"><a href="#cb1-323" aria-hidden="true" tabindex="-1"></a>tab <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb1-324"><a href="#cb1-324" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Ethnicity_collapsed) <span class="sc">%&gt;%</span></span>
-<span id="cb1-325"><a href="#cb1-325" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb1-326"><a href="#cb1-326" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(), <span class="co"># count cases</span></span>
-<span id="cb1-327"><a href="#cb1-327" aria-hidden="true" tabindex="-1"></a>    <span class="at">Frequency =</span> <span class="fu">sum</span>(NatRepemployees) <span class="co"># count weighted cases</span></span>
-<span id="cb1-328"><a href="#cb1-328" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb1-329"><a href="#cb1-329" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb1-330"><a href="#cb1-330" aria-hidden="true" tabindex="-1"></a>    <span class="at">N =</span> <span class="fu">sum</span>(n),</span>
-<span id="cb1-331"><a href="#cb1-331" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sum =</span> <span class="fu">sum</span>(Frequency),</span>
-<span id="cb1-332"><a href="#cb1-332" aria-hidden="true" tabindex="-1"></a>    <span class="at">Percentage =</span> <span class="dv">100</span> <span class="sc">*</span> (Frequency <span class="sc">/</span> Sum),</span>
-<span id="cb1-333"><a href="#cb1-333" aria-hidden="true" tabindex="-1"></a>    <span class="at">Ethnicity_short =</span> Ethnicity_collapsed</span>
-<span id="cb1-334"><a href="#cb1-334" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb1-335"><a href="#cb1-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-336"><a href="#cb1-336" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(tab, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/ethnicity_statistics_aggregated.csv&quot;</span>)</span>
-<span id="cb1-337"><a href="#cb1-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-338"><a href="#cb1-338" aria-hidden="true" tabindex="-1"></a>tab <span class="sc">%&gt;%</span></span>
-<span id="cb1-339"><a href="#cb1-339" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb1-340"><a href="#cb1-340" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum, Ethnicity_short)) <span class="sc">%&gt;%</span></span>
-<span id="cb1-341"><a href="#cb1-341" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
-<span id="cb1-342"><a href="#cb1-342" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Ethnicity&quot;</span>,</span>
-<span id="cb1-343"><a href="#cb1-343" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
-<span id="cb1-344"><a href="#cb1-344" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
-<span id="cb1-345"><a href="#cb1-345" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb1-346"><a href="#cb1-346" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
-<span id="cb1-347"><a href="#cb1-347" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-250"><a href="#cb1-250" aria-hidden="true" tabindex="-1"></a>age_range <span class="ot">&lt;-</span> <span class="fu">max</span>(data<span class="sc">$</span>Age) <span class="sc">-</span> <span class="fu">min</span>(data<span class="sc">$</span>Age)</span>
+<span id="cb1-251"><a href="#cb1-251" aria-hidden="true" tabindex="-1"></a>interval <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb1-252"><a href="#cb1-252" aria-hidden="true" tabindex="-1"></a>n_bins <span class="ot">&lt;-</span> (age_range <span class="sc">/</span> interval) <span class="sc">+</span> <span class="dv">1</span></span>
+<span id="cb1-253"><a href="#cb1-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-254"><a href="#cb1-254" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb1-255"><a href="#cb1-255" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(.,<span class="fu">aes</span>(Age)) <span class="sc">+</span></span>
+<span id="cb1-256"><a href="#cb1-256" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">colour=</span><span class="st">&quot;black&quot;</span>,<span class="at">alpha =</span> .<span class="dv">7</span>, <span class="at">bins =</span> n_bins) <span class="sc">+</span></span>
+<span id="cb1-257"><a href="#cb1-257" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">data =</span>age_statistics, <span class="fu">aes</span>(<span class="at">xintercept=</span>median), <span class="at">colour=</span><span class="st">&quot;red&quot;</span>) <span class="sc">+</span></span>
+<span id="cb1-258"><a href="#cb1-258" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">16</span>, <span class="dv">80</span>, <span class="dv">4</span>)) <span class="sc">+</span></span>
+<span id="cb1-259"><a href="#cb1-259" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb1-260"><a href="#cb1-260" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values=</span>colours, <span class="at">name =</span> <span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span></span>
+<span id="cb1-261"><a href="#cb1-261" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values=</span>colours, <span class="at">name =</span> <span class="st">&quot;Outsourcing status&quot;</span>) <span class="sc">+</span></span>
+<span id="cb1-262"><a href="#cb1-262" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">&quot;Count&quot;</span>)</span>
+<span id="cb1-263"><a href="#cb1-263" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-264"><a href="#cb1-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-265"><a href="#cb1-265" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-266"><a href="#cb1-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-267"><a href="#cb1-267" aria-hidden="true" tabindex="-1"></a><span class="fu"># Gender</span></span>
+<span id="cb1-268"><a href="#cb1-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-269"><a href="#cb1-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-270"><a href="#cb1-270" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted gender breakdown of the sample</span>
+<span id="cb1-271"><a href="#cb1-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-274"><a href="#cb1-274" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb1-275"><a href="#cb1-275" aria-hidden="true" tabindex="-1"></a>gender_statistics <span class="sc">%&gt;%</span></span>
+<span id="cb1-276"><a href="#cb1-276" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>percentage) <span class="sc">%&gt;%</span></span>
+<span id="cb1-277"><a href="#cb1-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb1-278"><a href="#cb1-278" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-279"><a href="#cb1-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
+<span id="cb1-280"><a href="#cb1-280" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Gender&quot;</span>,</span>
+<span id="cb1-281"><a href="#cb1-281" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
+<span id="cb1-282"><a href="#cb1-282" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
+<span id="cb1-283"><a href="#cb1-283" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb1-284"><a href="#cb1-284" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
+<span id="cb1-285"><a href="#cb1-285" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-286"><a href="#cb1-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-287"><a href="#cb1-287" aria-hidden="true" tabindex="-1"></a><span class="fu"># Ethnicity {#sec-ethnicity}</span></span>
+<span id="cb1-288"><a href="#cb1-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-289"><a href="#cb1-289" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that &#39;NA&#39; indicates non-responses.</span>
+<span id="cb1-290"><a href="#cb1-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-293"><a href="#cb1-293" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb1-294"><a href="#cb1-294" aria-hidden="true" tabindex="-1"></a>ethnicity_statistics <span class="sc">%&gt;%</span></span>
+<span id="cb1-295"><a href="#cb1-295" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>percentage) <span class="sc">%&gt;%</span></span>
+<span id="cb1-296"><a href="#cb1-296" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb1-297"><a href="#cb1-297" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-298"><a href="#cb1-298" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
+<span id="cb1-299"><a href="#cb1-299" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Ethnicity&quot;</span>,</span>
+<span id="cb1-300"><a href="#cb1-300" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
+<span id="cb1-301"><a href="#cb1-301" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
+<span id="cb1-302"><a href="#cb1-302" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb1-303"><a href="#cb1-303" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
+<span id="cb1-304"><a href="#cb1-304" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-305"><a href="#cb1-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-306"><a href="#cb1-306" aria-hidden="true" tabindex="-1"></a>We also make use of an aggregated ethnicity variable that groups ethnicities into fewer categories. The table below shows how the Census categories map onto the aggregated categories.</span>
+<span id="cb1-307"><a href="#cb1-307" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-310"><a href="#cb1-310" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb1-311"><a href="#cb1-311" aria-hidden="true" tabindex="-1"></a>ethnicity_cat <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb1-312"><a href="#cb1-312" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">contains</span>(<span class="st">&quot;ethnicity&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-313"><a href="#cb1-313" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb1-314"><a href="#cb1-314" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Ethnicity) <span class="sc">%&gt;%</span></span>
+<span id="cb1-315"><a href="#cb1-315" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,Ethnicity_collapsed_disaggregated, Ethnicity_binary))</span>
+<span id="cb1-316"><a href="#cb1-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-317"><a href="#cb1-317" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(ethnicity_cat, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/ethnicity_aggregation_mapping.csv&quot;</span>)</span>
+<span id="cb1-318"><a href="#cb1-318" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-319"><a href="#cb1-319" aria-hidden="true" tabindex="-1"></a>ethn_colnames <span class="ot">=</span> <span class="fu">c</span>(</span>
+<span id="cb1-320"><a href="#cb1-320" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Census categories&quot;</span>,</span>
+<span id="cb1-321"><a href="#cb1-321" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Aggregated categories&quot;</span></span>
+<span id="cb1-322"><a href="#cb1-322" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-323"><a href="#cb1-323" aria-hidden="true" tabindex="-1"></a>ethnicity_cat <span class="sc">%&gt;%</span></span>
+<span id="cb1-324"><a href="#cb1-324" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> ethn_colnames) <span class="sc">%&gt;%</span></span>
+<span id="cb1-325"><a href="#cb1-325" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width=</span><span class="cn">FALSE</span>)</span>
+<span id="cb1-326"><a href="#cb1-326" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb1-327"><a href="#cb1-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-328"><a href="#cb1-328" aria-hidden="true" tabindex="-1"></a>The table below shows the weighted ethnicity breakdown using the aggregated set of categories</span>
+<span id="cb1-329"><a href="#cb1-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-332"><a href="#cb1-332" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb1-333"><a href="#cb1-333" aria-hidden="true" tabindex="-1"></a>ethnicity_statistics_collapsed <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb1-334"><a href="#cb1-334" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Ethnicity_collapsed) <span class="sc">%&gt;%</span></span>
+<span id="cb1-335"><a href="#cb1-335" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb1-336"><a href="#cb1-336" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(), <span class="co"># count cases</span></span>
+<span id="cb1-337"><a href="#cb1-337" aria-hidden="true" tabindex="-1"></a>    <span class="at">Frequency =</span> <span class="fu">sum</span>(NatRepemployees) <span class="co"># count weighted cases</span></span>
+<span id="cb1-338"><a href="#cb1-338" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb1-339"><a href="#cb1-339" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb1-340"><a href="#cb1-340" aria-hidden="true" tabindex="-1"></a>    <span class="at">N =</span> <span class="fu">sum</span>(n),</span>
+<span id="cb1-341"><a href="#cb1-341" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sum =</span> <span class="fu">sum</span>(Frequency),</span>
+<span id="cb1-342"><a href="#cb1-342" aria-hidden="true" tabindex="-1"></a>    <span class="at">Percentage =</span> <span class="dv">100</span> <span class="sc">*</span> (Frequency <span class="sc">/</span> Sum),</span>
+<span id="cb1-343"><a href="#cb1-343" aria-hidden="true" tabindex="-1"></a>    <span class="at">Ethnicity_short =</span> Ethnicity_collapsed</span>
+<span id="cb1-344"><a href="#cb1-344" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-345"><a href="#cb1-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-346"><a href="#cb1-346" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(ethnicity_statistics_collapsed, <span class="at">file=</span><span class="st">&quot;../outputs/methodology/data/ethnicity_statistics_aggregated.csv&quot;</span>)</span>
+<span id="cb1-347"><a href="#cb1-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-348"><a href="#cb1-348" aria-hidden="true" tabindex="-1"></a>ethnicity_statistics_collapsed <span class="sc">%&gt;%</span></span>
+<span id="cb1-349"><a href="#cb1-349" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">2</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb1-350"><a href="#cb1-350" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(n, N, Sum, Ethnicity_short)) <span class="sc">%&gt;%</span></span>
+<span id="cb1-351"><a href="#cb1-351" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(</span>
+<span id="cb1-352"><a href="#cb1-352" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Ethnicity&quot;</span>,</span>
+<span id="cb1-353"><a href="#cb1-353" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted frequency&quot;</span>,</span>
+<span id="cb1-354"><a href="#cb1-354" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Weighted percentage&quot;</span></span>
+<span id="cb1-355"><a href="#cb1-355" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb1-356"><a href="#cb1-356" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>(<span class="at">full_width =</span> F)</span>
+<span id="cb1-357"><a href="#cb1-357" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 </code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal><i class="bi"></i></button></pre></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

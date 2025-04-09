@@ -77,9 +77,64 @@ data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
 income_data <- filter(data, income_drop_all==0)
 ```
 
+```{r age_stats}
+age_statistics <- data %>%
+  summarise(
+    mean = mean(Age, na.rm=T),
+    median = median(Age, na.rm=T),
+    min = min(Age,na.rm=T),
+    max = max(Age,na.rm=T),
+    stdev = sd(Age, na.rm=T),
+    wtd_mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
+    wtd_median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
+    wtd_min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
+    wtd_max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
+    wtd_stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),
+    N = n()
+  )
+
+readr::write_csv(age_statistics, file = "../outputs/methodology/data/age_stats.csv")
+
+```
+
+```{r gender_stats}
+gender_statistics <- data %>%
+  group_by(Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    percentage = 100 * (n / N),
+    wtd_percentage = 100 * (Frequency / Sum)
+  )
+
+readr::write_csv(gender_statistics, file="../outputs/methodology/data/gender_statistics.csv")
+```
+
+```{r ethnicity_stats}
+ethnicity_statistics <- data %>%
+  group_by(Ethnicity_labelled) %>%
+  summarise(
+    n = n(), # count cases
+    Frequency = sum(NatRepemployees) # count weighted cases
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    percentage = 100 * (n / N),
+    wtd_percentage = 100 * (Frequency / Sum)
+  )
+
+write_csv(ethnicity_statistics, file="../outputs/methodology/data/ethnicity_statistics_census.csv")
+```
+
+
 # Participants and Design
 
-\[**Insert Name of Report**\] contains data from two studies. The first of these studies was a nationally representative survey of \[**Workers?**\] conducted by Opinium Research between \[**Month Year**\]. The total size of the sample is `r nrow(data)`. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER
+\[**Insert Name of Report**\] contains data from two studies. The first of these studies was a nationally representative survey of `r nrow(data)` \[**Workers?**\] conducted by Opinium Research between \[**Month Year**\].   This sample had median age `r age_statistics$median` (min = `r age_statistics$min`, max = `r age_statistics$max`).  `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Female")],0)`% of respondents identified as female, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Male")],0)`% as male, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Other")],2)`% as other, and `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Prefer not to say")],2)`% preferred not to identify a gender. `r round(ethnicity_statistics$percentage[which(ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British")],0)`% of respondents identified as 'English / Welsh / Scottish / Northern Irish / British' (see @sec-ethnicity for a detailed breakdown of ethnicity). [**ADD POTENTIALLY POWER**]
 
 The second study was a follow-up survey of \[**Outsourced Workers - need to check if they were from the original survey or not, but think they were not**\] conducted by Opinium Research between \[**Month Year**\] with a total sample of \[**INSERT SAMPLE**\]. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.
 
@@ -108,7 +163,7 @@ The second study was a follow-up survey of \[**Outsourced Workers - need to chec
 
 # Analysis - Study 1
 
-- [ ]  Determining if the worker is outsourced
+- [x]  Determining if the worker is outsourced
 - [ ]  Calculating Low/Not Low pay
 - [ ]  Explain the analyses (e.g. any models that actually appear in the final output)
 
@@ -176,32 +231,18 @@ Together, these three sub groups form the classification of 'outsourced workers'
 
 # Age
 
-```{r}
-age_statistics <- data %>%
-  summarise(
-    mean = weighted.mean(Age, w = NatRepemployees, na.rm = T),
-    median = wtd.quantile(Age, w = NatRepemployees, probs = c(.5), na.rm = T),
-    min = wtd.quantile(Age, w = NatRepemployees, probs = c(0), na.rm = T),
-    max = wtd.quantile(Age, w = NatRepemployees, probs = c(1), na.rm = T),
-    stdev = sqrt(wtd.var(Age, w = NatRepemployees, na.rm = T)),
-    N = n()
-  )
-
-readr::write_csv(age_statistics, file = "../outputs/methodology/data/age_stats.csv")
-
-```
-
 The table below shows weighted descriptive statistics of the sample, and the figure below shows the frequency of respondents at each single year of age.
 
 ```{r}
-knitr::kable(age_statistics,
+age_statistics %>%
+  dplyr::select(contains('wtd')) %>%
+  knitr::kable(
              digits = 2,
              col.names = c("Mean",
                            "Median",
                            "Min",
                            "Max",
-                           "Standard dev.",
-                           "N")) %>%
+                           "Standard dev.")) %>%
   kable_styling(full_width = F)
 
 age_range <- max(data$Age) - min(data$Age)
@@ -223,26 +264,12 @@ data %>%
 
 # Gender
 
-```{r}
-gender_statistics <- data %>%
-  group_by(Gender) %>%
-  summarise(
-    n = n(),
-    Frequency = sum(NatRepemployees)
-  ) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  )
-
-readr::write_csv(gender_statistics, file="../outputs/methodology/data/gender_statistics.csv")
-```
 
 The table below shows the weighted gender breakdown of the sample
 
 ```{r}
 gender_statistics %>%
+  dplyr::select(-percentage) %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
   dplyr::select(-c(n, N, Sum)) %>%
   kable(col.names = c(
@@ -253,26 +280,13 @@ gender_statistics %>%
   kable_styling(full_width = F)
 ```
 
-# Ethnicity
+# Ethnicity {#sec-ethnicity}
 
 The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that 'NA' indicates non-responses.
 
 ```{r}
-tab <- data %>%
-  group_by(Ethnicity_labelled) %>%
-  summarise(
-    n = n(), # count cases
-    Frequency = sum(NatRepemployees) # count weighted cases
-  ) %>%
-  mutate(
-    N = sum(n),
-    Sum = sum(Frequency),
-    Percentage = 100 * (Frequency / Sum)
-  )
-
-write_csv(tab, file="../outputs/methodology/data/ethnicity_statistics_census.csv")
-
-tab %>%
+ethnicity_statistics %>%
+  dplyr::select(-percentage) %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
   dplyr::select(-c(n, N, Sum)) %>%
   kable(col.names = c(
@@ -306,7 +320,7 @@ ethnicity_cat %>%
 The table below shows the weighted ethnicity breakdown using the aggregated set of categories
 
 ```{r}
-tab <- data %>%
+ethnicity_statistics_collapsed <- data %>%
   group_by(Ethnicity_collapsed) %>%
   summarise(
     n = n(), # count cases
@@ -319,9 +333,9 @@ tab <- data %>%
     Ethnicity_short = Ethnicity_collapsed
   )
 
-write_csv(tab, file="../outputs/methodology/data/ethnicity_statistics_aggregated.csv")
+write_csv(ethnicity_statistics_collapsed, file="../outputs/methodology/data/ethnicity_statistics_aggregated.csv")
 
-tab %>%
+ethnicity_statistics_collapsed %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
   dplyr::select(-c(n, N, Sum, Ethnicity_short)) %>%
   kable(col.names = c(
