@@ -93,37 +93,84 @@ The second study was a follow-up survey of \[**Outsourced Workers - need to chec
 
 ## Study 1- Nationally representative survey
 
--   Explain the contents of the survey
--   I believe some questions were replicated from national survey's so lets explicate that
--   Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
--   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
--   link to the data dictionary
+- [ ]    Explain the contents of the survey
+- [ ]   I believe some questions were replicated from national survey's so lets explicate that
+- [ ]  Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
+- [ ]   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
+- [ ]  link to the data dictionary
 
 ## Study 2 - Outsourced workers survey
 
--   Explain the contents of the survey and how the focus differeces from the first study
--   Outline the key areas e.g. Rights Violations etc
--   If there is any variable that is constructed then refer to it here briefly with a more verborse explanation in the relevant section
--   Link to data dictionary
+- [ ]  Explain the contents of the survey and how the focus differeces from the first study
+- [ ]  Outline the key areas e.g. Rights Violations etc
+- [ ]  If there is any variable that is constructed then refer to it here briefly with a more verborse explanation in the relevant section
+- [ ]  Link to data dictionary
 
 # Analysis - Study 1
 
--   Determining if the worker is outsourced
--   Calculating Low/Not Low pay
--   Explain the analyses (e.g. any models that actually appear in the final output)
+- [ ]  Determining if the worker is outsourced
+- [ ]  Calculating Low/Not Low pay
+- [ ]  Explain the analyses (e.g. any models that actually appear in the final output)
+
+## Defining outsourcing
+
+Workers were defined as outsourced based on responses to a set of diagnostic questions. Three questions asked respondents directly about whether they considered themselves outsourced and/or agency workers.
+
+The first of these questions asked respondents to indicate directly whether they considered themselves outsourced by selecting one of the following options:
+
+1. I am sure I’m an outsourced worker
+2. I think I might be an outsourced worker
+3. I am not an outsourced worker
+
+The second question asked respondents to indicate whether they considered themselves an agency worker by selecting from three options. For respondents who responded 1 or 2 to question 1, the options were:
+
+1. I am sure that I’m also an agency worker
+2. I think I might also be an agency worker
+3. I am not an agency worker
+
+For respondents who responded 3 to question 1, the options were:
+
+1. I am sure that I’m an agency worker
+2. I think I might be an agency worker
+3. I am not an agency worker
+
+Respondents were also asked whether the work they do was long- or short-term by selecting one of:
+
+1. I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.
+2. I’m hired to do work which an organisation needs doing on a short-term or temporary basis.
+3. Other (please specify)
+
+Finally, respondents were asked about aspects of their work that might indicate that the work they do is outsourced work. Respondents were asked: "Please read each of the following statements and tell us whether or not they are true for you and your work." The statements were:
+
+1. I am paid by one organisation but I do work for a different organisation.
+2. The organisation I’m paid by is a ‘third party’ organisation which other organisations hire to do work for them, rather than doing that w [**FIND QUESTION IN DATA DICT**]
+3. My employer / agency provides people to do work for other organisations (i.e. they might provide people to do cleaning, security, administratio [**FIND QUESTION IN DATA DICT**]
+4. On a day-to-day basis, I’m paid by one organisation but I get given tasks or instructions by people who are paid by a different organisation.
+5. I am paid by one organisation, but I work in a space which has the logo or branding of a different organisation.
+6. I wear a uniform which has the logo or branding of my employer / agency, and which marks me out as being paid by a different organisation to so [**FIND QUESTION IN DATA DICT**]
+
+Workers were categorised into three mutually exclusive sub groups based on their responses to the above questions.
+
+1. A respondent was categorised as '**pure outsourced**' if they responded 'I am sure I'm an outsourced worker' or 'I think I might be an outsourced worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.'.
+
+2. A respondent was categorised as '**likely agency**' if they responded 'I am sure that I'm an agency worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who are already defined as being 'pure outsourced'.
+
+3. A respondent was categorised as belonging to the '**high indicators**' group if they responded TRUE to five or six of the outsourcing indicators, as well as responding 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who were already defined as 'pure outsourced' or 'likely agency'.
+
+Together, these three sub groups form the classification of 'outsourced workers' considered in this report. Throughout the report, the term 'outsourced' refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as 'pure outsourced', 'likely agency', or 'high indicators'. 
 
 # Analysis - Study 2
 
--   Explain the analyses (e.g. any models that actually appear in the final output)
+- [ ] Explain the analyses (e.g. any models that actually appear in the final output)
 
 # Limitations and Future Research?
 
--   Discuss the limitations of the data and the analysis
--   If something is really burning we can suggest some futher analysis that people can do
+- [ ]  Discuss the limitations of the data and the analysis
+- [ ]  If something is really burning we can suggest some futher analysis that people can do
 
 # Reproducibility
 
--   maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....
+- [ ] maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....
 
 ------------------------------------------------------------------------
 
