@@ -77,12 +77,55 @@ data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
 income_data <- filter(data, income_drop_all==0)
 ```
 
-# Sample descriptives
+# Participants and Design
 
-In this section we present descriptive statistics on the sample. All statistics are weighted estimates based on [**INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM**]
+\[**Insert Name of Report**\] contains data from two studies. The first of these studies was a nationally representative survey of \[**Workers?**\] conducted by Opinium Research between \[**Month Year**\]. The total size of the sample is `r nrow(data)`. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER
 
+The second study was a follow-up survey of \[**Outsourced Workers - need to check if they were from the original survey or not, but think they were not**\] conducted by Opinium Research between \[**Month Year**\] with a total sample of \[**INSERT SAMPLE**\]. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives. ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.
 
-The total size of the sample is `r nrow(data)`.
+\[In both surveys??\] All statistics are weighted estimates based on \[**INSERT INFORMATION HERE - THIS IS NEEDED FROM OPINIUM**\]
+
+-   How were the survey's administered?
+
+\[**POTENTIALLY ADD A TABLE HERE WITH CROSSTABS FOR THE TWO SAMPLES OR TABBED VISUALISATIONS**\]
+
+# Measures
+
+## Study 1- Nationally representative survey
+
+-   Explain the contents of the survey
+-   I believe some questions were replicated from national survey's so lets explicate that
+-   Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
+-   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
+-   link to the data dictionary
+
+## Study 2 - Outsourced workers survey
+
+-   Explain the contents of the survey and how the focus differeces from the first study
+-   Outline the key areas e.g. Rights Violations etc
+-   If there is any variable that is constructed then refer to it here briefly with a more verborse explanation in the relevant section
+-   Link to data dictionary
+
+# Analysis - Study 1
+
+-   Determining if the worker is outsourced
+-   Calculating Low/Not Low pay
+-   Explain the analyses (e.g. any models that actually appear in the final output)
+
+# Analysis - Study 2
+
+-   Explain the analyses (e.g. any models that actually appear in the final output)
+
+# Limitations and Future Research?
+
+-   Discuss the limitations of the data and the analysis
+-   If something is really burning we can suggest some futher analysis that people can do
+
+# Reproducibility
+
+-   maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....
+
+------------------------------------------------------------------------
 
 # Age
 
@@ -130,6 +173,7 @@ data %>%
   
 
 ```
+
 # Gender
 
 ```{r}
@@ -162,7 +206,7 @@ gender_statistics %>%
   kable_styling(full_width = F)
 ```
 
-# Ethnicity 
+# Ethnicity
 
 The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that 'NA' indicates non-responses.
 
@@ -212,7 +256,6 @@ ethnicity_cat %>%
   kable_styling(full_width=FALSE)
 ```
 
-
 The table below shows the weighted ethnicity breakdown using the aggregated set of categories
 
 ```{r}
@@ -241,4 +284,3 @@ tab %>%
   )) %>%
   kable_styling(full_width = F)
 ```
-
