@@ -148,11 +148,134 @@ The second study was a follow-up survey of \[**Outsourced Workers - need to chec
 
 ## Study 1- Nationally representative survey
 
-- [ ]    Explain the contents of the survey
-- [ ]   I believe some questions were replicated from national survey's so lets explicate that
-- [ ]  Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
-- [ ]   Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
-- [ ]  link to the data dictionary
+- [ ] Explain the contents of the survey
+- [ ] I believe some questions were replicated from national survey's so lets explicate that
+- [x] Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
+- [ ] Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
+- [ ] link to the data dictionary
+
+### Income calculations ([**perhaps more detailed than necessary in this section**])
+
+Respondents could choose how they provided information about their income. Firstly, they could choose the payment period for which to express their income from the following options:
+
+- Annually / per year
+- Monthly 
+- Weekly
+- Hourly 
+
+Secondly, they could choose either an 'open' form of reporting or a 'closed' form. The open form required respondents to type in their pay for the payment period they chose. The closed form required respondents to select which income bracket their pay belonged to from a list of options. 
+
+The annual options were:
+
+```{r}
+ops <- levels(data$INCOME_CLOSED_ANNUAL_labelled)
+```
+`r paste0("- ", ops, collapse = "\n")`
+
+The monthly options were:
+
+```{r}
+ops <- levels(data$INCOME_CLOSED_MONTHLY_labelled)
+```
+
+`r paste0("- ", ops, collapse = "\n")`
+
+The weekly options were:
+
+```{r}
+ops <- levels(data$INCOME_CLOSED_WEEKLY_labelled)
+```
+
+`r paste0("- ", ops, collapse = "\n")`
+
+The hourly options were:
+
+```{r}
+ops <- levels(data$INCOME_CLOSED_HOURLY_labelled)
+```
+
+`r paste0("- ", ops, collapse = "\n")`
+
+
+```{r}
+data_subset <- data %>%
+  dplyr::select(c(ID, contains("INCOME", ignore.case = F))) %>%
+  dplyr::select(!ends_with("labelled") & !ends_with("FREQ") & !ends_with("2"))
+
+number_open <- data_subset %>%
+  filter(!is.na(INCOME_OPEN_1)) %>%
+  nrow()
+
+number_closed <- data_subset %>%
+  filter(is.na(INCOME_OPEN_1)) %>%
+  dplyr::select(c(ID, contains("CLOSED"))) %>%
+  nrow()
+
+# but also check how many "prefer not to say"
+closed_income <- data %>%
+  filter(is.na(INCOME_OPEN_1)) %>%
+  dplyr::select(c(ID, contains("INCOME", ignore.case = F))) %>%
+  dplyr::select(ends_with("labelled"))
+
+pref_not_say <- closed_income %>%
+  rowwise() %>%
+  summarise(
+    sum = sum(c_across(everything()) == "Prefer not to say", na.rm=TRUE)
+  ) %>%
+  summarise(
+    total_not_answered = sum(sum)
+  )
+
+closed_answered <- number_closed - pref_not_say$total_not_answered
+
+```
+
+`r number_open` respondents answered using the open method. `r closed_answered` respondents answered using the closed method. `r nrow(data) - sum(number_open,closed_answered)` did not answer either.
+
+We equivalised respondents' income across the reporting options in two steps. Firstly, we converted closed income responses to continuous numeric values by taking the midpoint of the income brackets, or the value of the "less than" and "over" values. For example, a closed response of "£5,600 up to £11,200" would be converted to £8400; and a closed response of "Less than £5,600 a year" would be converted to £5600. These converted closed responses were combined with the open responses to produce a single continous income variable across payment periods. 
+
+```{r}
+weeks_in_year <- 365 / 7 # if we're being pedantic (this is 52.14 weeks)
+min_holiday_entitlement <- 28
+non_working_weeks <- min_holiday_entitlement/5
+working_weeks <- weeks_in_year - non_working_weeks
+```
+
+Next, we expressed all respondents' income in annual, weekly, and hourly periods. To do this we made an assumption about the number of working weeks in a year based on the minimum holiday entitlement of 28 days. We calculated the total number of weeks in a year as 365 / 7 = `r round(weeks_in_year,2)`, the total number of non-working weeks as 28 / 5 = `r round(non_working_weeks,2)`, and thus the total number of working weeks as `r round(weeks_in_year,2)` - `r round(non_working_weeks,2)` = `r round(working_weeks,2)`. 
+
+With this figure and the number of hours worked per week, we could convert incomes provided in one payment period to another. The table below shows how this was achieved.
+
+```{r}
+conversion_table <- data.frame("Income provided..." = 
+                                 c("... annually",
+                                   "... monthly",
+                                   "... weekly",
+                                   "... hourly"),
+                               "Formula to convert to annual" = 
+                                 c("= income",
+                                   "= income x 12",
+                                   "= income x working weeks",
+                                   "= income x hours per week x working weeks "),
+                               "Formula to convert to weekly" = 
+                                 c("= income / working weeks",
+                                   "= (income x 12) / working weeks",
+                                   "= income",
+                                   "= income x hours per week"),
+                               "Formula to convert to hourly" = 
+                                 c("= weekly income / hours worked per week",
+                                   "= weekly income / hours worked per week",
+                                   "= weekly income / hours worked per week",
+                                   "= weekly income / hours worked per week"))
+
+conversion_table %>%
+  kable(col.names = c(
+    "Income provided...", 
+    "Formula to convert to annual",
+    "Formula to convert to weekly",
+    "Formula to convert to hourly")) %>%
+  kable_styling(full_width = T)
+```
+
 
 ## Study 2 - Outsourced workers survey
 
