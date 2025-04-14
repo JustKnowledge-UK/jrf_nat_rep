@@ -302,6 +302,7 @@ conversion_table %>%
 -   [x] Determining if the worker is outsourced
 -   [ ] Calculating Low/Not Low pay
 -   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
+    -   [ ] Outsourced workers are paid 2k less and after controls it is 3k
 
 ## Defining outsourcing
 
@@ -353,6 +354,14 @@ Together, these three sub groups form the classification of 'outsourced workers'
 # Analysis - Study 2
 
 -   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
+-   [ ]  For example, when asked to compare their experiences to if they did the same role in-house, 1 in 4 outsourced workers think they are less able to progress; 1 in 5 think it’s harder to assert their rights at work; 1 in 6 think they have less secure hours; and the same proportion feel less invested in their role and in their work, compared to if they were outsourced. 1 in 6 (17%) outsourced workers think they are paid *less* than in-house workers in comparable roles – no sign of a supposed pay premium for this group of workers.
+-   [ ] 4 in 10 outsourced workers report having gone without at least one key workplace right or entitlement, such as being paid on time, or paid what they’re entitled to – linking worryingly to the fifth of workers who think it’s harder to assert your rights when you’re outsourced
+-   [ ] And most strikingly, a third of all outsourced workers (32%) say they would actively prefer to be in-house if they had a choice, far more than the less than 1 in 5 (18%) who told us they *actively* preferred to be outsourced. This is a significant proportion of outsourced workers who aren’t happy with the status quo.
+-   [ ] Stacked (horizontal) bar chart of 'benefits and downsides' question
+-   [ ] Percentage of people reporting multiple negative responses
+-   [ ] Our findings suggest that just 1 in 10 (10%) outsourced workers have received 4 weeks’ notice as minimum – falling to 1 in 20 (5%) for lower-paid outsourced workers.
+-   [ ] Altogether over half (55%) of Black outsourced workers said they’d received less than a week’s notice of their shifts minimum, compared to 4 in 10 (40%) for all outsourced workers, and 36% for White outsourced workers.
+-   [ ] 'Pooling harms'
 
 # Limitations and Future Research?
 
