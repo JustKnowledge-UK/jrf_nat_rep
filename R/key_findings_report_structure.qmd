@@ -1741,6 +1741,7 @@ mod <- multinom(Gender ~ outsourcing_status, data, weights=NatRepemployees)
 
 # get coefficients and calcualte p
 coefs <- summary(mod)$coefficients
+coef_names <- rownames(coefs)
 
 ors <- exp(coefs)
 colnames(ors) <- paste(colnames(ors), "or", sep="_")
@@ -1755,16 +1756,29 @@ p_2 <- apply(p, 2, function(x) ifelse(x < 0.01, 1, NA))
 sig_ors <- exp(summary(mod)$coefficients * p_2)
 
 coefs <- cbind(coefs, ors, p) %>%
-  as_tibble()
+  as_tibble() %>%
+  mutate(
+    gender = coef_names, .before=everything()
+  )
 
 write_csv(coefs, file = "../outputs/data/gender_inferential_tab.csv")
 ```
 
 The outsourced workforce consists of a greater proportion of males than the non-outsourced workforce.[^15] Men make up `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the outsourced workforce compared to `r round(gender_statistics[which(gender_statistics$outsourcing_status == "Not outsourced" & gender_statistics$Gender == "Male"),"Percentage"], 0)`% of the non-outsourced workforce. This difference is statistically significant; outsourced workers, compared to non-outsourced workers, are `r round(sig_ors['Male', 'outsourcing_statusOutsourced'], 2)` times more likely to be male than female.[^16]
 
-[^15]: [outputs/data/sector_summary_3.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/sector_summary_3.csv)
+[^15]: [outputs/data/gender_statistics.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/gender_statistics.csv)
 
 [^16]: [../outputs/data/gender_inferential_tab.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/gender_inferential_tab.csv)
+
+```{r}
+# try just using a glm?
+mod <- glm(outsourcing_status ~ Gender, family = "quasibinomial", weights = NatRepemployees, data)
+summary(mod)
+
+ors <- extract_glm_coefs(mod)
+ors
+```
+
 
 ```{r}
 # gender_statistics %>%
