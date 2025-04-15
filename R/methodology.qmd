@@ -359,7 +359,7 @@ Regional weekly median income values were drawn from the [Annual Survey of Hours
 
 ## Models
 
-In this section we describe the statistical models used in the report.
+In this section we describe the statistical models used in the report. In all models we applied survey weights so that the estimates can be considered representative of employees nationally. 
 
 ### Outsourced pay gap
 
@@ -452,7 +452,7 @@ but here, ethnicity is categorical variable with eight levels:
 - Prefer not to say
 - White other
 
-Finally, we constructed a third generalised model predicting whether a person was outsourced based on disaggregated ethnicity groupings. The formula for this model is again:
+Finally, we constructed a third generalised linear model predicting whether a person was outsourced based on disaggregated ethnicity groupings. The formula for this model is again:
 
 $$
 Outsourcing = Ethnicity
@@ -484,7 +484,35 @@ but here, ethnicity is categorical variable with 21 levels:
 
 ### Migration models
 
+We constructed a generalised linear model predicting whether a person was outsourced based on wehther the person was born in the UK. The formula for this model is:
 
+$$
+Outsourcing = Migration
+$$
+where Migration is a categorical variable with two levels:
+
+- Born in UK
+- Not born in UK
+
+This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
+
+### Ethnicity-migration interaction
+
+### Ethnicity-outsourced interaction
+
+### Gender
+
+We used a generalised linear model to predict outsourcing from gender. The formula for this model is:
+
+$$
+Outsourcing = Gender
+$$
+where Gender is a categorical variable with four levels:
+
+- Female (reference category)
+- Male
+- Prefer not to say
+- Other
 
 # Analysis - Study 2
 
