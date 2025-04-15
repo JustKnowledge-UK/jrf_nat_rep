@@ -300,7 +300,7 @@ conversion_table %>%
 # Analysis - Study 1
 
 -   [x] Determining if the worker is outsourced
--   [ ] Calculating Low/Not Low pay
+-   [x] Calculating Low/Not Low pay
 -   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
     -   [ ] Outsourced workers are paid 2k less and after controls it is 3k
 
@@ -350,6 +350,141 @@ Workers were categorised into three mutually exclusive sub groups based on their
 3.  A respondent was categorised as belonging to the '**high indicators**' group if they responded TRUE to five or six of the outsourcing indicators, as well as responding 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who were already defined as 'pure outsourced' or 'likely agency'.
 
 Together, these three sub groups form the classification of 'outsourced workers' considered in this report. Throughout the report, the term 'outsourced' refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as 'pure outsourced', 'likely agency', or 'high indicators'.
+
+## Defining low pay
+
+A 'low pay' binary variable was created by implementing an income threshold below which respondents were considered to be on a relatively low income. In line with with the [Organisation for Economic Co-operation and Development](https://www.oecd.org/en/data/indicators/incidence-of-low-and-high-pay.html), we set the threshold at two-thirds median weekly income. The two-thirds threshold was based on the weekly median income for respondents' region to account for regional variations in earnings. 
+
+Regional weekly median income values were drawn from the [Annual Survey of Hours and Earnings](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup) (2023 provisional edition). Respondents whose reported weekly income was less than or equal to two-thirds of the median weekly income in their region were assigned to the 'low pay' group, while those whose reported weekly income was greater than two-thirds of the median weekly income in their region were assigned to the 'not low pay' group.
+
+## Models
+
+In this section we describe the statistical models used in the report.
+
+### Outsourced pay gap
+
+To investigate the pay gap been outsourced and non-outsourced workers we constructed a linear regression model predicting annual and weekly income (in separate models) from outsourcing membership. We included other variables in the model to account for their potential influence on income. The full regression model can be expressed as:
+
+$$
+Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing
+$$
+where
+
+- Income is a continuous numeric variable indicating a the respondent's income (weekly or annual, in different models)
+- Age is a continuous numeric variable indicating the respondent's age
+- Gender is a categorical variable with three levels: 
+  - Female (reference category)
+  - Male
+  - Other
+- Education is a categorical variable indicating whether the respondent has a degree, with three levels:
+  - No (reference category)
+  - Yes
+  - Don't know
+- Ethnicity is a categorical variable with eight levels:
+  - White British (reference category)
+  - Arab/British Arab
+  - Asian/Asian British
+  - Black/African/Caribbean/Black British
+  - Mixed/Multiple ethnic group
+  - Other ethnic groupo
+  - Prefer not to say
+  - White other
+- Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
+  - I was born in the UK (reference category)
+  - Within the last year
+  - Within the last 3 years
+  - Within the last 5 years
+  - Within the last 10 years
+  - Within the last 15 years
+  - Within the last 20 years
+  - Within the last 30 years
+  - More than 30 years ago
+  - Prefer not to say
+- Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
+  - London (reference category)
+  - East Midlands
+  - East of England
+  - North East
+  - North West
+  - Northern Ireland
+  - Scotland
+  - South East
+  - South West
+  - Wales
+  - West Midlands
+  - Yorkshire and the Humber
+- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+  - Not outsourced (reference category)
+  - Outsourced 
+
+### Ethnicity models
+
+Several regressions were run to assess the likelihood of being outsourced from a person's ethnicity.
+
+Firstly, we constructed a generalised linear model predicting whether a person was outsourced based on whether they were White British or not. Thus the formula for this model is simply:
+
+$$
+Outsourcing = Ethnicity
+$$
+where
+
+- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+  - Not outsourced (reference category)
+  - Outsourced
+- Ethnicity is a cateorical variable indicating whether the respondent is White British, with two levels:
+  - White British
+  - Non-White-British
+  
+Next, we constructed a generalised linear model predicting whether a person was outsourced based on aggregated ethnicity groupings. The formula for this model is again:
+
+$$
+Outsourcing = Ethnicity
+$$
+
+but here, ethnicity is categorical variable with eight levels:
+
+- White British (reference category)
+- Arab/British Arab
+- Asian/Asian British
+- Black/African/Caribbean/Black British
+- Mixed/Multiple ethnic group
+- Other ethnic groupo
+- Prefer not to say
+- White other
+
+Finally, we constructed a third generalised model predicting whether a person was outsourced based on disaggregated ethnicity groupings. The formula for this model is again:
+
+$$
+Outsourcing = Ethnicity
+$$
+
+but here, ethnicity is categorical variable with 21 levels:
+
+- English/Welsh/Scottish/Northern Irish/British (reference category)
+- Irish
+- Gypsy or Irish Traveller
+- Roma
+- Any other White background
+- White and Black Caribbean
+- White and Black African
+- White and Asian
+- Any other Mixed/Multiple ethnic background
+- Indian
+- Pakistani
+- Bangladeshi
+- Chinese
+- Any other Asian background
+- African
+- Caribbean
+- Any other Black, Black British, or Caribbean background
+- Arab
+- Any other ethnic group
+- Don't think of myself as any of these
+- Prefer not to say
+
+### Migration models
+
+
 
 # Analysis - Study 2
 
