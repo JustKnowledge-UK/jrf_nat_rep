@@ -903,26 +903,118 @@ data %>%
 mod_2 <- glm(income_group ~ Ethnicity_collapsed * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod_2)
 
-mod_3 <-  glm(income_group ~ Ethnicity_binary * outsourcing_status, data, family="quasibinomial", weights = NatRepemployees)
+mod_3 <-  glm(income_group ~ Ethnicity_binary * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
 summary(mod_3)
 
-coefs <- extract_glm_coefs(mod_2)
+coefs2 <- extract_glm_coefs(mod_2)
 
-black_coef <- extract_glm_coefs(mod_2, only_sig = T) %>%
-  filter(variable == "Ethnicity_collapsedBlack/African/Caribbean/Black British:outsourcing_statusOutsourced") %>%
-  mutate(or=round(or,2)) %>%
-  pull(or)
+write_csv(coefs2, file = "../outputs/data/ethnicity_collapsed_income_group_inferential.csv")
+
+coefs3 <- extract_glm_coefs(mod_3)
+
+write_csv(coefs3, file = "../outputs/data/ethnicity_binary_income_group_inferential.csv")
+
+coefs <- extract_glm_coefs(mod_2, only_sig=T)
+
+
+ems <- emmeans(mod_2, specs = "outsourcing_status", by = "Ethnicity_collapsed")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","outsourcing_status"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal()
+
+ems_2 <- emmeans(mod_2, specs = "Ethnicity_collapsed", by = "outsourcing_status")
+cons <- summary(contrast(ems_2, "pairwise",adjust="tukey"))
+sig_cons_2 <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal()
 
 # other_coef <- extract_glm_coefs(mod_2,, only_sig = T)[6,"Estimate"] %>%
 #   exp(.) %>%
 #   round(.,2) %>%
 #   pull()
 
+wb <- sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)
+mix <- sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)
+
 ```
 
-Overall, there is no interaction between being from a minority and outsourced on whether you are low paid. i.e., being from an ethnic minority and outsourced is not associated with being in the low pay group.^[[outputs/data/ethnicity_binary_income_group.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_binary_income_group.csv)]
+Overall, there is no interaction between being from a minority and outsourced on whether you are low paid. i.e., being from an ethnic minority and outsourced is not associated with being in the low pay group.^[[outputs/data/ethnicity_binary_income_group_inferential.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_binary_income_group_inferential.csv)]
 
-However there is nuance in the groups. There is evidence to suggest that people who are Black and outsourced are less likely to be in the high income group (OR = `r black_coef`x). 
+However there is nuance in the groups. We do find evidence to suggest that among White British people, outsourced people are `r wb` times more likely to be in the low income group compared to non-outsourced people, and among Mixed ethnicity people, outsourced people are `r mix` times more likely to be in the low income group compared to non-outsourced people.^[[outputs/data/ethnicity_collapsed_income_group_inferential.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_collapsed_income_group_inferential.csv)]
+
+```{r}
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","outsourcing_status"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal()
+```
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+mod_2 <- glm(income_group ~ Ethnicity_collapsed_disaggregated * outsourcing_status, income_data, family="quasibinomial", weights = NatRepemployees)
+summary(mod_2)
+
+coefs <- extract_glm_coefs(mod_2, only_sig=T)
+
+coefs2 <- extract_glm_coefs(mod_2)
+
+write_csv(coefs2, file = "../outputs/data/ethnicity_collapsed_disaggregated_income_group_inferential.csv")
+
+ems <- emmeans(mod_2, specs = "outsourcing_status", by = "Ethnicity_collapsed_disaggregated")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","outsourcing_status"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal()
+
+ems_2 <- emmeans(mod_2, specs = "Ethnicity_collapsed_disaggregated", by = "outsourcing_status")
+cons <- summary(contrast(ems_2, "pairwise",adjust="tukey"))
+sig_cons_2 <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed_disaggregated"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+
+ew <- sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)
+wa <- sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)
+
+```
+
+Looking at this with disaggregated ethnicities indicates that among “English / Welsh / Scottish / Northern Irish / British” workers, outsourced people are `r ew` times more likely to be in the low income group compared to non-outsourced people. Among “White and Asian” workers, outsourced workers are `r wa` times more likely to be in the low income group compared to non-outsourced workers.^[[outputs/data/ethnicity_collapsed_disaggregated_income_group_inferential.csv](https://github.com/JustKnowledge-UK/jrf_nat_rep/blob/main/outputs/data/outputs/data/ethnicity_collapsed_disaggregated_income_group_inferential.csv)]
+
+```{r}
+sjPlot::plot_model(mod_2, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","outsourcing_status"), dodge=0.5) +
+  coord_flip() +
+  xlab("") +
+  theme_minimal()
+```
 
 ```{r}
 tab_split <- income_data %>%
@@ -1376,7 +1468,6 @@ For workers born outside of the UK:
 
 -   Among White workers, someone not born in the UK is 1.82 times more likely to be outsourced than someone born in the UK.
 -   Among workers from Mixed ethnic backgrounds, someone not born in the UK is 2.73 times more likely to be outsourced than someone born in the UK.
--   Among Other workers, someone not born in the UK is 0.13 times more likely to be outsourced than someone born in the UK.
 
 For workers from other ethnicities, it doesn’t matter whether you are born in the UK or not – you are equally likely as a Black or an Asian worker to be outsourced, whether you were born in the UK or somewhere else. And compared to a White person born in the UK, Black African and South Asian workers specifically are more likely to be outsourced, whether or not they were born in the UK . Does this need any further detail or explanation
 
@@ -1429,12 +1520,12 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary
 ```
 
 ```{r}
-ems_2 <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed")
-cons <- summary(contrast(ems_2, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
-  mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
-  )
+  ems_2 <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed")
+  cons <- summary(contrast(ems_2, "pairwise",adjust="tukey"))
+  sig_cons <- cons %>% filter(p.value < .05) %>%
+    mutate(
+      or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    )
 
 write_csv(cons, file = "../outputs/data/bornUK_binary_contrasts_2.csv")
 ```
@@ -1445,7 +1536,6 @@ Similarly, the plot below shows that[^11]
 
 -   Among White British workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "White British") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
 -   Among Mixed workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or),2)` times more likely to be outsourced than someone born in the UK.
--   Among Other ethnicity workers, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or),2)` times as likely (i.e.,`r round(100 * (1 - (sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Other ethnic group") %>% pull(or))),0)`% less likely) to be outsourced than someone born in the UK.
 -   Among people who preferred not to say their ethnicity, someone not born in the UK is `r round(sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Prefer not to say") %>% pull(or),2)` times as likely (i.e.,`r round(100 * (1 - (sig_cons %>% filter(contrast == "Born in UK - Not born in UK" & Ethnicity_collapsed == "Prefer not to say") %>% pull(or))),0)`% less likely) to be outsourced than someone born in the UK.
 
 
@@ -1455,6 +1545,45 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
   xlab("") + ylab("Likelihood of being outsourced") +
   theme_minimal()
 ```
+
+```{r}
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated*BORNUK_binary, data, weights = NatRepemployees, family = "quasibinomial")
+# summary(mod)
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
+
+ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "BORNUK_binary")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+ems_2 <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed_disaggregated")
+cons <- summary(contrast(ems_2, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","BORNUK_binary"), dodge=0.5) +
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal()
+
+
+```
+For people born in UK, if you are Pakistani you are more likely to be outsourced than if you are White.
+
+For White people and for White and Asian people, if you're not born in UK you're more likely to be outsourced.
+
 
 ::: {.callout-tip title="#migration-by-pay-split"}
 If we do a basic “born UK / not born UK” split, looking by low and high pay, what % of the low-paid workers group were born outside of the UK, vs in the high-paid group?
