@@ -515,6 +515,22 @@ We did this for both the aggregated eight-level ethnicity variable as well as th
 
 ### Ethnicity-outsourced interaction
 
+A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income. 
+
+First we examined the interaction of a binary ethnicity variable with outsourcing:
+
+$$
+Income Group = Ethnicity * Outsourcing
+$$
+where ethnicity was a binary categorical variable with levels:
+
+- White British
+- Non-White-British
+
+Next we estimated using the same formula but this time with the eight-level aggregated ethnicity variable.
+
+Finally, we conducted the same analysis using the 21-level disaggregated ethnicity variable. 
+
 ### Gender
 
 We used a generalised linear model to predict outsourcing from gender. The formula for this model is:
