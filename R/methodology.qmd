@@ -498,6 +498,21 @@ This binary variable was constructed by collapsing the 10-level migration variab
 
 ### Ethnicity-migration interaction
 
+We explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models. We did this stepwise to ascertain whether entering an interaction term imporved model fit. 
+Model 1 was defined as:
+
+$$
+Outsourcing = Ethnicity + Migration
+$$
+Model 2 was defined as:
+
+$$
+Outsourcing = Ethnicity + Migration + Ethnicity:Migration
+$$
+where Ethnicity:Migration represents the interaction term. Adding an interaction term improved model fit.
+
+We did this for both the aggregated eight-level ethnicity variable as well as the disaggregated 21-level variable.
+
 ### Ethnicity-outsourced interaction
 
 ### Gender
@@ -507,6 +522,7 @@ We used a generalised linear model to predict outsourcing from gender. The formu
 $$
 Outsourcing = Gender
 $$
+
 where Gender is a categorical variable with four levels:
 
 - Female (reference category)
