@@ -139,13 +139,11 @@ write_csv(ethnicity_statistics, file="../outputs/methodology/data/ethnicity_stat
 
 To achieve a robust estimate of outsourced workers, the sample was weighted by age, gender, and education, region, and ethnicity. The ethnic minority sub-sample (1,435 respondents) was also weighted separately by age, gender, and region to ensure that findings related to ethnic minority adults were fully representative. Targets were estimated using data from the Labour Force Survey, the 2021 Census for England and Wales, and the Northern Ireland Census.
 
-This sample had median age `r age_statistics$median` (SD = `r round(age_statistics$stdev,2)`). `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Female")],0)`% of respondents identified as female, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Male")],0)`% as male, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Other")],2)`% as other, and `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Prefer not to say")],2)`% preferred not to identify a gender. `r round(ethnicity_statistics$percentage[which(ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British")],0)`% of respondents identified as 'English / Welsh / Scottish / Northern Irish / British' (see @sec-ethnicity for a detailed breakdown of ethnicity). \[**ADD POTENTIALLY POWER**\]
+This sample had median age `r age_statistics$median` (SD = `r round(age_statistics$stdev,2)`). `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Female")],0)`% of respondents identified as female, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Male")],0)`% as male, `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Other")],2)`% as other, and `r round(gender_statistics$percentage[which(gender_statistics$Gender == "Prefer not to say")],2)`% preferred not to identify a gender. `r round(ethnicity_statistics$percentage[which(ethnicity_statistics$Ethnicity_labelled == "English / Welsh / Scottish / Northern Irish / British")],0)`% of respondents identified as 'English / Welsh / Scottish / Northern Irish / British' (see @sec-ethnicity for a detailed breakdown of ethnicity).
 
-In a follow-up survey of Outsourced workers (as defined in @sec-study1) conducted by Opinium Research between 19th April to the 16th of May 2024 with a total sample of \[**INSERT SAMPLE**\]. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives (see @sec-study2).
+A follow-up survey of Outsourced workers (as defined in @sec-study1) was conducted by Opinium Research between 19th April to the 16th of May 2024 with a total sample of 1814. The purpose of this study was to further probe the experiences of outsourced workers and to understand the impact of outsourcing on their work and lives (see @sec-study2).
 
-Soft quotas on age, gender, and region were implemented to ensure broad representativeness, and the final data was weighted to targets based on age, gender, education, region, and ethnicity. The targets were based on the weighted data from study 1. A small proportion of respondents had participated in study 1 and met the outsourced criteria (5%).
-
-ADD INFORMATION ABOUT MEAN AGE, GENDER SPLIT and ETHNIC DIVERSITY AND POTENTIALLY POWER.
+Soft quotas on age, gender, and region were implemented to ensure broad representativeness, and the final data was weighted to targets based on age, gender, education, region, and ethnicity. The targets were based on the weighted data from study 1. The survey population had a mean Age of 38.9 (SD = 13.0). 42.4% Female and 65.5% White British. A small proportion of respondents had previously participated in study 1 and met the outsourced criteria (5%).
 
 Both survey's were administered online.
 
@@ -156,8 +154,6 @@ An initial pilot study aimed to refine the diagnostic questions used to identify
 # Measures
 
 ## Study 1- Nationally representative survey {#sec-study1}
-
--   [x] Explain the contents of the survey
 
 The survey covered personal demographics, employment demographics (e.g. occupation, hours worked, pay), and the outsourced diagnostic questions. The main objectives were to ensure an accurate estimate of the size and demographic makeup of the outsourced population, and to analyse the data alongside the Labour Force Survey (LFS). \[**WHAT EXACTLY WAS INTENDED TO BE COMPARABLE?**\]
 
@@ -292,10 +288,11 @@ conversion_table %>%
 
 ## Study 2 - Outsourced workers survey {#sec-study2}
 
--   [ ] Explain the contents of the survey and how the focus differences from the first study
--   [ ] Outline the key areas e.g. Rights Violations etc
--   [ ] If there is any variable that is constructed then refer to it here briefly with a more verbose explanation in the relevant section
--   [ ] Link to data dictionary
+In the follow up survey of outsourced workers the data focuses on workers experiences and perceptions of outsourced work. The dataset is large containing 214 variables. Analysis of all the variables was beyond the cope of the report thus we focus on a subset of the data pertaining to outsourced workers experiences of rights violations, discrimination, job clarity, benefits and drawbacks of outsourced work and potential improvements to their work arrangements.
+
+In the process of data cleaning we set hours per week to NA for participants who gave an impossible number of work hours per week (e.g. $\ge$ 168, *N*=11). Relatedly we construct variables to determine hourly, weekly, monthly and annual pay as in study 1 and flag outlier responses. Through this method 11.22% (183) participants were dropped from all subsequent analysis leaving a final sample of 1631 participants. We also determine whether the participant is low paid using the method from study 1.
+
+A data dictionary is available from the [Github Repository](https://github.com/JustKnowledge-UK/jrf_nat_rep "Just Knowledge GitHub") associated with this project along with all code used to produce the analyses.
 
 # Analysis - Study 1
 
@@ -353,13 +350,13 @@ Together, these three sub groups form the classification of 'outsourced workers'
 
 ## Defining low pay
 
-A 'low pay' binary variable was created by implementing an income threshold below which respondents were considered to be on a relatively low income. In line with with the [Organisation for Economic Co-operation and Development](https://www.oecd.org/en/data/indicators/incidence-of-low-and-high-pay.html), we set the threshold at two-thirds median weekly income. The two-thirds threshold was based on the weekly median income for respondents' region to account for regional variations in earnings. 
+A 'low pay' binary variable was created by implementing an income threshold below which respondents were considered to be on a relatively low income. In line with with the [Organisation for Economic Co-operation and Development](https://www.oecd.org/en/data/indicators/incidence-of-low-and-high-pay.html), we set the threshold at two-thirds median weekly income. The two-thirds threshold was based on the weekly median income for respondents' region to account for regional variations in earnings.
 
 Regional weekly median income values were drawn from the [Annual Survey of Hours and Earnings](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup) (2023 provisional edition). Respondents whose reported weekly income was less than or equal to two-thirds of the median weekly income in their region were assigned to the 'low pay' group, while those whose reported weekly income was greater than two-thirds of the median weekly income in their region were assigned to the 'not low pay' group.
 
 ## Models
 
-In this section we describe the statistical models used in the report. In all models we applied survey weights so that the estimates can be considered representative of employees nationally. 
+In this section we describe the statistical models used in the report. In all models we applied survey weights so that the estimates can be considered representative of employees nationally.
 
 ### Outsourced pay gap
 
@@ -367,55 +364,54 @@ To investigate the pay gap been outsourced and non-outsourced workers we constru
 
 $$
 Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing
-$$
-where
+$$ where
 
-- Income is a continuous numeric variable indicating a the respondent's income (weekly or annual, in different models)
-- Age is a continuous numeric variable indicating the respondent's age
-- Gender is a categorical variable with three levels: 
-  - Female (reference category)
-  - Male
-  - Other
-- Education is a categorical variable indicating whether the respondent has a degree, with three levels:
-  - No (reference category)
-  - Yes
-  - Don't know
-- Ethnicity is a categorical variable with eight levels:
-  - White British (reference category)
-  - Arab/British Arab
-  - Asian/Asian British
-  - Black/African/Caribbean/Black British
-  - Mixed/Multiple ethnic group
-  - Other ethnic groupo
-  - Prefer not to say
-  - White other
-- Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
-  - I was born in the UK (reference category)
-  - Within the last year
-  - Within the last 3 years
-  - Within the last 5 years
-  - Within the last 10 years
-  - Within the last 15 years
-  - Within the last 20 years
-  - Within the last 30 years
-  - More than 30 years ago
-  - Prefer not to say
-- Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
-  - London (reference category)
-  - East Midlands
-  - East of England
-  - North East
-  - North West
-  - Northern Ireland
-  - Scotland
-  - South East
-  - South West
-  - Wales
-  - West Midlands
-  - Yorkshire and the Humber
-- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
-  - Not outsourced (reference category)
-  - Outsourced 
+-   Income is a continuous numeric variable indicating a the respondent's income (weekly or annual, in different models)
+-   Age is a continuous numeric variable indicating the respondent's age
+-   Gender is a categorical variable with three levels:
+    -   Female (reference category)
+    -   Male
+    -   Other
+-   Education is a categorical variable indicating whether the respondent has a degree, with three levels:
+    -   No (reference category)
+    -   Yes
+    -   Don't know
+-   Ethnicity is a categorical variable with eight levels:
+    -   White British (reference category)
+    -   Arab/British Arab
+    -   Asian/Asian British
+    -   Black/African/Caribbean/Black British
+    -   Mixed/Multiple ethnic group
+    -   Other ethnic groupo
+    -   Prefer not to say
+    -   White other
+-   Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
+    -   I was born in the UK (reference category)
+    -   Within the last year
+    -   Within the last 3 years
+    -   Within the last 5 years
+    -   Within the last 10 years
+    -   Within the last 15 years
+    -   Within the last 20 years
+    -   Within the last 30 years
+    -   More than 30 years ago
+    -   Prefer not to say
+-   Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
+    -   London (reference category)
+    -   East Midlands
+    -   East of England
+    -   North East
+    -   North West
+    -   Northern Ireland
+    -   Scotland
+    -   South East
+    -   South West
+    -   Wales
+    -   West Midlands
+    -   Yorkshire and the Humber
+-   Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+    -   Not outsourced (reference category)
+    -   Outsourced
 
 ### Ethnicity models
 
@@ -425,16 +421,15 @@ Firstly, we constructed a generalised linear model predicting whether a person w
 
 $$
 Outsourcing = Ethnicity
-$$
-where
+$$ where
 
-- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
-  - Not outsourced (reference category)
-  - Outsourced
-- Ethnicity is a cateorical variable indicating whether the respondent is White British, with two levels:
-  - White British
-  - Non-White-British
-  
+-   Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+    -   Not outsourced (reference category)
+    -   Outsourced
+-   Ethnicity is a cateorical variable indicating whether the respondent is White British, with two levels:
+    -   White British
+    -   Non-White-British
+
 Next, we constructed a generalised linear model predicting whether a person was outsourced based on aggregated ethnicity groupings. The formula for this model is again:
 
 $$
@@ -443,14 +438,14 @@ $$
 
 but here, ethnicity is categorical variable with eight levels:
 
-- White British (reference category)
-- Arab/British Arab
-- Asian/Asian British
-- Black/African/Caribbean/Black British
-- Mixed/Multiple ethnic group
-- Other ethnic groupo
-- Prefer not to say
-- White other
+-   White British (reference category)
+-   Arab/British Arab
+-   Asian/Asian British
+-   Black/African/Caribbean/Black British
+-   Mixed/Multiple ethnic group
+-   Other ethnic groupo
+-   Prefer not to say
+-   White other
 
 Finally, we constructed a third generalised linear model predicting whether a person was outsourced based on disaggregated ethnicity groupings. The formula for this model is again:
 
@@ -460,27 +455,27 @@ $$
 
 but here, ethnicity is categorical variable with 21 levels:
 
-- English/Welsh/Scottish/Northern Irish/British (reference category)
-- Irish
-- Gypsy or Irish Traveller
-- Roma
-- Any other White background
-- White and Black Caribbean
-- White and Black African
-- White and Asian
-- Any other Mixed/Multiple ethnic background
-- Indian
-- Pakistani
-- Bangladeshi
-- Chinese
-- Any other Asian background
-- African
-- Caribbean
-- Any other Black, Black British, or Caribbean background
-- Arab
-- Any other ethnic group
-- Don't think of myself as any of these
-- Prefer not to say
+-   English/Welsh/Scottish/Northern Irish/British (reference category)
+-   Irish
+-   Gypsy or Irish Traveller
+-   Roma
+-   Any other White background
+-   White and Black Caribbean
+-   White and Black African
+-   White and Asian
+-   Any other Mixed/Multiple ethnic background
+-   Indian
+-   Pakistani
+-   Bangladeshi
+-   Chinese
+-   Any other Asian background
+-   African
+-   Caribbean
+-   Any other Black, Black British, or Caribbean background
+-   Arab
+-   Any other ethnic group
+-   Don't think of myself as any of these
+-   Prefer not to say
 
 ### Migration models
 
@@ -488,48 +483,43 @@ We constructed a generalised linear model predicting whether a person was outsou
 
 $$
 Outsourcing = Migration
-$$
-where Migration is a categorical variable with two levels:
+$$ where Migration is a categorical variable with two levels:
 
-- Born in UK
-- Not born in UK
+-   Born in UK
+-   Not born in UK
 
 This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
 
 ### Ethnicity-migration interaction
 
-We explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models. We did this stepwise to ascertain whether entering an interaction term imporved model fit. 
-Model 1 was defined as:
+We explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models. We did this stepwise to ascertain whether entering an interaction term imporved model fit. Model 1 was defined as:
 
 $$
 Outsourcing = Ethnicity + Migration
-$$
-Model 2 was defined as:
+$$ Model 2 was defined as:
 
 $$
 Outsourcing = Ethnicity + Migration + Ethnicity:Migration
-$$
-where Ethnicity:Migration represents the interaction term. Adding an interaction term improved model fit.
+$$ where Ethnicity:Migration represents the interaction term. Adding an interaction term improved model fit.
 
 We did this for both the aggregated eight-level ethnicity variable as well as the disaggregated 21-level variable.
 
 ### Ethnicity-outsourced interaction
 
-A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income. 
+A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income.
 
 First we examined the interaction of a binary ethnicity variable with outsourcing:
 
 $$
 Income Group = Ethnicity * Outsourcing
-$$
-where ethnicity was a binary categorical variable with levels:
+$$ where ethnicity was a binary categorical variable with levels:
 
-- White British
-- Non-White-British
+-   White British
+-   Non-White-British
 
 Next we estimated using the same formula but this time with the eight-level aggregated ethnicity variable.
 
-Finally, we conducted the same analysis using the 21-level disaggregated ethnicity variable. 
+Finally, we conducted the same analysis using the 21-level disaggregated ethnicity variable.
 
 ### Gender
 
@@ -541,15 +531,15 @@ $$
 
 where Gender is a categorical variable with four levels:
 
-- Female (reference category)
-- Male
-- Prefer not to say
-- Other
+-   Female (reference category)
+-   Male
+-   Prefer not to say
+-   Other
 
 # Analysis - Study 2
 
 -   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
--   [ ]  For example, when asked to compare their experiences to if they did the same role in-house, 1 in 4 outsourced workers think they are less able to progress; 1 in 5 think it’s harder to assert their rights at work; 1 in 6 think they have less secure hours; and the same proportion feel less invested in their role and in their work, compared to if they were outsourced. 1 in 6 (17%) outsourced workers think they are paid *less* than in-house workers in comparable roles – no sign of a supposed pay premium for this group of workers.
+-   [ ] For example, when asked to compare their experiences to if they did the same role in-house, 1 in 4 outsourced workers think they are less able to progress; 1 in 5 think it’s harder to assert their rights at work; 1 in 6 think they have less secure hours; and the same proportion feel less invested in their role and in their work, compared to if they were outsourced. 1 in 6 (17%) outsourced workers think they are paid *less* than in-house workers in comparable roles – no sign of a supposed pay premium for this group of workers.
 -   [ ] 4 in 10 outsourced workers report having gone without at least one key workplace right or entitlement, such as being paid on time, or paid what they’re entitled to – linking worryingly to the fifth of workers who think it’s harder to assert your rights when you’re outsourced
 -   [ ] And most strikingly, a third of all outsourced workers (32%) say they would actively prefer to be in-house if they had a choice, far more than the less than 1 in 5 (18%) who told us they *actively* preferred to be outsourced. This is a significant proportion of outsourced workers who aren’t happy with the status quo.
 -   [ ] Stacked (horizontal) bar chart of 'benefits and downsides' question
@@ -569,7 +559,9 @@ where Gender is a categorical variable with four levels:
 
 ------------------------------------------------------------------------
 
-# Age
+# Appendices
+
+## Study 1 - Age
 
 The table below shows weighted descriptive statistics of the sample, and the figure below shows the frequency of respondents at each single year of age.
 
@@ -602,7 +594,7 @@ data %>%
 
 ```
 
-# Gender
+## Study 1 - Gender
 
 The table below shows the weighted gender breakdown of the sample
 
@@ -619,7 +611,7 @@ gender_statistics %>%
   kable_styling(full_width = F)
 ```
 
-# Ethnicity {#sec-ethnicity}
+## Study 1 - Ethnicity {#sec-ethnicity}
 
 The table below shows the weighted ethnicity breakdown using the full range of Census 2021 categories. Note that 'NA' indicates non-responses.
 
