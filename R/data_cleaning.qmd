@@ -1106,7 +1106,6 @@ mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1,
 
 After further discussion and consultation with JRF analysts, who felt the 80% threshold was high, we have reverted to use 2/3 ASHE regional weekly pay as the threshold. This is also consistent with what JRF have done in the past and what the OECD uses (see https://data.oecd.org/earnwage/wage-levels.htm).
 
-I leave the above older thresholding to illustrate our process, including how inclusion of closed income responses affects the figures.
 
 ```{r}
 # get the ashe data
