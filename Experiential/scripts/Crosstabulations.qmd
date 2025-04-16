@@ -1,0 +1,759 @@
+---
+title: "Second Pass on Experiential Survey"
+format: 
+  html:
+    self-contained: true
+    page-layout: full
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code for Nerds"
+    monobackgroundcolor: "black"
+   # toc: true
+editor: visual
+author: Celestin Okoroji & Jolyon Miles-Wilson
+engine: knitr
+execute:
+  warning: false
+---
+
+```{r}
+
+#| echo: false
+
+#Load Data
+##load libraries and data, create text vars to remove
+library(tidyverse)
+library(GWalkR)
+
+#first run chisqared script and use the data output from that
+data <- read_csv("../data/postx2_data.csv")
+
+library(crosstable)
+library(flextable)
+library(scales)
+library(officer)  # Load officer for fp_border
+
+crosstable_options(scientific_log = 6)
+
+# Define a text vars to remove
+text_vars <- c("ID", "What_Do_You_Do_TEXT",
+               "Job_Title_TEXT",
+               "What_Does_Your_Employer_Do_TEXT",
+               "TermsChanging_TEXT",
+               "RightsViolations_TEXT",
+               "Why_Job_TEXT",
+               "Why_Outsourced_TEXT",
+               "What_Improvements_Other_TEXT")
+
+```
+
+# Explore Data
+
+Our main goal in this section is to understand **“what % of all respondents said yes to this question”.** Using the dashboard below you can do this in a self-guided manner, you can also switch the 'data' tab in the interface to explore individual variables.
+
+Select variables and add them to the X and Y axes.
+
+> If you select two categorical (blue) variables you need to add the 'row counts' (purple) variable to one of the axes
+
+In addition to this, we have provided low pay crosstabulations for all the variables. We can provide any other cross-tabulations you would like.
+
+```{r}
+#| echo: false
+gwalkr(data)
+
+```
+
+# Crosstabulations
+
+Next we produce cross tabulations for every variable in the clean dataset (except text responses) and low pay (defined as 4/5th ASHE).
+
+Where variables are numeric e.g. likert scales, higher values = better/more positive.\
+\
+These tables are extremely verbose but the Low Pay crosstab is very informative so we have included it in full here.
+
+We have also produced crosstabs for the following variables:
+
+-   Outsourcing Group
+
+-   Ethnicity
+
+-   Race (Collapsed Ethnicity)
+
+-   BORNUK (whether the person was born in the UK)
+
+-   Sex
+
+-   Region
+
+-   Occupation_Category
+
+-   Organisation_Category
+
+The crosstabulations are very long. It would be useful to further reduce the number of variables just to those which are of interest to the final write up. e.g. \< 20 variables *plus* demographics or however many you think can be reasonably discussed in the report.
+
+-   [x] Morgan provide a list of the final set of variables of interest
+-   [x] The list has been reduced from 172 variables to 88 but its probably still took long. Cel to reduce using Chi2 tests
+
+## By Low Pay {collapse="true"}
+
+```{r}
+# Create the crosstable and convert it to flextable
+Income_Crosstab<- crosstable(data %>% 
+                select(-any_of(text_vars)), 
+                by = Income_Group,
+                total = "row",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 1, 
+             #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Income_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Income_Crosstab<- Income_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Income_Crosstab
+
+
+```
+
+## By Ethnicity
+
+```{r}
+# Create the crosstable and convert it to flextable
+Ethnicity_Crosstab<- crosstable(data %>% 
+                                  select(-any_of(text_vars)), 
+                                by = Ethnicity, 
+                                total = "row",
+                                showNA = "no", 
+                                funs=c(median, mean, "std dev"=sd),
+                                percent_digits = 1, 
+                                #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Ethnicity_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Ethnicity_Crosstab<- Ethnicity_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Ethnicity_Crosstab
+
+```
+
+## By Race
+
+```{r}
+# Create the crosstable and convert it to flextable
+Race_Crosstab<- crosstable(data %>% 
+                             select(-any_of(text_vars)), 
+                           by = Ethnicity_Collapsed, 
+                           total = "row",
+                           showNA = "no", 
+                           funs=c(median, mean, "std dev"=sd),
+                           percent_digits = 1, 
+                           #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Race_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Race_Crosstab<- Race_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Race_Crosstab
+
+```
+
+## By Born_UK
+
+```{r}
+# Create the crosstable and convert it to flextable
+BORNUK_Crosstab<- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = BORNUK, 
+                             total = "row",
+                             showNA = "no", 
+                             funs=c(median, mean, "std dev"=sd),
+                             percent_digits = 1, 
+                             #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- BORNUK_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+BORNUK_Crosstab<- BORNUK_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+BORNUK_Crosstab
+```
+
+## By Sex
+
+```{r}
+# Create the crosstable and convert it to flextable
+Sex_Crosstab<- crosstable(data %>% 
+                            select(-any_of(text_vars)), 
+                          by = Sex, 
+                          total = "row",
+                          showNA = "no", 
+                          funs=c(median, mean, "std dev"=sd),
+                          percent_digits = 1, 
+                          #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Sex_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Sex_Crosstab<- Sex_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Sex_Crosstab
+
+```
+
+## By Region
+
+```{r}
+# Create the crosstable and convert it to flextable
+Region_Crosstab<- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = Region, 
+                             total = "row",
+                             showNA = "no", 
+                             funs=c(median, mean, "std dev"=sd),
+                             percent_digits = 1, 
+                             #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Region_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Region_Crosstab<- Region_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Region_Crosstab
+```
+
+## By Occupation Category
+
+```{r}
+# Create the crosstable and convert it to flextable
+Occupation_Crosstab<- crosstable(data %>% 
+                                   select(-any_of(text_vars)), 
+                                 by = Occupation_Catergory, 
+                                 total = "row",
+                                 showNA = "no",
+                                 funs=c(median, mean, "std dev"=sd),
+                                 percent_digits = 1, 
+                                 #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Occupation_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Occupation_Crosstab<- Occupation_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Occupation_Crosstab
+```
+
+## By Organisational Category
+
+```{r}
+# Create the crosstable and convert it to flextable
+Organisational_Crosstab<- crosstable(data %>% 
+                                       select(-any_of(text_vars)), 
+                                     by = Organisation_Catergory, 
+                                     total = "row",
+                                     showNA = "no", 
+                                     funs=c(median, mean, "std dev"=sd),
+                                     percent_digits = 1, 
+                                     #   percent_pattern = "N={n} ({p_row})"
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Organisational_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Organisational_Crosstab<- Organisational_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+# Display the styled flextable
+Organisational_Crosstab
+```
+
+```{r}
+#| include: false
+# examples of incorporating the weights
+
+# my preference - using the weights for counts, ('Outsourced' is the weights variable) e.g.
+test <- data %>% 
+  filter(!is.na(Income_Group)) %>%
+  group_by(Sex, Income_Group) %>%
+  summarise(
+    count = sum(Outsourced)
+  ) %>%
+  mutate(
+    perc = 100 * (count / sum(count))
+  )
+
+# alternative using srvyr
+# I don't love this because it's a bit more black boxy, i.e. having to know 
+# that survey_prop calcualtes percentages
+# I personally prefer just doing it manually so i know what's what
+library(srvyr)
+
+# Convert survey design object to srvyr design
+srvyr_design <- srvyr::as_survey_design(data, weights = "Outsourced")
+
+# Group by Income_Group and summarize multiple variables
+Income_Crosstab <- srvyr_design %>%
+  filter(!is.na(Income_Group)) %>%
+  group_by(Sex, Income_Group) %>%
+  summarize(
+    prop = survey_prop()
+  )
+
+# If you want to format the table similar to `crosstable()`
+Income_Crosstab <- Income_Crosstab %>%
+  as_flextable() %>%
+  colformat_double(digits=2)
+
+Income_Crosstab 
+
+
+# there's also survey package and svydesign
+# again I'm not a huge fan because we have to rely on 
+# in built commands and the output formats of the package
+# though note this is probably the way to go for more complex survey designs
+
+```
+
+# Bigger Q's - To Do Next
+
+## regressions for fun
+
+```{r}
+library(jtools)
+data$Income_Group<- as.factor(data$Income_Group)
+
+model<-glm(Income_Group ~ Age + Sex + Region +
+           Education_Band + TradeUnion + BORNUK*Ethnicity_Collapsed + Clarity_Overall_Mean, family = binomial, data)
+
+#summary(model)
+
+export_summs(model, digits = 3, stars = c(`***` = 0.01, `**` = 0.05, `*` = 0.1))
+
+#effect_plot(model, pred = Clarity_Overall_Mean, interval = TRUE, plot.points = TRUE, jitter = 0.05)
+```
+
+## Question 1
+
+Do the important questions in the survey relating to job quality (i.e. on secure and predictable contracts and cancellations; on people’s treatment at work, including discrimination; on whether they feel they lose out or gain through being outsourced) differ meaningfully if we split by low pay and high pay? This is important to us understanding if low-paid outsourced workers come out worse on job quality than their higher paid counterparts – or not.
+
+-   [x] Morgan to define job quality questions
+
+```{r}
+# subset job quality q's and demographics
+
+
+# simple regresiion on most interesting job quality q
+
+
+# mixed effects model?
+
+
+# mutiple multivariate regression on all job quality q's
+
+
+```
+
+## Question 2
+
+Do some of these important questions on job quality see meaningful differences along some of the key demographic lines that were meaningful in the nat rep analysis and pointed to potential inequalities in outsourcing – so most importantly I think ethnicity, being born in uk / outside uk, age, gender etc.
+
+```{r}
+
+# assessed above - use jobquality subset and multivariate multiple regression
+# in this case restrict predictors to demographics
+
+##reuse Jolyon's mixed effects model from last time
+```
+
+## Other Q's - Strikeouts already covered in crosstabs
+
+**Ideas about “interesting” questions to start digging into:**
+
+Trade union questions one and two (UNION, TUCOV): Interested in low vs high pay; and if low paid workers are less likely to be a member, or to have their pay and conditions covered by agreements? And also interested in how this pattern looks across our other key demographic lines – ethnicity, born in UK / outside UK, age and gender, etc.
+
+~~Working hours: Low vs high pay: do low-paid workers have different typical hours to higher paid workers, for example fewer hours?~~
+
+GUARANTEED HOURS: What is the spread for low paid vs high paid workers; do they cluster in different places in terms of how many hours they are guaranteed?
+
+~~NOTICE: Same as above, interested in whether low-paid workers are more likely to be given less notice?~~
+
+CANCELLATION (1): Interested in people who say YES here and then say they receive 0% pay for cancelled shifts in the following question – are low paid workers more likely to be at risk of cancellation without compensation?
+
+SICK PAY – Start with low vs not low pay, but would like to chat about how we might best dig into this in more detail
+
+~~TUPE – Low and not-low pay~~
+
+TERMSCHANGING: Low pay and not low pay, to see if there is a meaningful trend – here we could aggregate people who say worse immediately and over time / better immediately and over time, etc. together?
+
+RIGHTS VIOLATIONS: I think this is particularly interesting, and we would like to understand more about how this might differ depending on high/low pay, ethnicity, born in the uk / outside of the uk, age, gender – essentially the potential inequalities we see in the workforce demographics – and whether some groups disproportionately experience violations of their rights
+
+~~SATISFACTION – I think begin with low pay / not low pay?~~
+
+PAY COMPARISON – I think this is particularly interesting and we would like to understand whether some groups of workers are more likely to say they are paid less than their in house colleagues (if sample is large enough)
+
+PAY COMPARISON 2 / 3 – Think we want to understand whether low-paid workers are more / less / equally likely to say they got a smaller pay rise than in house colleagues, if they received a pay rise
+
+-   [ ] We need clarity on the below 'outsourced %' questions
+
+TASKS AND INSTRUCTIONS – Total outsourced % only for the moment
+
+UNIFORM / UNIFORM A / B / C – Total outsourced % only for the moment
+
+DIFFERENT SPACES 1 AND 2 – Total outsourced % only for the moment
+
+BELONGINGANDCONNECTION – Total outsourced % only for the moment
+
+PARTOFTEAM – Total outsourced % only for the moment
+
+~~TRAINING AND INDUCTION – I think we’d like to know if there are meaningful differences here by high / low pay~~
+
+TREATMENTATWORKQUALITY –  I think this is particularly interesting, and we’d like to know whether this meaningfully differs between responses along the lines of inequalities we’ve seen in the outsourced population – i.e. born in uk / outside UK, ethnicity, age, gender
+
+TREATMENT AT WORK COMPARISON – As above, I think here we’d like to know if there are meaningful differences according to some of the inequalities we have seen in the outsourced population, in terms of people saying that they are treated worse or better than in-house staff (rather than treated the same)
+
+WORKPLACEDISCRIMINATION – I think this is particularly interesting, but want to think a bit more about what kind of analysis would be best to test “significance” of responses, vs if what we want to look at is a simple assessment of whether people with each protected characteristic have experienced discrimination linked to them?
+
+~~COMPLAINTS AND PROBLEMS – Start with low pay vs not low pay~~
+
+CLARITY AND CONFIDENCE – I think we’d like to start by understanding high / low pay – to see if low-paid workers are less likely to have clarity and confidence on these issues – but it would be good to have a follow-up discussion about how we can focus down on some of the specific statements, and dig into any differences in responses, once we’ve seen the pivot tables?
+
+~~WHYJOBA – Low pay vs not low pay~~
+
+~~WHYJOBB – Low pay vs not low pay~~
+
+~~BENEFITS / DOWNSIDES OF OUTSOURCING – Low pay vs not low pay~~
+
+~~WHY OUTSOURCED – Low pay vs not low pay~~
+
+IMPROVEMENTS – Total outsourced % only for the moment
+
+PREFERENCE QUESTION – This is very interesting, and would be good to dig into differences across the inequality lines we see in the outsourced workforce here to see whether there are meaningful patterns on i.e. ethnicity, born in UK, gender, age
