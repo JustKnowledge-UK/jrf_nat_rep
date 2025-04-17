@@ -1,0 +1,1073 @@
+---
+title: "Pros and Cons Analysis 23-03-25"
+format: 
+  html:
+    self-contained: true
+    page-layout: full
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code for Nerds"
+    monobackgroundcolor: "darkgrey"
+   # toc: true
+editor: visual
+author: Celestin Okoroji
+engine: knitr
+execute:
+  warning: false
+---
+
+## Preamble
+
+This document was created to address our recent email chain. This document has not been internally Q&A and should be considered draft.
+
+## The Variables of Interest
+
+First let us construct a subset of the main data set only containing 'the questions where we ask people if they think they see better / worse / no impact on various T&Cs as a result of being outsourced' and some demographics (we assume here that the questions being referred to are the 'pros and cons' vars because these have matching response options as described.
+
+There are 14 of these variables to which we add a few demographic variables for use later on (Sex, Age, Ethnicity_Collapsed, Region, Education_Band, Annual_Income, Income_Group, outsourcing group)
+
+```{r}
+library(tidyverse)
+
+# Read data
+data <- read_csv("data/2025-01-21 - clean_data_jrf_experiential.csv")
+
+# reduced dataset
+data_processed <- data %>%
+  mutate(across(where(is.character), as.factor)) %>%
+  select(
+    starts_with("pro"),
+    Sex, Age, Ethnicity_Collapsed, Region, Education_Band,
+    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+  )
+```
+
+Next, since the data we are interested in is categorical and has already been cross tabulated elsewhere, we will transform the data into a numerical form so we can do some other interesting analysis.
+
+```{r}
+# Function to transform categorical responses to numeric values
+recode_pros_cons <- function(x) {
+  case_when(
+    grepl("more|better|easier", tolower(x)) ~ 1,
+    grepl("less|harder|worse", tolower(x)) ~ -1,
+    grepl("neither|no impact", tolower(x)) ~ 0,
+    grepl("don't know", tolower(x)) ~ NA_real_,
+    # Default case
+    TRUE ~ NA_real_
+  )
+}
+
+# Process the data
+data_processed <- data %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  # Select both original and new numeric columns
+  select(
+    # Original variables
+    starts_with("pro"),
+    # Recoded numeric variables
+    contains("_numeric"),
+    Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
+    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+  )
+
+
+```
+
+Next lets create a basic visualisation of the data. As you will notice most responses seem to be positive or neutral. Its relevant to note that some of the variable have 0 negative responses (over 1800+ outsourced respondents). This seems to indicate that by and large outsourced workers consider that being outsourced has a limited negative impact on the areas covered by the variables. I've added correlations here for completeness though there a no really strong correlations, and only a few moderate ones.
+
+```{r fig.height=10,fig.width=12}
+# Load visualization packages
+library(ggplot2)
+library(tidyr)
+library(forcats)
+
+# Create stacked bar chart for all Pros_And_Cons variables
+pros_cons_plot <- data_processed %>%
+  select(contains("_numeric")) %>%
+  # Convert to long format for plotting
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "response"
+  ) %>%
+  # Clean variable names for display
+  mutate(
+    variable = gsub("Pros_And_Cons_|_numeric", "", variable),
+    variable = gsub("_", " ", variable),
+    response_label = case_when(
+      response == 1 ~ "Positive",
+      response == 0 ~ "Neutral",
+      response == -1 ~ "Negative",
+      is.na(response) ~ "Don't know"
+    )
+  ) %>%
+  # Count responses for each variable and response type
+  count(variable, response, response_label) %>%
+  group_by(variable) %>%
+  mutate(percentage = n / sum(n) * 100) %>%
+  mutate(response_label = factor(response_label, 
+                               levels = c("Negative", "Neutral", "Positive", "Don't know")))
+
+# Plot stacked bar chart
+ggplot(pros_cons_plot, aes(x = variable, y = percentage, fill = response_label)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("Negative" = "#E74C3C", 
+                              "Neutral" = "#F1C40F", 
+                              "Positive" = "#2ECC71", 
+                              "Don't know" = "#BDC3C7")) +
+  coord_flip() +
+  labs(
+    title = "Pros and Cons: Response Distribution",
+    x = NULL,
+    y = "Percentage (%)",
+    fill = "Response"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Create a diverging bar chart to better visualize positive/negative distribution
+diverging_plot <- pros_cons_plot %>%
+  # Filter out Don't know responses
+  filter(!is.na(response)) %>%
+  # Create values for diverging bars
+  mutate(
+    plot_value = ifelse(response == 0, 0,
+                       ifelse(response == 1, percentage, -percentage))
+  )
+
+# Plot diverging bar chart
+ggplot(diverging_plot, aes(x = variable, y = plot_value, fill = response_label)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Negative" = "#E74C3C", 
+                              "Neutral" = "#F1C40F", 
+                              "Positive" = "#2ECC71")) +
+  coord_flip() +
+  labs(
+    title = "Pros and Cons: Positive vs Negative Responses",
+    subtitle = "Negative values on left, positive values on right",
+    x = NULL,
+    y = "Percentage (%)",
+    fill = "Response"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  geom_hline(yintercept = 0, color = "black", linewidth = 0.5)
+
+# Create a correlation heatmap to see relationships between variables
+correlation_plot <- data_processed %>%
+  select(contains("_numeric")) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  rownames_to_column("variable1") %>%
+  pivot_longer(-variable1, names_to = "variable2", values_to = "correlation") %>%
+  mutate(
+    variable1 = gsub("Pros_And_Cons_|_numeric", "", variable1),
+    variable2 = gsub("Pros_And_Cons_|_numeric", "", variable2)
+  )
+
+# Plot correlation heatmap
+ggplot(correlation_plot, aes(x = variable1, y = variable2, fill = correlation)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#E74C3C", mid = "white", high = "#2ECC71", midpoint = 0) +
+  geom_text(aes(label = round(correlation, 2)), color = "black", size = 3) +
+  labs(
+    title = "Correlation Between Pros and Cons Variables",
+    x = NULL,
+    y = NULL,
+    fill = "Correlation"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+
+```
+
+\
+
+## Means
+
+Next we explore the mean values for each of the Pros_and_Cons variables. Looking at the variables this way confirms that overall the sentiment towards these questions overall appears to be positive
+
+```{r fig.height=10,fig.width=12}
+# Calculate means for each Pros_And_Cons variable
+means_with_sd <- data_processed %>%
+  # Select only the numeric versions
+  select(contains("_numeric")) %>%
+  # Calculate mean and standard error for each variable
+  summarise(across(everything(), 
+                   list(
+                     mean = ~ mean(.x, na.rm = TRUE),
+                     se = ~ sd(.x, na.rm = TRUE) / sqrt(sum(!is.na(.x)))
+                   ))) %>%
+  # Convert to long format
+  pivot_longer(
+    cols = everything(),
+    names_to = c("variable", ".value"),
+    names_pattern = "(.*)_(mean|se)"
+  ) %>%
+  # Clean variable names
+  mutate(
+    variable = gsub("Pros_And_Cons_|_numeric", "", variable),
+    variable = gsub("_", " ", variable),
+    # Create factor for sorting
+    variable = fct_reorder(variable, mean)
+  )
+
+# Create plot with error bars
+means_with_error_plot <- ggplot(means_with_sd, 
+                               aes(x = variable, y = mean)) +
+  geom_bar(stat = "identity", 
+           aes(fill = mean > 0),
+           width = 0.7) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = 0.2) +
+  scale_fill_manual(values = c("TRUE" = "#2ECC71", "FALSE" = "#E74C3C")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  coord_flip() +
+  labs(
+    title = "Average Response by Category with Standard Error",
+    subtitle = "Values range from -1 (negative) to +1 (positive)",
+    x = NULL,
+    y = "Mean Value"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(-1, 1), 
+                     breaks = seq(-1, 1, 0.25))
+
+# Display the plot with error bars
+means_with_error_plot
+```
+
+## Thematic Means
+
+We were asked to look at these variables together as themes. To do so we grouped the variables in the way they were set out in the emails. Again these show that there are differing levels of positivity but nevertheless, it is interesting to note promotion and progression and enforcement coming in as the least positive
+
+```{r fig.height=10,fig.width=12}
+# Define the themes and their corresponding variables
+themes <- list(
+  "Secure work and incomes" = c(
+    "Pay", "Hours", "Job security"
+  ),
+  "Terms and conditions" = c(
+    "Holiday leave", "Flexibility", "Terms and conditions"
+  ),
+  "Progression and opportunity" = c(
+    "Progress", "Training", "Specialise"
+  ),
+  "Enforcement" = c(
+    "Rights", "Health safety"
+  ),
+  "Connections and relationships" = c(
+    "Treatment", "Connected", "Invested"
+  )
+)
+
+# Prepare the data with theme information
+themed_data <- data_processed %>%
+  # Select only the numeric versions
+  select(contains("_numeric")) %>%
+  # Create a mapping from column names to themes
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  # Clean variable names
+  mutate(
+    clean_var = gsub("Pros_And_Cons_|_numeric", "", variable),
+    clean_var = gsub("_", " ", clean_var)
+  ) %>%
+  # Add theme classification
+  mutate(theme = case_when(
+    grepl("Pay", clean_var, ignore.case = TRUE) ~ "Secure work and incomes",
+    grepl("Hours", clean_var, ignore.case = TRUE) ~ "Secure work and incomes",
+    grepl("security", clean_var, ignore.case = TRUE) ~ "Secure work and incomes",
+    
+    grepl("Holiday", clean_var, ignore.case = TRUE) ~ "Terms and conditions",
+    grepl("Flex", clean_var, ignore.case = TRUE) ~ "Terms and conditions",
+    grepl("Terms", clean_var, ignore.case = TRUE) ~ "Terms and conditions",
+    
+    grepl("Progress|Promotion", clean_var, ignore.case = TRUE) ~ "Progression and opportunity",
+    grepl("Training|Development", clean_var, ignore.case = TRUE) ~ "Progression and opportunity",
+    grepl("Special", clean_var, ignore.case = TRUE) ~ "Progression and opportunity",
+    
+    grepl("Rights", clean_var, ignore.case = TRUE) ~ "Enforcement",
+    grepl("Health|Safety", clean_var, ignore.case = TRUE) ~ "Enforcement",
+    
+    grepl("Treatment", clean_var, ignore.case = TRUE) ~ "Connections and relationships",
+    grepl("Connect", clean_var, ignore.case = TRUE) ~ "Connections and relationships",
+    grepl("Invest", clean_var, ignore.case = TRUE) ~ "Connections and relationships",
+    
+    TRUE ~ "Other"
+  ))
+
+# Calculate means by theme
+theme_means <- themed_data %>%
+  filter(!is.na(value)) %>%
+  group_by(theme) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    se = sd(value, na.rm = TRUE) / sqrt(n()),
+    n = n()
+  ) %>%
+  filter(theme != "Other") %>%
+  # Create factor for sorting
+  mutate(theme = fct_reorder(theme, mean))
+
+# Create plot with error bars
+theme_means_error_plot <- ggplot(theme_means, 
+                                aes(x = theme, y = mean)) +
+  geom_bar(stat = "identity", 
+           aes(fill = mean > 0),
+           width = 0.7) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), 
+                width = 0.2) +
+  scale_fill_manual(values = c("TRUE" = "#2ECC71", "FALSE" = "#E74C3C")) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  coord_flip() +
+  labs(
+    title = "Average Response by Theme with Standard Error",
+    subtitle = "Values range from -1 (negative) to +1 (positive)",
+    x = NULL,
+    y = "Mean Value",
+    caption = paste("Error bars represent standard error of the mean")
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(-1, 1), 
+                     breaks = seq(-1, 1, 0.25))
+
+# Display plot
+theme_means_error_plot
+
+# Calculate means for individual variables but organized by theme
+variable_means_by_theme <- themed_data %>%
+  filter(!is.na(value), theme != "Other") %>%
+  group_by(theme, clean_var) %>%
+  summarise(
+    mean = mean(value, na.rm = TRUE),
+    se = sd(value, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  # Create ordered factors
+  group_by(theme) %>%
+  mutate(clean_var = fct_reorder(clean_var, mean)) %>%
+  ungroup() %>%
+  mutate(theme = factor(theme, levels = levels(theme_means$theme)))
+
+# Create a plot showing variables within themes
+themed_variables_plot <- ggplot(variable_means_by_theme, 
+                               aes(x = clean_var, y = mean, fill = theme)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.2) +
+  facet_grid(theme ~ ., scales = "free_y", space = "free_y") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  coord_flip() +
+  labs(
+    title = "Average Response by Variable within Themes",
+    subtitle = "Values range from -1 (negative) to +1 (positive)",
+    x = NULL,
+    y = "Mean Value"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(face = "bold"),
+    panel.spacing = unit(1, "lines")
+  ) +
+  scale_y_continuous(limits = c(-1, 1), 
+                     breaks = seq(-1, 1, 0.5))
+
+# Display the faceted plot
+themed_variables_plot
+```
+
+## Basic Regression (2 vars)
+
+Now, to my point about 'over-claiming' its useful to understand whether variations in responses to these question are usefully explained by other variables that seem to have a relationship to outsourcing. Namely, Gender and Ethnicity. We explore this through a simple regression model.\
+\
+In relation to security (e.g. pay and hours etc) being a woman was associated with lower scores and this result is significant. Moreover, Being of Black/ African/Caribbean/Black British origin was associated with *higher* scores and this result was significant. Similar results are found across all themes with slight variations.
+
+Interestingly, in the 'connections' theme all minority groups have significantly higher scores compared to the White baseline. Potentially indicating higher exposure to similar others (re: homophily).
+
+::: callout-note
+In a forest plot, if the confidence interval or the point estimate crosses 0, the result is not statistically significant.
+:::
+
+```{r fig.height=10,fig.width=12}
+# Prepare data for regression analysis
+# First, let's create a dataset with demographic variables and theme means per respondent
+regression_data <- data_processed %>%
+  # Select demographic variables and numeric pros/cons variables
+  select(
+    # Demographic variables (adjust column names to match your actual data)
+    Sex, Ethnicity_Collapsed,
+    # All of the recoded variables
+    contains("_numeric")
+  ) %>%
+  # Calculate mean score for each theme per respondent
+  mutate(
+    # Create theme scores for each respondent by averaging relevant variables
+    theme_secure = rowMeans(select(., contains("Pay_numeric"), contains("Hours_numeric"), contains("security_numeric")), na.rm = TRUE),
+    theme_terms = rowMeans(select(., contains("Holiday_numeric"), contains("Flex_numeric"), contains("Terms_numeric")), na.rm = TRUE),
+    theme_progression = rowMeans(select(., contains("Progress_numeric"), contains("Training_numeric"), contains("Special_numeric")), na.rm = TRUE),
+    theme_enforcement = rowMeans(select(., contains("Rights_numeric"), contains("Health_numeric"), contains("Safety_numeric")), na.rm = TRUE),
+    theme_connections = rowMeans(select(., contains("Treatment_numeric"), contains("Connect_numeric"), contains("Invest_numeric")), na.rm = TRUE)
+  )%>%
+    mutate(across(where(is.character), as.factor))
+
+#relevel
+regression_data$Sex<-relevel(regression_data$Sex, ref = "Male")
+regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White")
+
+# Run regression models for each theme
+model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed, regression_data)
+model_terms <- lm(theme_terms ~ Sex + Ethnicity_Collapsed, data = regression_data)
+model_progression <- lm(theme_progression ~ Sex + Ethnicity_Collapsed, data = regression_data)
+model_enforcement <- lm(theme_enforcement ~ Sex + Ethnicity_Collapsed, data = regression_data)
+model_connections <- lm(theme_connections ~ Sex + Ethnicity_Collapsed, data = regression_data)
+
+# Display summary of one model
+summary(model_secure)
+summary(model_terms)
+summary(model_progression)
+summary(model_enforcement)
+summary(model_connections)
+
+# Create a function to extract coefficients from all models
+extract_coefficients <- function(model, theme_name) {
+  coef_data <- broom::tidy(model, conf.int = TRUE) %>%
+    filter(term != "(Intercept)") %>%
+    mutate(theme = theme_name)
+  return(coef_data)
+}
+
+# Combine coefficients from all models
+all_coefficients <- bind_rows(
+  extract_coefficients(model_secure, "Secure work and incomes"),
+  extract_coefficients(model_terms, "Terms and conditions"),
+  extract_coefficients(model_progression, "Progression and opportunity"),
+  extract_coefficients(model_enforcement, "Enforcement"),
+  extract_coefficients(model_connections, "Connections and relationships")
+)
+
+# Visualize regression coefficients
+coefficient_plot <- ggplot(all_coefficients, 
+                         aes(x = term, y = estimate, color = theme)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                position = position_dodge(width = 0.5),
+                width = 0.2) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  coord_flip() +
+  facet_wrap(~ theme) +
+  labs(
+    title = "Effect of Demographics on Theme Scores",
+    subtitle = "Regression coefficients with 95% confidence intervals",
+    x = NULL,
+    y = "Estimated Effect",
+    caption = "Reference categories: Sex = Male, Ethnicity = White"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+# Display the coefficient plot
+coefficient_plot
+
+# Alternative visualization: Forest plot of all coefficients
+forest_plot <- ggplot(all_coefficients, 
+                     aes(x = estimate, y = interaction(theme, term), 
+                        xmin = conf.low, xmax = conf.high, color = theme)) +
+  geom_point(size = 2) +
+  geom_errorbarh(height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black") +
+  labs(
+    title = "Demographic Effects on Work Experience Themes",
+    subtitle = "Regression coefficients with 95% confidence intervals",
+    x = "Estimated Effect",
+    y = NULL,
+    caption = "Reference categories: Sex = Male, Ethnicity = White"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    panel.grid.minor = element_blank()
+  )
+
+# Display the forest plot
+forest_plot
+```
+
+## Regression (More Vars)
+
+Finally, we consider a wider array of demographic variables and how they explain scores on these questions (Sex, Ethnicity_Collapsed, Age, Region, Education_Band, Income_Group and outsourcing group).
+
+Generally speaking, adding these variables did not change the results above. However, as found elsewhere in this project - Age remains a significant negative predictor across the most outcomes of interest e.g. as a person gets older the less positively they respond these questions. This finding seems intuitive to me, as one gets older the more 'stability' (as opposed to flexibility) matters.
+
+There also seems to be a clear effect of being less well educated, such that for people who are in the low/mid education band they seem to respond more negatively compared with the high educated. This could also be an effect of pay (?), in most cases being 'Not low paid' has no significant relationship with the outcomes of interest.
+
+```{r fig.height=10,fig.width=12}
+# Prepare data for regression analysis
+# First, let's create a dataset with demographic variables and theme means per respondent
+regression_data <- data_processed %>%
+  # Select demographic variables and numeric pros/cons variables
+  select(
+    # Demographic variables (adjust column names to match your actual data)
+    Sex, Ethnicity_Collapsed, Age, Region, Education_Band, Income_Group, OutsourcedNonOL,
+    # All of the recoded variables
+    contains("_numeric")
+  ) %>%
+  # Calculate mean score for each theme per respondent
+  mutate(
+    # Create theme scores for each respondent by averaging relevant variables
+    theme_secure = rowMeans(select(., contains("Pay_numeric"), contains("Hours_numeric"), contains("security_numeric")), na.rm = TRUE),
+    theme_terms = rowMeans(select(., contains("Holiday_numeric"), contains("Flex_numeric"), contains("Terms_numeric")), na.rm = TRUE),
+    theme_progression = rowMeans(select(., contains("Progress_numeric"), contains("Training_numeric"), contains("Special_numeric")), na.rm = TRUE),
+    theme_enforcement = rowMeans(select(., contains("Rights_numeric"), contains("Health_numeric"), contains("Safety_numeric")), na.rm = TRUE),
+    theme_connections = rowMeans(select(., contains("Treatment_numeric"), contains("Connect_numeric"), contains("Invest_numeric")), na.rm = TRUE)
+  ) %>%
+    mutate(across(where(is.character), as.factor))
+
+#relevel
+regression_data$Sex<-relevel(regression_data$Sex, ref = "Male")
+regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White")
+
+# Run regression models for each theme
+model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, regression_data)
+
+model_terms <- lm(theme_terms ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
+model_progression <- lm(theme_progression ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
+model_enforcement <- lm(theme_enforcement ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
+model_connections <- lm(theme_connections ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
+
+# Display summary of one model
+summary(model_secure)
+summary(model_terms)
+summary(model_progression)
+summary(model_enforcement)
+summary(model_connections)
+
+# Create a function to extract coefficients from all models
+extract_coefficients <- function(model, theme_name) {
+  coef_data <- broom::tidy(model, conf.int = TRUE) %>%
+    filter(term != "(Intercept)") %>%
+    mutate(theme = theme_name)
+  return(coef_data)
+}
+
+# Combine coefficients from all models
+all_coefficients <- bind_rows(
+  extract_coefficients(model_secure, "Secure work and incomes"),
+  extract_coefficients(model_terms, "Terms and conditions"),
+  extract_coefficients(model_progression, "Progression and opportunity"),
+  extract_coefficients(model_enforcement, "Enforcement"),
+  extract_coefficients(model_connections, "Connections and relationships")
+)
+
+# Visualize regression coefficients
+coefficient_plot <- ggplot(all_coefficients, 
+                         aes(x = term, y = estimate, color = theme)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                position = position_dodge(width = 0.5),
+                width = 0.2) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  coord_flip() +
+  facet_wrap(~ theme) +
+  labs(
+    title = "Effect of Demographics on Theme Scores",
+    subtitle = "Regression coefficients with 95% confidence intervals",
+    x = NULL,
+    y = "Estimated Effect",
+    caption = "Reference categories: Sex = Male, Ethnicity = White"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+# Display the coefficient plot
+coefficient_plot
+
+
+```
+
+```{r fig.height=20,fig.width=12}
+# Alternative visualization: Forest plot of all coefficients
+forest_plot <- ggplot(all_coefficients, 
+                     aes(x = estimate, y = interaction(theme, term), 
+                        xmin = conf.low, xmax = conf.high, color = theme)) +
+  geom_point(size = 2) +
+  geom_errorbarh(height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black") +
+  labs(
+    title = "Demographic Effects on Work Experience Themes",
+    subtitle = "Regression coefficients with 95% confidence intervals",
+    x = "Estimated Effect",
+    y = NULL,
+    caption = "Reference categories: Sex = Male, Ethnicity = White"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    panel.grid.minor = element_blank()
+  )
+
+# Display the forest plot
+forest_plot
+```
+
+## Person Level Approach
+
+Here we go for an approach outlined in our email exchange, directly looking at how many people responded with negatively (`-1`s) across the selected variables.
+
+The story remains largely the same. A very significant minority report 0 negative responses to these questions (40%). Only 17.4% reported 5 or more negative responses (of a possible 14)
+
+```{r}
+
+## check that this code correctly removes NA's e.g. that the total is not affected by NA's
+person_level <- data_processed %>%
+  mutate(
+    total = rowSums(select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(select(., contains("_numeric")) == -1, na.rm = TRUE)
+  )
+
+
+library(ggplot2)
+
+ggplot(person_level, aes(x = total)) +
+  geom_histogram(binwidth = 5, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Scores", x = "Total Score", y = "Count") +
+  theme_minimal()
+
+
+ggplot(person_level, aes(x = num_neg)) +
+  geom_histogram(binwidth = 1, fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of -1 Responses per Person", 
+       x = "Number of -1 Responses", 
+       y = "Count of People") +
+  theme_minimal()
+
+
+ggplot(person_level, aes(x = num_neg)) +
+  geom_density(fill = "red", alpha = 0.5) +
+  labs(title = "Density Plot of -1 Responses per Person", 
+       x = "Number of -1 Responses", 
+       y = "Density") +
+  theme_minimal()
+
+library(dplyr)
+library(ggplot2)
+
+#Categorize people based on the number of -1 responses
+person_level <- person_level %>%
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  ))
+
+# Count and calculate percentages
+neg_counts <- person_level %>%
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Create the bar plot
+ggplot(neg_counts, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Percentage of People Reporting Negative Responses",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of People") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+
+
+
+```
+
+## Could you send the crosstabs for this analysis by the key demographics (pay, ethnicity, sex, migration), so we can see whether some groups report higher rates of multiple negative outcomes than others?
+
+```{r}
+library(crosstable)
+library(flextable)
+
+
+# Create the crosstab by Income Group
+Income_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, num_neg, Income_Group), 
+                             by = Income_Group,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Income_Crosstab
+
+# create a crosstab by ethnicity
+
+Ethnicity_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, num_neg, Ethnicity_Collapsed), 
+                             by = Ethnicity_Collapsed,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Ethnicity_Crosstab
+
+#sex crosstab
+Sex_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, num_neg, Sex), 
+                             by = Sex,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Sex_Crosstab
+
+
+# Migrations
+
+Migration_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, num_neg, BORNUK), 
+                             by = BORNUK,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Migration_Crosstab
+```
+
+## Could you replicate this just for the people who say they are paid less: so, what % of this group who report being paid less than if they were in-house [also]{.underline} says yes to 1,2,3,4,5+ negative outcomes?
+
+Wow! 307 people selected that they get paid less and it should be noted that this is a small proportion of the total sample. However, for the people who reported being paid less - every single one reported at least one other negative outcome. And 70 reported 5 or more.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Filter for people paid less and create negative categories
+paid_less_group <- person_level %>%
+  filter(Pros_And_Cons_Pay == 'I get paid less') %>%
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Create the bar plot for paid less group
+ggplot(paid_less_group, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Percentage of People Paid Less Reporting Negative Responses",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of People Paid Less") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+```
+
+## Could you also replicate this first bit of analysis, but just focusing on the % of workers who say yes to 1, 2, 3, 4, 5+ “negatives” in the three sub-groups of “negative variables” I think are most important (below) – I think this would allow us to talk about overlaps between the most serious kinds of harm, because these represent really core elements of people’s terms and conditions:
+
+Here are the results looking only at the three specified areas.  
+
+```{r}
+## check that this code correctly removes NA's e.g. that the total is not affected by NA's
+person_level_secure_terms_enforcement <- data_processed %>%
+  select(Pros_And_Cons_Pay_numeric,
+         Pros_And_Cons_Hours_numeric,
+         Pros_And_Cons_Security_numeric,
+         Pros_And_Cons_Holiday_numeric,
+         Pros_And_Cons_Flexibility_numeric,
+         Pros_And_Cons_Terms_numeric,
+         Pros_And_Cons_HealthSafety_numeric,
+         Pros_And_Cons_Rights_numeric
+         ) %>% 
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+  
+
+library(dplyr)
+library(ggplot2)
+
+# Create the bar plot
+ggplot(person_level_secure_terms_enforcement, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Percentage of People Reporting Negative Responses within the Themes of Security, Terms and Enforcement",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of People") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+
+
+```
+
+## Could you also replicate this just for the 3 “secure work and incomes” variables – so what % of workers report negatives on 1, 2 or all 3 of these variables?
+
+Bare in mind here that the maximum is 3 i.e. where people gave a negative response to all three of the constituent variables.
+
+```{r}
+
+# Analyze negative responses for secure work and income variables
+# Calculate the percentage of negative responses across Pay, Hours, and Security variables
+secure_work_incomes_group <- person_level %>%
+  select(Pros_And_Cons_Pay_numeric, Pros_And_Cons_Hours_numeric, Pros_And_Cons_Security_numeric) %>%
+  # Remove rows where all selected columns are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Visualize the distribution of negative responses for secure work and income variables
+ggplot(secure_work_incomes_group, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Distribution of Negative Responses on Secure Work and Income Variables",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of Respondents") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+```
+
+## Could you do the same basic analysis for this “entitlements” question – so the % of people who said yes to 1, 2, 3, 4, 5+ etc. negative variables – i.e. going without a payslip / being paid late / not being paid for holiday they’re entitled to, etc.
+
+**I dont understand what you are asking for here. What is the ‘basic analysis’ you are refering to? and which specific ‘entitlements’ variables.**
+
+-   I mean could you look at the people who say yes to 1,2,3,4,5+ of the variables for the question “Some workers don’t receive everything that they are entitled to from their employer. In your current role, have you experienced any of the following – please tick all that apply.” So that we can look at how many workers report experiencing going without multiple entitlements in their current role.
+
+    This plot ignores where people have given a response of None
+
+```{r}
+# Create a custom function to recode experiences
+# Regular rights violations are coded as -1 (negative)
+# "None" responses are coded as +1 (positive)
+# NA values coded as 0 (not experienced)
+recode_rights_experiences <- function(x, is_none_column = FALSE) {
+  if (is_none_column) {
+    # For RightsViolations_None column
+    case_when(
+      is.na(x) ~ 0,          # NA means not answered
+      TRUE ~ 1               # "None" response is positive (+1)
+    )
+  } else {
+    # For all other rights columns
+    case_when(
+      is.na(x) ~ 0,          # NA means not experienced (0)
+      TRUE ~ -1              # Any non-NA value means negative experience (-1)
+    )
+  }
+}
+
+# Process the data - create numeric columns for rights variables
+rights_data <- data %>%
+  # Recode regular rights violations
+  mutate(across(starts_with("Rights") & !contains("None"), 
+                ~ recode_rights_experiences(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  # Special handling for None column
+  mutate(RightsViolations_None_numeric = 
+           recode_rights_experiences(RightsViolations_None, is_none_column = TRUE)) %>%
+  # Select both original and numeric columns plus demographic variables
+  select(
+    starts_with("Rights"),
+    contains("_numeric"),
+    Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
+    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+  )
+
+# Calculate negative experiences count and categorize
+rights_summary <- rights_data %>%
+  # Select only the violation columns, excluding the "None" column
+  select(contains("_numeric") & !contains("None_numeric")) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorize by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Visualize the distribution of negative rights experiences
+ggplot(rights_summary, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Distribution of Negative Responses on Rights",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of Respondents") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+```
+
+## Additionally investigate the most common violation
+
+Here we include 'None' responses
+
+```{r}
+# Calculate the frequency of both positive and negative responses
+rights_frequencies_with_none <- rights_data %>%
+  # Select all numeric columns for rights
+  select(contains("_numeric")) %>%
+  # Convert to long format for easier analysis
+  pivot_longer(
+    cols = everything(),
+    names_to = "right_type",
+    values_to = "value"
+  ) %>%
+  # Clean up the variable names for display
+  mutate(
+    right_type = str_replace(right_type, "Rights_", ""),
+    right_type = str_replace(right_type, "Violations_", ""),
+    right_type = str_replace(right_type, "_numeric", ""),
+    # Create a response type column to distinguish positive/negative
+    response_type = case_when(
+      value == 1 ~ "None (No violations)",
+      value == -1 ~ "Violation reported",
+      TRUE ~ "No response"
+    )
+  ) %>%
+  # Filter to include only meaningful responses (exclude zeros)
+  filter(value != 0) %>%
+  # Count by both right type and response type
+  count(right_type, response_type, value) %>%
+  # Calculate percentages based on total respondents
+  mutate(
+    percent = (n / nrow(rights_data)) * 100
+  )
+
+# Alternative stacked bar chart
+ggplot(rights_frequencies_with_none, 
+       aes(x = reorder(right_type, n), 
+           y = percent,
+           fill = response_type)) +
+  geom_bar(stat = "identity", position = "stack", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")),
+            position = position_stack(vjust = 0.5)) +
+  labs(
+    title = "Distribution of Responses for Each Rights Issue",
+    x = "Type of Rights Issue",
+    y = "Percentage of Respondents",
+    fill = "Response Type"
+  ) +
+  scale_fill_manual(values = c("None (No violations)" = "forestgreen", 
+                              "Violation reported" = "darkred",
+                              "No response" = "gray80")) +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 10),
+    legend.position = "bottom"
+  )
+```
+
+## Could you also send the crosstabs for this by the key demographics (pay, ethnicity, sex, migration), so again we can see whether some groups report higher rates of multiple failures to receive their entitlements than others
+
+TBC
+
+On the crosstabs, which it would be great to have for both of these questions, could they be flipped? So instead of showing the proportion of respondents saying yes to each variable who are in X group, instead showing the proportion of respondents in each group who say yes to each variable? I.e. instead of seeing that 23.22% of the people who said yes to 5+ negatives were in the low pay group, could we see the % of the low pay group who said yes to 5+ negatives – for each of these demographic cross tabs?
+
+```{r}
+
+library(crosstable)
+library(flextable)
+
+
+# Create the crosstab by Income Group
+Reverse_Income_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, Income_Group), 
+                             by = neg_category,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Reverse_Income_Crosstab
+
+# create a crosstab by ethnicity
+
+Reverse_Ethnicity_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, Ethnicity_Collapsed), 
+                             by = neg_category,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Reverse_Ethnicity_Crosstab
+
+#sex crosstab
+Reverse_Sex_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, Sex), 
+                             by = neg_category,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Reverse_Sex_Crosstab
+
+```

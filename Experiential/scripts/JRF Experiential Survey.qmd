@@ -1,0 +1,439 @@
+---
+title: "JRF Experiential Survey"
+format: 
+  html:
+    self-contained: true
+    page-layout: full
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code for Nerds"
+   # toc: true
+editor: visual
+author: Celestin Okoroji & Jolyon Miles-Wilson
+engine: knitr
+execute:
+  warning: false
+---
+
+## Intro
+
+This document contains the results of several regression models focusing on Ethnicity and Sex in relation to various aspects of outsourced work. This document is intentionally terse and concentrates only on presenting results that have statistically significant findings.
+
+All models use the same predictors: Age, Sex, Ethnicity, Arrival in the UK and Income Group. All models are weighted.
+
+For each plot, if the point estimate and confidence interval is to the right of the vertical dotted line, the variable is associated with a higher outcome (holding all other variables constant). Vice versa, if the point estimate and confidence interval is to the left of the vertical line, the variable is associated with a lower outcome. If the confidence interval crosses the vertical line, the variable is not significantly associated with the outcome.
+
+In most cases interaction effects between Sex and Ethnicity (and three-way interactions with Income group) were explored. If they are not reported here it indicates that these models were not better fits to the data than the main effects models.
+
+```{r}
+#| echo: false
+#| output: false
+
+#import data
+library(readr)
+library(jtools)
+data <- read_csv("data/postx2_data.csv")
+
+##relevling for regressions
+data$Income_Group<-relevel(factor(data$Income_Group), ref = "Not low")
+data$Ethnicity_Collapsed<-relevel(factor(data$Ethnicity_Collapsed), ref = "White")
+data$Sex<-relevel(factor(data$Sex), ref = "Male")
+
+```
+
+## Improvements
+
+The following regression model examines the relationship between the number of improvements suggested by outsourced workers i.e. the model sums the number of improvements suggested by each worker from a total of 15 possible options (such as higher pay, more flexible working hours etc).
+
+The model shows that as Age increases the number of suggested improvements decreases. The same is true for Female compared to Male respondents. Notably, Black respondents were more likely to suggest a greater number of improvements compared with White respondents. This was not the case for any other Ethnic group. Low income had no significant effect on the number of improvements suggested.
+
+```{r}
+#| echo: false
+#| output: false
+
+What_Improvements_Score.fit1<- (lm(What_Improvements_Score ~ 
+                                    Age +
+                                    Sex +
+                                    Ethnicity_Collapsed +
+                                    BORNUK +
+                                    Income_Group, weights= Outsourced, data)) 
+
+summary(What_Improvements_Score.fit1) #significant
+export_summs(What_Improvements_Score.fit1, scale=TRUE, robust=TRUE)
+
+```
+
+```{r}
+
+plot_summs(What_Improvements_Score.fit1, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "What Improvements Score")
+```
+
+## Which Improvements Specifically
+
+For brevity I am omitting all of the models in favour of brief overview of the significant results. Note that these models do not include the interaction effects. If particular improvements are not mentioned here, it is because there were no significant predictors (or significant results were uninteresting for another reason).
+
+-   **Pay**: Black respondents were more likely to suggest pay improvements compared to White respondents. There was no significant effect for other ethnic groups.
+-   **More Hours**: Age and Sex(female) associated with lower likelihood of suggesting more hours. People who arrived in the last year are much more likely to suggest more hours.
+-   **Less Hours**: Low pay associated with lower likelihood of suggesting less hours
+-   **More Consistency**: Age associated with lower likelihood of suggesting more consistency. Being Black associated with higher likelihood of suggesting more consistency. There was no significant effect for other ethnic groups.
+-   **More Flexibility**: Age associated with lower likelihood of suggesting more flexibility. Being Asian associated with higher likelihood of suggesting more flexibility. There was no significant effect for other ethnic groups.
+-   **Part of InHouse**: Sex (female) associated with lower likelihood of wanting to be part of InHouse
+-   **Enforce Rights**: Age associated with lower likelihood of suggesting enforcing rights
+-   **Management**: Age and Low pay associated with lower likelihood of suggesting management improvements
+-   **Autonomy**: Age and Sex associated with lower likelihood of suggesting autonomy improvements
+-   **Union**: Sex associated with lower likelihood of suggesting union improvements
+
+# Rights Violations
+
+Next we looked at Rights Violations. Again the number of rights violations reported is summed to create an overall score. Age and Sex have significant negative associations with the number of rights violations reported.
+
+```{r}
+#| echo: false
+#| output: false
+Rights_Violations_Score.fit1<- (lm(Rights_Violations_Score ~ 
+                                     Age +
+                                     Sex +
+                                     Ethnicity_Collapsed +
+                                     BORNUK +
+                                     Income_Group, weights = Outsourced, data)) 
+
+summary(Rights_Violations_Score.fit1) # some significant
+export_summs(Rights_Violations_Score.fit1, scale=TRUE, robust=TRUE)
+```
+
+```{r}
+plot_summs(Rights_Violations_Score.fit1, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Rights Violations Score")
+
+```
+
+## Which Rights Violations Specifically
+
+-   **Paid On Time**: Age associated with lower likelihood of reporting not being Paid on Time.
+-   **Paid Correctly**: Age associated with lower likelihood of reporting not being Paid Correctly.
+-   **Leave Entitlement**: Age associated with lower likelihood of reporting not getting full leave entitlements.
+-   **Holiday Pay**: Age associated with lower likelihood of reporting not getting holiday pay. Selecting 'Other' Ethnic group was associated with higher likelihood of reporting not getting holiday pay.
+-   **Sick Pay**: Age and Sex associated with lower likelihood of reporting not getting sick pay.
+-   **Pay Slips**: Age and Sex associated with lower likelihood of reporting issues with Pay Slips. Low pay was associated with higher likelihood of reporting issues with Pay Slips.
+-   **Health and Safety**: Age and Sex associated with lower likelihood of reporting usses with Health and Safety.
+
+# Clarity
+
+The clarity variables created a reliable scale and thus we initially take the mean of these variables in one analysis. However, in discussion we recognise that the clarity related variables may represent distinct concepts related to general confidence in who to approach around certain matters and specific attitudes towards management and how they deal with specific scenarios related to discrimination. We have not yet explored these in detail.
+
+It is worth clarifying here that there are many significant results in the model: - Being Black is associated with higher Clarity - Being in the 'Other' ethnic group is associated with lower Clarity - Being low income is associated with lower Clarity - There are significant interactions between Sex and being a member of the Mixed or 'Other' ethnic group such that women in these groups have higher clarity than men
+
+```{r}
+#| echo: false
+#| output: false
+#fit 2
+Clarity.fit2<- (lm(Clarity_Overall_Mean ~ 
+                                     Age +
+                                     Sex *
+                                     Ethnicity_Collapsed +
+                                     BORNUK +
+                                     Income_Group, weights = Outsourced, data)) 
+
+summary(Clarity.fit2) #some 
+
+export_summs(Clarity.fit2, scale=TRUE, robust=TRUE)
+```
+
+```{r}
+plot_summs(Clarity.fit2, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Clarity Overall Mean")
+
+```
+
+# Clarity Specifics
+
+> TBC
+
+# Additional Exploration
+
+At this point plots may be sufficient to elucidate the relationships between the variables in each case
+
+### Age Discrimination
+
+```{r}
+#| echo: false
+#| output: false
+client_discrimination_age.fit<- lm(Client_Discrimination_Age ~ 
+                                       Age +
+                                       Sex +
+                                       Ethnicity_Collapsed +
+                                       Income_Group +
+                                       BORNUK, 
+                                     weights = Outsourced, 
+                                     data,
+                                    na.action = na.omit)
+
+summary(client_discrimination_age.fit) 
+export_summs(client_discrimination_age.fit, scale=TRUE, robust=TRUE)
+```
+
+```{r}
+plot_summs(client_discrimination_age.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Age Discrimination")
+```
+
+### Disability Discrimination
+
+```{r}
+#| echo: false
+#| output: false
+
+Client_Discrimination_Disability.fit<- (lm(Client_Discrimination_Disability ~ 
+                                      Age +
+                                      Sex +
+                                      Ethnicity_Collapsed +
+                                      Income_Group +
+                                      BORNUK,weights = Outsourced, data)) 
+
+summary(Client_Discrimination_Disability.fit) 
+export_summs(Client_Discrimination_Disability.fit, scale=TRUE, robust=TRUE)
+```
+
+```{r}
+plot_summs(Client_Discrimination_Disability.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Clarity Overall Mean")
+```
+
+### Nationality Discrimination
+
+```{r}
+#| echo: false
+#| output: false
+Client_Discrimination_Nationality.fit<- (lm(Client_Discrimination_Nationality ~ 
+                                             Age +
+                                             Sex +
+                                             Ethnicity_Collapsed +
+                                             Income_Group +
+                                             BORNUK, weights = Outsourced,data)) 
+
+summary(Client_Discrimination_Nationality.fit) 
+export_summs(Client_Discrimination_Nationality.fit, scale=TRUE, robust=TRUE)
+```
+
+```{r, fig.fullwidth=TRUE}
+
+plot_summs(Client_Discrimination_Nationality.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Nationality")
+```
+
+### Ethnic Disctimination
+
+```{r}
+#| echo: false
+#| output: false
+Client_Discrimination_Ethnicity.fit<- (lm(Client_Discrimination_Ethnicity ~ 
+                                              Age +
+                                              Sex +
+                                              Ethnicity_Collapsed +
+                                              Income_Group +
+                                              BORNUK, weights = Outsourced,data)) 
+
+summary(Client_Discrimination_Ethnicity.fit) 
+
+export_summs(Client_Discrimination_Ethnicity.fit, scale=TRUE, robust=TRUE)
+
+```
+
+```{r}
+plot_summs(Client_Discrimination_Ethnicity.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Ethnicity")
+
+```
+
+### Sex Discrimination
+
+```{r}
+#| echo: false
+#| output: false
+
+Client_Discrimination_Sex.fit<- (lm(Client_Discrimination_Sex ~ 
+                                            Age +
+                                            Sex *
+                                            Ethnicity_Collapsed +
+                                            Income_Group +
+                                            BORNUK, weights = Outsourced,data)) 
+
+summary(Client_Discrimination_Sex.fit) #not sig!?
+export_summs(Client_Discrimination_Sex.fit, scale=TRUE, robust=TRUE)
+
+```
+
+```{r}
+
+plot_summs(Client_Discrimination_Sex.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Sex")
+```
+
+### TRADE UNION and TUCOV
+
+```{r}
+#| echo: false
+#| output: false
+
+data$TradeUnion<-factor(data$TradeUnion)
+#drop prefer not to say
+data<-data[!data$TradeUnion=="Prefer not to say",]
+
+trade_union.fit<- glm(TradeUnion ~ 
+                        Age +
+                        Sex +
+                        Ethnicity_Collapsed +
+                        Income_Group +
+                        BORNUK, 
+                        family = quasibinomial,
+                        weights = Outsourced,data) 
+
+summary(trade_union.fit) #not sig!?
+export_summs(trade_union.fit, scale=TRUE, robust=TRUE)
+
+```
+
+```{r}
+
+plot_summs(trade_union.fit, plot.distributions = TRUE,
+           rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Sex")
+
+```
+
+### TUCOV 
+```{r}
+#| echo: false
+#| output: false
+
+# data$TUCOV<-factor(data$TUCOV)
+# 
+# library(nnet)
+# 
+# TUCOV.fit<- multinom(TUCOV ~ 
+#                   Age +
+#                   Sex +
+#                   Ethnicity_Collapsed +
+#                   Income_Group +
+#                   BORNUK, 
+#                   family = quasibinomial,
+#                   weights = Outsourced,data) 
+# 
+# summary(TUCOV.fit) #not sig!?
+# export_summs(TUCOV.fit, scale=TRUE, robust=TRUE)
+
+```
+
+```{r}
+
+# plot_summs(TUCOV.fit, plot.distributions = TRUE,
+#            rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Sex")
+
+```
+
+## Cross tab
+```{r}
+
+#| echo: false
+#| output: false
+
+library(crosstable)
+library(flextable)
+library(scales)
+library(officer)
+library(dplyr)
+
+Income_Crosstab <- crosstable(data %>% 
+                   dplyr::select(Income_Group,
+                                 TradeUnion,
+                          TUCOV,
+                          Guaranteed_Hours,
+                          Notice_Of_Working_Hours,
+                          Notice_Of_Cancelled_Shifts,
+                          Cancelled_Shift_Pay,
+                          Sick_Pay,
+                          Pay_Comparison,
+                          Training_Induction,
+                          Treatment_At_Work_InHouse,
+                          Why_Job_BestAvailable,
+                          Why_Job_NotQualified,
+                          Why_Job_Health,
+                          Why_Job_Carer,
+                          Pros_And_Cons_Flexibility, 
+                          Pros_And_Cons_Pay, 
+                          Pros_And_Cons_Hours, 
+                          Pros_And_Cons_Holiday, 
+                          Pros_And_Cons_Terms, 
+                          Pros_And_Cons_Promotion, 
+                          Pros_And_Cons_Training, 
+                          Pros_And_Cons_Security, 
+                          Pros_And_Cons_Treatment, 
+                          Pros_And_Cons_Specialisation, 
+                          Pros_And_Cons_Connection, 
+                          Pros_And_Cons_FeelInvested, 
+                          Pros_And_Cons_Rights, 
+                          Pros_And_Cons_HealthSafety,
+                          Work_Preference
+                   ), 
+                by = "Income_Group",  # Note the quotes here
+                total = "row",
+                showNA = "no", 
+                funs = c(median, mean, "std dev" = sd),
+                percent_digits = 1
+) %>%
+  as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Income_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Calculate the actual domain (min and max) of the numeric columns
+numeric_data <- unlist(data[numeric_columns])
+min_val <- min(numeric_data, na.rm = TRUE)
+max_val <- max(numeric_data, na.rm = TRUE)
+
+# Apply basic styling
+Income_Crosstab<- Income_Crosstab%>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns (right-align numeric columns)
+  align(j = numeric_flextable_columns, align = "right", part = "body") %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table using officer's fp_border function
+  border_outer(border = officer::fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = officer::fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Apply dynamic background color to numeric cells based on their actual min/max range
+  bg(j = numeric_flextable_columns, 
+     bg = scales::col_numeric(palette = "viridis", domain = c(min_val, max_val))(numeric_data), 
+     part = "body") %>%
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all")
+
+
+```
+
+```{r}
+Income_Crosstab
+```
+
+
+JOB SATISFACTION
+

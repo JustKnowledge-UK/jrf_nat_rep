@@ -1,0 +1,307 @@
+---
+title: "Updated X tabs for MB 21_01_25"
+format: 
+  html:
+    self-contained: true
+    page-layout: full
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code for Nerds"
+    monobackgroundcolor: "black"
+   # toc: true
+editor: visual
+author: Celestin Okoroji
+engine: knitr
+execute:
+  warning: false
+---
+
+```{r}
+library(tidyverse)
+library(crosstable)
+library(flextable)
+library(scales)
+library(officer)  # Load officer for fp_border
+
+setwd("~/Library/CloudStorage/OneDrive-Personal/Documents/GitHub/jrf-experiential")
+data <- read_csv("data/postx2_data.csv")
+data <- data %>%
+  mutate(across(where(is.character), as.factor))
+
+
+library(crosstable)
+library(flextable)
+library(scales)
+library(officer)  # Load officer for fp_border
+
+crosstable_options(scientific_log = 6)
+
+# Define all text vars to remove
+text_vars <- c("ID", "What_Do_You_Do_TEXT",
+               "Job_Title_TEXT",
+               "What_Does_Your_Employer_Do_TEXT",
+               "TermsChanging_TEXT",
+               "RightsViolations_TEXT",
+               "Why_Job_TEXT",
+               "Why_Outsourced_TEXT",
+               "What_Improvements_Other_TEXT")
+
+```
+
+# Income Crosstab
+
+```{r}
+# Create the crosstable and convert it to flextable
+Income_Crosstab <- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = Income_Group,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_col})") %>%
+   as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Income_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Apply basic styling
+Income_Crosstab <- Income_Crosstab %>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns to the center
+  align(j = numeric_flextable_columns, align = "center", part = "body") %>%
+  
+  # Round numeric values to 2 decimal places
+  colformat_num(j = numeric_flextable_columns, digits = 2) %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table
+  border_outer(border = fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all") %>%
+  
+  # Add a title
+  add_header_lines("Demographics by Income Group") %>%
+  
+  # Rename the column headers
+  bold(i = 1, j = 1, part = "header") %>%
+  set_header_labels(variable = "Response", label = "Variable")
+
+# Display the styled flextable
+Income_Crosstab
+
+```
+
+# Sex Crosstab
+
+```{r}
+# Create the crosstable and convert it to flextable
+Sex_Crosstab <- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = Sex,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_col})") %>%
+   as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Sex_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Apply basic styling
+Sex_Crosstab <- Sex_Crosstab %>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns to the center
+  align(j = numeric_flextable_columns, align = "center", part = "body") %>%
+  
+  # Round numeric values to 2 decimal places
+  colformat_num(j = numeric_flextable_columns, digits = 2) %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table
+  border_outer(border = fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all") %>%
+  
+  # Add a title
+  add_header_lines("Demographics by Sex") %>%
+  
+  # Rename the column headers
+  bold(i = 1, j = 1, part = "header") %>%
+  set_header_labels(variable = "Response", label = "Variable")
+
+# Display the styled flextable
+Sex_Crosstab
+
+```
+
+# Ethnicity Crosstab
+
+```{r}
+# Create the crosstable and convert it to flextable
+Ethnicity_Crosstab <- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = Ethnicity_Collapsed,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_col})") %>%
+   as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- Ethnicity_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Apply basic styling
+Ethnicity_Crosstab <- Ethnicity_Crosstab %>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns to the center
+  align(j = numeric_flextable_columns, align = "center", part = "body") %>%
+  
+  # Round numeric values to 2 decimal places
+  colformat_num(j = numeric_flextable_columns, digits = 2) %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table
+  border_outer(border = fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all") %>%
+  
+  # Add a title
+  add_header_lines("Demographics by Ethnicity") %>%
+  
+  # Rename the column headers
+  bold(i = 1, j = 1, part = "header") %>%
+  set_header_labels(variable = "Response", label = "Variable")
+
+# Display the styled flextable
+Ethnicity_Crosstab
+
+```
+
+# BORNUK Crosstab
+
+```{r}
+
+data <- data %>%
+  mutate(
+    BORNUK = if_else(BORNUK == "I was born in the UK", "I was born in the UK", "Not born in the UK")
+  )
+# Create the crosstable and convert it to flextable
+BORNUK_Crosstab <- crosstable(data %>% 
+                               select(-any_of(text_vars)), 
+                             by = BORNUK,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_col})") %>%
+   as_flextable()
+
+# Retrieve the column keys from the flextable object
+col_keys <- BORNUK_Crosstab$col_keys
+
+# Identify numeric columns in the original data and map to flextable column keys
+numeric_columns <- names(data)[sapply(data, is.numeric)]
+numeric_flextable_columns <- intersect(col_keys, numeric_columns)
+
+# Apply basic styling
+BORNUK_Crosstab <- BORNUK_Crosstab %>%
+  # Autofit column widths
+  autofit() %>%
+  
+  # Align numeric columns to the center
+  align(j = numeric_flextable_columns, align = "center", part = "body") %>%
+  
+  # Round numeric values to 2 decimal places
+  colformat_num(j = numeric_flextable_columns, digits = 2) %>%
+  
+  # Add background color to the header
+  bg(bg = "#4F81BD", part = "header") %>%
+  color(color = "white", part = "header") %>%
+  
+  # Bold the header
+  bold(part = "header") %>%
+  
+  # Add borders around the table
+  border_outer(border = fp_border(color = "black", width = 1)) %>%
+  border_inner_h(border = fp_border(color = "gray", width = 0.5)) %>%
+  border_inner_v(border = fp_border(color = "gray", width = 0.5)) %>%
+  
+  # Align the text to the center for non-numeric (categorical) variables
+  align(j = setdiff(col_keys, numeric_flextable_columns), align = "center", part = "body") %>%
+  
+  # Set font size and type for the whole table
+  fontsize(size = 10, part = "all") %>%
+  font(fontname = "Arial", part = "all") %>%
+  
+  # Add a title
+  add_header_lines("Demographics by BORNUK") %>%
+  
+  # Rename the column headers
+  bold(i = 1, j = 1, part = "header") %>%
+  set_header_labels(variable = "Response", label = "Variable")
+
+# Display the styled flextable
+BORNUK_Crosstab
+
+```
