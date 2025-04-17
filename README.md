@@ -18,13 +18,13 @@ This repository contains the data and analysis underlying JRF's Nationally Repre
 
 ### Repository structure
 
-- Data: Contains input data, including the original survey data files and cleaned data files.
-- R: Contains scripts used for data cleaning and analysis:
+- `Data/`: Contains input data, including the original survey data files and cleaned data files.
+- `R/`: Contains scripts used for data cleaning and analysis:
   - data_cleaning.qmd is the data cleaning script
   - key_findings_report_structure.qmd is the analysis script
   - methodology.qmd is the script for producing the methodology document
-- outputs: Contains the various outputs (plots, datafiles) from the cleaning and analysis
-- py: Contains python script for plotting regional distribution of outsourced workers.
+- `outputs`: Contains the various outputs (plots, datafiles) from the cleaning and analysis
+- `py`: Contains python script for plotting regional distribution of outsourced workers.
 
 ### Usage
 
