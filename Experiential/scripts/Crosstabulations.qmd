@@ -102,11 +102,11 @@ The crosstabulations are very long. It would be useful to further reduce the num
 Income_Crosstab<- crosstable(data %>% 
                 select(-any_of(text_vars)), 
                 by = Income_Group,
-                total = "row",
+                total = "both",
                 showNA = "no", 
                 funs=c(median, mean, "std dev"=sd),
-                percent_digits = 1, 
-             #   percent_pattern = "N={n} ({p_row})"
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -166,11 +166,11 @@ Income_Crosstab
 Ethnicity_Crosstab<- crosstable(data %>% 
                                   select(-any_of(text_vars)), 
                                 by = Ethnicity, 
-                                total = "row",
-                                showNA = "no", 
-                                funs=c(median, mean, "std dev"=sd),
-                                percent_digits = 1, 
-                                #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -229,11 +229,11 @@ Ethnicity_Crosstab
 Race_Crosstab<- crosstable(data %>% 
                              select(-any_of(text_vars)), 
                            by = Ethnicity_Collapsed, 
-                           total = "row",
-                           showNA = "no", 
-                           funs=c(median, mean, "std dev"=sd),
-                           percent_digits = 1, 
-                           #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -292,11 +292,11 @@ Race_Crosstab
 BORNUK_Crosstab<- crosstable(data %>% 
                                select(-any_of(text_vars)), 
                              by = BORNUK, 
-                             total = "row",
-                             showNA = "no", 
-                             funs=c(median, mean, "std dev"=sd),
-                             percent_digits = 1, 
-                             #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -354,11 +354,11 @@ BORNUK_Crosstab
 Sex_Crosstab<- crosstable(data %>% 
                             select(-any_of(text_vars)), 
                           by = Sex, 
-                          total = "row",
-                          showNA = "no", 
-                          funs=c(median, mean, "std dev"=sd),
-                          percent_digits = 1, 
-                          #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -417,11 +417,11 @@ Sex_Crosstab
 Region_Crosstab<- crosstable(data %>% 
                                select(-any_of(text_vars)), 
                              by = Region, 
-                             total = "row",
-                             showNA = "no", 
-                             funs=c(median, mean, "std dev"=sd),
-                             percent_digits = 1, 
-                             #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -479,11 +479,11 @@ Region_Crosstab
 Occupation_Crosstab<- crosstable(data %>% 
                                    select(-any_of(text_vars)), 
                                  by = Occupation_Catergory, 
-                                 total = "row",
-                                 showNA = "no",
-                                 funs=c(median, mean, "std dev"=sd),
-                                 percent_digits = 1, 
-                                 #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 
@@ -541,11 +541,11 @@ Occupation_Crosstab
 Organisational_Crosstab<- crosstable(data %>% 
                                        select(-any_of(text_vars)), 
                                      by = Organisation_Catergory, 
-                                     total = "row",
-                                     showNA = "no", 
-                                     funs=c(median, mean, "std dev"=sd),
-                                     percent_digits = 1, 
-                                     #   percent_pattern = "N={n} ({p_row})"
+                total = "both",
+                showNA = "no", 
+                funs=c(median, mean, "std dev"=sd),
+                percent_digits = 2, 
+                percent_pattern = "{n} ({p_col})"
 ) %>%
   as_flextable()
 

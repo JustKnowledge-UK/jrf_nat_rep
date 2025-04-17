@@ -155,11 +155,11 @@ An initial pilot study aimed to refine the diagnostic questions used to identify
 
 ## Study 1- Nationally representative survey {#sec-study1}
 
-The survey covered personal demographics, employment demographics (e.g. occupation, hours worked, pay), and the outsourced diagnostic questions. The main objectives were to ensure an accurate estimate of the size and demographic makeup of the outsourced population, and to analyse the data alongside the Labour Force Survey (LFS). \[**WHAT EXACTLY WAS INTENDED TO BE COMPARABLE?**\]
+The survey covered personal demographics, employment demographics (e.g. occupation, hours worked, pay), and the outsourced diagnostic questions. The main objectives were to ensure an accurate estimate of the size and demographic makeup of the outsourced population, and to analyse the data alongside the Labour Force Survey (LFS). \[MORGAN - **WHAT EXACTLY WAS INTENDED TO BE COMPARABLE? SPECIFICALLY WHICH QUESTIONS HAVE BEEN REPLICATED FROM TLFS**\]
 
-Comparability to the LFS posed challenges, primarily because the LFS is conducted face-to-face, with interviewers playing a significant role in ensuring the accuracy of data and respondents' understanding of questions. However, as the Transformed Labour Force Survey (TLFS)– an online first version of the survey set to replace the LFS— was underway, where possible we used the TLFS versions. While question wording is still under review, this was deemed the best approach, as some TLFS waves had already taken place and findings on comparability to LFS \[**CITATION**\].
+Comparability to the LFS posed challenges, primarily because the LFS is conducted face-to-face, with interviewers playing a significant role in ensuring the accuracy of data and respondents' understanding of questions. However, as the Transformed Labour Force Survey (TLFS)– an online first version of the survey set to replace the LFS— was underway, where possible we used the TLFS versions. While question wording is still under review, this was deemed the best approach, as some TLFS waves had already taken place and findings on comparability to LFS \[MORGAN - **CITATION**\].
 
--   [ ] I believe some questions were replicated from national survey's so lets explicate that
+-   [x] I believe some questions were replicated from national survey's so lets explicate that
 -   [x] Discuss the issue of pay calcs (e.g. basic overview and then refer to the section on it)
 -   [ ] Discuss the issue of defining outsourcing ((e.g. basic overview and then refer to the section on it))
 -   [ ] link to the data dictionary
@@ -255,6 +255,8 @@ Next, we expressed all respondents' income in annual, weekly, and hourly periods
 
 With this figure and the number of hours worked per week, we could convert incomes provided in one payment period to another. The table below shows how this was achieved.
 
+\[ADD OUTLIER EXCLUSION CRITERIA\]
+
 ```{r}
 conversion_table <- data.frame("Income provided..." = 
                                  c("... annually",
@@ -288,7 +290,7 @@ conversion_table %>%
 
 ## Study 2 - Outsourced workers survey {#sec-study2}
 
-In the follow up survey of outsourced workers the data focuses on workers experiences and perceptions of outsourced work. The dataset is large containing 214 variables. Analysis of all the variables was beyond the cope of the report thus we focus on a subset of the data pertaining to outsourced workers experiences of rights violations, discrimination, job clarity, benefits and drawbacks of outsourced work and potential improvements to their work arrangements.
+In the follow up survey of outsourced workers the data focuses on workers experiences and perceptions of outsourced work. The dataset is large containing 214 variables. Analysis of all the variables was beyond the scope of the report thus we focus on a subset of the data pertaining to outsourced workers experiences of rights violations, discrimination, job clarity, benefits and drawbacks of outsourced work and potential improvements to their work arrangements.
 
 In the process of data cleaning we set hours per week to NA for participants who gave an impossible number of work hours per week (e.g. $\ge$ 168, *N*=11). Relatedly we construct variables to determine hourly, weekly, monthly and annual pay as in study 1 and flag outlier responses. Through this method 11.22% (183) participants were dropped from all subsequent analysis leaving a final sample of 1631 participants. We also determine whether the participant is low paid using the method from study 1.
 
@@ -340,13 +342,13 @@ Finally, respondents were asked about aspects of their work that might indicate 
 
 Workers were categorised into three mutually exclusive sub groups based on their responses to the above questions.
 
-1.  A respondent was categorised as '**pure outsourced**' if they responded 'I am sure I'm an outsourced worker' or 'I think I might be an outsourced worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.'.
+1.  A respondent was categorised as '**clearly outsourced**' if they responded 'I am sure I'm an outsourced worker' or 'I think I might be an outsourced worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis.'.
 
-2.  A respondent was categorised as '**likely agency**' if they responded 'I am sure that I'm an agency worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who are already defined as being 'pure outsourced'.
+2.  A respondent was categorised as '**likely agency**' if they responded 'I am sure that I'm an agency worker' **and** 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who are already defined as being 'clearly outsourced'.
 
-3.  A respondent was categorised as belonging to the '**high indicators**' group if they responded TRUE to five or six of the outsourcing indicators, as well as responding 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who were already defined as 'pure outsourced' or 'likely agency'.
+3.  A respondent was categorised as belonging to the '**high indicators**' group if they responded TRUE to five or six \[CAN THIS BE EXPRESSED AS $\ge$ 5?\] of the outsourcing indicators, as well as responding 'I’m hired to do work which an organisation needs doing on a long-term or ongoing basis', **excluding** those people who were already defined as 'clearly outsourced' or 'likely agency'.
 
-Together, these three sub groups form the classification of 'outsourced workers' considered in this report. Throughout the report, the term 'outsourced' refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as 'pure outsourced', 'likely agency', or 'high indicators'.
+Together, these three sub groups form the classification of 'outsourced workers' considered in this report. Throughout the report, the term 'outsourced' refers to workers across the three sub groups. In places, analysis considers the three sub groups separately, in which case the groups will be referred to by name as 'clearly outsourced', 'likely agency', or 'high indicators'.
 
 ## Defining low pay
 
@@ -555,7 +557,7 @@ where Gender is a categorical variable with four levels:
 
 # Reproducibility
 
--   [ ] maybe this should go earlier but it would be good to add a section that shows how to reproduce the analysis and the data. But maybe this would duplicate the readme. Here i am just thinking of a step by step guide to reproduce the analysis and the data e.g. clone the repo, run the code for data cleaning then run.....
+All analyses presented in this report can be fully reproduced using the code and data provided in the [Just Knowlegde GitHub repository.](https://github.com/JustKnowledge-UK/jrf_nat_rep/tree/main "GitHub")
 
 ------------------------------------------------------------------------
 
