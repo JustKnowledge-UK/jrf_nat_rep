@@ -153,7 +153,7 @@ A follow-up survey of Outsourced workers (as defined in @sec-study1) was conduct
 
 Soft quotas on age, gender, and region were implemented to ensure broad representativeness, and the final data was weighted to targets based on age, gender, education, region, and ethnicity. The targets were based on the weighted data from study 1. The survey population had a mean Age of 38.9 (SD = 13.0). 42.4% Female and 65.5% White British. A small proportion of respondents had previously participated in study 1 and met the outsourced criteria (5%).
 
-Both survey's were administered online.
+Both surveys were administered online.
 
 An initial pilot study aimed to refine the diagnostic questions used to identify outsourced workers, ensuring they aligned with JRF's initial definition and could be accurately answered by survey respondents. The diagnostic questions and feedback follow-ups were run on Opinium’s political omnibus, a nationally and politically representative sample of 2,055 UK adults between 30 August and 1 September 2023. The questions were filtered to those in work, resulting in a total of 1,200 respondents. Data from this pilot study is not reported here.
 
@@ -308,8 +308,7 @@ A data dictionary is available from the [Github Repository](https://github.com/J
 
 -   [x] Determining if the worker is outsourced
 -   [x] Calculating Low/Not Low pay
--   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
-    -   [ ] Outsourced workers are paid 2k less and after controls it is 3k
+-   [x] Explain the analyses (e.g. any models that actually appear in the final output)
 
 ## Defining outsourcing
 
@@ -641,7 +640,7 @@ tab_model(mod_weekly_int, pred.labels = labels, dv.labels = "Weekly income")
 
 ```
 
-The plot below illustrate the main effect that men are paid more than women, outsourced men and women are paid less than non-outsourced men and women, and that the difference in pay between men and women is not significantly different for outsourced people compared to non-outsourced people.
+The plot below illustrates the main effect that men are paid more than women, outsourced men and women are paid less than non-outsourced men and women, and that the difference in pay between men and women is not significantly different for outsourced people compared to non-outsourced people.
 
 ```{r}
 sjPlot::plot_model(mod_annual_int, type = "pred", legend.title="", terms = c("outsourcing_status","Gender"), dodge=0.5) +#
