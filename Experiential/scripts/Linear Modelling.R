@@ -2,7 +2,7 @@ library(readr)
 library(weights)
 library(dplyr)
 ## to reduce dataset further perform chi squared test on all variables by income_group
-data<-read_csv("data/2025-04-16 - clean_data_jrf_experiential.csv")
+data<-read_csv("../data/postx2_data.csv")
 #turn off scientific notation
 options(scipen=99)
 

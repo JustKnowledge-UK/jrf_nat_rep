@@ -6,6 +6,7 @@ author:
 date: "`r format(Sys.time(), '%e %B %Y')`"
 format: 
   html:
+    page-layout: full
     self-contained: true
     code-fold: true
     code-tools: true
@@ -423,7 +424,6 @@ $$ where
     -   Not outsourced (reference category)
     -   Outsourced
 
-
 ```{r}
 #| output: false
 #| warning: false
@@ -536,7 +536,7 @@ weekly_gender_coef <- extract_lm_coefs(mod_weekly, only_sig = T) %>%
 
 The above model was also used to assess a possible gender pay gap. As shown in the preceding two tables, there is a significant difference in pay between men and women. Annually, men earn £`r annual_gender_coef$Estimate %>% round(2)` more than women. Per week, men earn £`r weekly_gender_coef$Estimate %>% round(2)` more than women.
 
-We next explored whether outsourcing compounds this gender pay gap by adding an interaction term into the previous models so that 
+We next explored whether outsourcing compounds this gender pay gap by adding an interaction term into the previous models so that
 
 $$
 Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing + Gender:Outsourcing
@@ -657,7 +657,7 @@ sjPlot::plot_model(mod_annual_int, type = "pred", legend.title="", terms = c("ou
 
 Several regressions were run to assess the likelihood of being outsourced from demographics. These models underlie the claims in the report in relation to ethnicity, migration, and gender.
 
-The overall model was defined as: 
+The overall model was defined as:
 
 $$
 Outsourcing = Ethnicity + Age + Gender + Education + Region + Migration
@@ -665,82 +665,79 @@ $$
 
 where
 
-- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
-  - Not outsourced (reference category)
-  - Outsourced
-- Age is a continuous numeric variable indicating the respondent's age
-- Gender is a categorical variable with three levels: 
-  - Female (reference category)
-  - Male
-  - Other
-- Education is a categorical variable indicating whether the respondent has a degree, with three levels:
-  - No (reference category)
-  - Yes
-  - Don't know
-- Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
-  - I was born in the UK (reference category)
-  - Within the last year
-  - Within the last 3 years
-  - Within the last 5 years
-  - Within the last 10 years
-  - Within the last 15 years
-  - Within the last 20 years
-  - Within the last 30 years
-  - More than 30 years ago
-  - Prefer not to say
-- Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
-  - London (reference category)
-  - East Midlands
-  - East of England
-  - North East
-  - North West
-  - Northern Ireland
-  - Scotland
-  - South East
-  - South West
-  - Wales
-  - West Midlands
-  - Yorkshire and the Humber
-
+-   Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+    -   Not outsourced (reference category)
+    -   Outsourced
+-   Age is a continuous numeric variable indicating the respondent's age
+-   Gender is a categorical variable with three levels:
+    -   Female (reference category)
+    -   Male
+    -   Other
+-   Education is a categorical variable indicating whether the respondent has a degree, with three levels:
+    -   No (reference category)
+    -   Yes
+    -   Don't know
+-   Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
+    -   I was born in the UK (reference category)
+    -   Within the last year
+    -   Within the last 3 years
+    -   Within the last 5 years
+    -   Within the last 10 years
+    -   Within the last 15 years
+    -   Within the last 20 years
+    -   Within the last 30 years
+    -   More than 30 years ago
+    -   Prefer not to say
+-   Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
+    -   London (reference category)
+    -   East Midlands
+    -   East of England
+    -   North East
+    -   North West
+    -   Northern Ireland
+    -   Scotland
+    -   South East
+    -   South West
+    -   Wales
+    -   West Midlands
+    -   Yorkshire and the Humber
 
 For this exploration we modelled ethnicity in three ways.
 
-1. As a categorical variable with two levels:
-    - White British (reference category)
-    - Not White British
-    
-2. As a categorical variable with eight levels:
-    - White British (reference category)
-    - Arab/British Arab
-    - Asian/Asian British
-    - Black/African/Caribbean/Black British
-    - Mixed/Multiple ethnic group
-    - Other ethnic groupo
-    - Prefer not to say
-    - White other
-    
-3. As a categorical variable with 21 levels:
-    - English/Welsh/Scottish/Northern Irish/British (reference category)
-    - Irish
-    - Gypsy or Irish Traveller
-    - Roma
-    - Any other White background
-    - White and Black Caribbean
-    - White and Black African
-    - White and Asian
-    - Any other Mixed/Multiple ethnic background
-    - Indian
-    - Pakistani
-    - Bangladeshi
-    - Chinese
-    - Any other Asian background
-    - African
-    - Caribbean
-    - Any other Black, Black British, or Caribbean background
-    - Arab
-    - Any other ethnic group
-    - Don't think of myself as any of these
-    - Prefer not to say
+1.  As a categorical variable with two levels:
+    -   White British (reference category)
+    -   Not White British
+2.  As a categorical variable with eight levels:
+    -   White British (reference category)
+    -   Arab/British Arab
+    -   Asian/Asian British
+    -   Black/African/Caribbean/Black British
+    -   Mixed/Multiple ethnic group
+    -   Other ethnic groupo
+    -   Prefer not to say
+    -   White other
+3.  As a categorical variable with 21 levels:
+    -   English/Welsh/Scottish/Northern Irish/British (reference category)
+    -   Irish
+    -   Gypsy or Irish Traveller
+    -   Roma
+    -   Any other White background
+    -   White and Black Caribbean
+    -   White and Black African
+    -   White and Asian
+    -   Any other Mixed/Multiple ethnic background
+    -   Indian
+    -   Pakistani
+    -   Bangladeshi
+    -   Chinese
+    -   Any other Asian background
+    -   African
+    -   Caribbean
+    -   Any other Black, Black British, or Caribbean background
+    -   Arab
+    -   Any other ethnic group
+    -   Don't think of myself as any of these
+    -   Prefer not to say
 
 All models were run with a quasibinomial distribution to account for the survey weights. Because quasibinomial models don't involve likelihoods, model fit could not be determined using information criteria. Instead, we use Tjur's pseudo *R^2^* to appraise model fit. This approach uses predicted probabilities from the model to calculate the average predicted probability for each level of the outcome variable, then takes the difference in this average between the two levels. The result is a figure between 0 and 1 that estimates how different the average predicted probability in the outsourced group is from the average predicted probability in the not outsourced group. Values closer to 1 indicate the averages are more different and therefore that the model is more accurate in discriminating between the two groups.
 
@@ -953,7 +950,7 @@ tab_model(mod,
           show.r2 = FALSE)
 ```
 
-#### Migration 
+#### Migration
 
 We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
 
@@ -1025,6 +1022,7 @@ tab_model(mod,
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
+
 #### Gender
 
 ```{r}
@@ -1034,10 +1032,10 @@ gender_coefs <- coefs %>%
 
 We used the same generalised linear model as in the previous section to estimate the effect of Gender on outsourcing, where Gender is a categorical variable with four levels:
 
-- Female (reference category)
-- Male
-- Prefer not to say
-- Other
+-   Female (reference category)
+-   Male
+-   Prefer not to say
+-   Other
 
 The model indicates that men are `r gender_coefs$or %>% round(2)` times more likely to be outsourced than women.
 
@@ -1049,10 +1047,9 @@ $$
 Outsourcing = Ethnicity + Age + Gender + Educaton + Region + Migration + Ethnicity:Migration
 $$
 
-where Ethnicity:Migration represents the interaction term. 
+where Ethnicity:Migration represents the interaction term.
 
-
-We did this twice: first for the aggregated eight-level ethnicity variable, and then for the disaggregated 21-level variable. 
+We did this twice: first for the aggregated eight-level ethnicity variable, and then for the disaggregated 21-level variable.
 
 ```{r migration-ethnicity-interaction}
 #| output: false
@@ -1072,7 +1069,6 @@ tjur <- data %>%
 coefs <- extract_glm_coefs(mod, only_sig=T)
 
 ```
-
 
 For model 1, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
 
@@ -1120,7 +1116,6 @@ tab_model(mod,
           show.r2 = FALSE)
 ```
 
-
 ```{r}
 ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "BORNUK_binary")
 cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
@@ -1132,10 +1127,10 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 To explore the interaction we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
 
-1. Among people born in the UK, Asian/Asian British people are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than White British people.
-2. Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "White British - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than White British people.
-3. Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than Black/African/Caribbean/Black British people.
-  
+1.  Among people born in the UK, Asian/Asian British people are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than White British people.
+2.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "White British - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than White British people.
+3.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than Black/African/Caribbean/Black British people.
+
 The plot below visualises these effects.
 
 ```{r}
@@ -1157,13 +1152,11 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 Examining the effect of migration for particular ethnicities, we find that:
 
-1. Among White British people, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-2. Among people of Mixed/Multiple ethnic group, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-3. Among people who preferred not to say their ethnicity, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Prefer not to say") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-
+1.  Among White British people, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2.  Among people of Mixed/Multiple ethnic group, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+3.  Among people who preferred not to say their ethnicity, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Prefer not to say") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
 
 The plot below visualises these effects.
-
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_binary"), dodge=0.5) +#
@@ -1172,7 +1165,6 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
   xlab("") + ylab("Likelihood of being outsourced") +
   theme_minimal() 
 ```
-
 
 ```{r migration-ethnicity_disaggregated-interaction}
 #| output: false
@@ -1266,6 +1258,7 @@ tab_model(mod,
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
+
 ```{r}
 ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "BORNUK_binary")
 cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
@@ -1277,7 +1270,7 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 Again for this model we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
 
-1. Among people born in the UK, Pakistani workers are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than English/Welsh/Scottish/Northern Irish/British workers.
+1.  Among people born in the UK, Pakistani workers are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than English/Welsh/Scottish/Northern Irish/British workers.
 
 No other differences were significant. The plot below visualises these effects.
 
@@ -1291,6 +1284,7 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary
     legend.position = "none"
   )
 ```
+
 ```{r}
 ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed_disaggregated")
 cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
@@ -1302,8 +1296,8 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 Examining the effect of migration for particular ethnicities, we find that:
 
-1. Among English/Welsh/Scottish/Northern Irish/British workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-2. Among Mixed White and Asian workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK (**NB n < 50 for this group**).
+1.  Among English/Welsh/Scottish/Northern Irish/British workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2.  Among Mixed White and Asian workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK (**NB n \< 50 for this group**).
 
 No other differences were significant. The plot below visualises these findings.
 
@@ -1317,12 +1311,11 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
 
 #### Ethnicity-outsourced interaction
 
-A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income. 
+A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income.
 
 $$
 Income Group = Outsourcing + Ethnicity + Age + Gender + Education + Region + Migration + Outsourcing:Ethnicity
-$$
-As in preceding sections, we consturcted three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
+$$ As in preceding sections, we consturcted three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
 
 ```{r}
 #| output: false
@@ -1385,7 +1378,6 @@ tab_model(mod,
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
-
 
 ```{r out-ethn-agg-int}
 #| output: false
@@ -1478,10 +1470,9 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 To explore the interaction we calculated estimated marginal means of the ethnicity x outsourcing effect. Examining the effect of ethnicity within each level of outsourcing, we find that:
 
-- Among people who are outsourced, people of Mixed/Multiple ethnic group are `r sig_cons %>% pull(or) %>% round(2)` times more likely than Black/African/Caribbean/Black British people to be in the low income group. 
+-   Among people who are outsourced, people of Mixed/Multiple ethnic group are `r sig_cons %>% pull(or) %>% round(2)` times more likely than Black/African/Caribbean/Black British people to be in the low income group.
 
 No other significant differences were observed. The plot below visualises this.
-
 
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed"), dodge=0.5) +#
@@ -1490,6 +1481,7 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_s
   xlab("") + ylab("Likelihood of being outsourced") +
   theme_minimal() 
 ```
+
 ```{r}
 ems <- emmeans(mod, specs = "outsourcing_status", by = "Ethnicity_collapsed", nuisance = c("BORNUK_labelled"))
 cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
@@ -1501,8 +1493,8 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 Examining the effect of outsourcing within each ethnicity, we find that:
 
-1. Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
-2. Among people of Mixed/Multiple ethnic groups, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+1.  Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2.  Among people of Mixed/Multiple ethnic groups, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
 
 For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
 
@@ -1634,7 +1626,6 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 No other significant differences were observed when examining the effect of ethnicity within each level of outsourcing. The plot below visualises this.
 
-
 ```{r}
 sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
   
@@ -1657,8 +1648,8 @@ sig_cons <- cons %>% filter(p.value < .05) %>%
 
 Examining the effect of outsourcing within each ethnicity, we find that:
 
-1. Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
-2. Among people of Mixed White and Asian ethnicity, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers (**NB n < 50 for this group**)
+1.  Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2.  Among people of Mixed White and Asian ethnicity, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers (**NB n \< 50 for this group**)
 
 For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
 
@@ -1672,25 +1663,20 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
   theme_minimal() 
 ```
 
-
 # Analysis - Study 2
 
--   [ ] Explain the analyses (e.g. any models that actually appear in the final output)
--   [ ] For example, when asked to compare their experiences to if they did the same role in-house, 1 in 4 outsourced workers think they are less able to progress; 1 in 5 think it’s harder to assert their rights at work; 1 in 6 think they have less secure hours; and the same proportion feel less invested in their role and in their work, compared to if they were outsourced. 1 in 6 (17%) outsourced workers think they are paid *less* than in-house workers in comparable roles – no sign of a supposed pay premium for this group of workers.
--   [ ] 4 in 10 outsourced workers report having gone without at least one key workplace right or entitlement, such as being paid on time, or paid what they’re entitled to – linking worryingly to the fifth of workers who think it’s harder to assert your rights when you’re outsourced
--   [ ] And most strikingly, a third of all outsourced workers (32%) say they would actively prefer to be in-house if they had a choice, far more than the less than 1 in 5 (18%) who told us they *actively* preferred to be outsourced. This is a significant proportion of outsourced workers who aren’t happy with the status quo.
--   [ ] Stacked (horizontal) bar chart of 'benefits and downsides' question
--   [ ] Percentage of people reporting multiple negative responses
--   [ ] Our findings suggest that just 1 in 10 (10%) outsourced workers have received 4 weeks’ notice as minimum – falling to 1 in 20 (5%) for lower-paid outsourced workers.
--   [ ] Altogether over half (55%) of Black outsourced workers said they’d received less than a week’s notice of their shifts minimum, compared to 4 in 10 (40%) for all outsourced workers, and 36% for White outsourced workers.
--   [ ] 'Pooling harms'
+Analysis from Study 2 appearing in \[NAME OF REPORT\] primarily employs a descriptive approach to understand the data. We conducted several cross-tabulations focusing on key demographic variables including Migration Status, Low Pay, and Ethnicity.
+
+Due to the extensive number of variables examined, these cross-tabulations are not reproduced in this document. However, researchers can easily recreate all analyses by running the "Crosstabulations.qmd" script available in the GitHub repository associated with this project (see @reproducibility). The repository contains all necessary data files and code to replicate our findings.
+
+\[TO CHECK WITH MORGAN WHETHER ANY OF THE MODELLING IS USED IN THE REPORT\]
 
 # Limitations and Future Research?
 
 -   [ ] Discuss the limitations of the data and the analysis
--   [ ] If something is really burning we can suggest some futher analysis that people can do
+-   [ ] If something is really burning we can suggest some further analysis that people can do
 
-# Reproducibility
+# Reproducibility {#reproducibility}
 
 All analyses presented in this report can be fully reproduced using the code and data provided in the [Just Knowlegde GitHub repository.](https://github.com/JustKnowledge-UK/jrf_nat_rep/tree/main "GitHub")
 

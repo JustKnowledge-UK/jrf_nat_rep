@@ -33,7 +33,7 @@ In most cases interaction effects between Sex and Ethnicity (and three-way inter
 #import data
 library(readr)
 library(jtools)
-data <- read_csv("data/postx2_data.csv")
+data <- read_csv("../data/postx2_data.csv")
 
 ##relevling for regressions
 data$Income_Group<-relevel(factor(data$Income_Group), ref = "Not low")
@@ -223,7 +223,7 @@ plot_summs(Client_Discrimination_Nationality.fit, plot.distributions = TRUE,
            rescale.distributions = TRUE, scale = TRUE, robust = TRUE, title = "Nationality")
 ```
 
-### Ethnic Disctimination
+### Ethnic Discrimination
 
 ```{r}
 #| echo: false
@@ -302,7 +302,8 @@ plot_summs(trade_union.fit, plot.distributions = TRUE,
 
 ```
 
-### TUCOV 
+### TUCOV
+
 ```{r}
 #| echo: false
 #| output: false
@@ -333,6 +334,7 @@ plot_summs(trade_union.fit, plot.distributions = TRUE,
 ```
 
 ## Cross tab
+
 ```{r}
 
 #| echo: false
@@ -434,6 +436,4 @@ Income_Crosstab<- Income_Crosstab%>%
 Income_Crosstab
 ```
 
-
 JOB SATISFACTION
-
