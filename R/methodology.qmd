@@ -38,6 +38,7 @@ library(sjstats)
 library(readr)
 library(sjPlot)
 library(nnet)
+library(apaTables)
 ```
 
 ```{r palette}
@@ -66,6 +67,13 @@ extract_lm_coefs <- function(mod, only_sig = F){
     coefs <- coefs[which(coefs[,4] < .05),]
   }
   coefs <- as_tibble(coefs, rownames="variable") # specify new variable to add rownames to 
+}
+
+get_pvalue <- function(model){
+  f_value <- summary(model)$fstatistic
+  p_value <- pf(f_value['value'], f_value['numdf'], f_value['dendf'], lower.tail = F)
+  attributes(p_value) <- NULL
+  return(p_value)
 }
 
 ```
@@ -413,128 +421,1255 @@ $$ where
     -   Not outsourced (reference category)
     -   Outsourced
 
-### Ethnicity models
 
-Several regressions were run to assess the likelihood of being outsourced from a person's ethnicity.
+```{r}
+#| output: false
+#| warning: false
+#| message: false
 
-Firstly, we constructed a generalised linear model predicting whether a person was outsourced based on whether they were White British or not. Thus the formula for this model is simply:
+# Annual income
+# Intercept only
+mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+
+summary(mod_annual)
+
+# F and p
+f_annual <- round(anova(mod_base, mod_annual)[2,"F"],2)
+p_annual <- anova(mod_base, mod_annual)[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova(mod_base, mod_annual)[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual)$r.squared,2)
+
+# Weekly income
+# Intercept only
+mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_weekly)
+
+# F and p
+f_weekly <- round(anova(mod_base, mod_weekly)[2,"F"],2)
+p_weekly <- anova(mod_base, mod_weekly)[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ",round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova(mod_base, mod_weekly)[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly)$r.squared,2)
+
+```
+
+The annual income model was statistically significant (*R^2^* = `r rsquare_annual`, *F*(`r dfs_annual[[1]]`, `r dfs_annual[[2]]`) = `r f_annual`, *p* `r p_annual`). The table below shows the coefficients for the annual income model.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Outsourcing: Outsourced',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+  
+tab_model(mod_annual, pred.labels = labels, dv.labels = "Annual income")
+```
+
+As expected, the model statistics for weekly income model were identical to the those of the annual income model. The model was statistically significant (*R^2^* = `r rsquare_weekly`, *F*(`r dfs_weekly[[1]]`, `r dfs_weekly[[2]]`) = `r f_weekly`, *p* `r p_weekly`). The table below shows the coefficients for the weekly income model.
+
+```{r}
+tab_model(mod_weekly, pred.labels = labels, dv.labels = "Weekly income")
+```
+
+### Gender pay gap
+
+```{r}
+annual_gender_coef <- extract_lm_coefs(mod_annual, only_sig = T) %>%
+  filter(variable == "GenderMale") 
+
+weekly_gender_coef <- extract_lm_coefs(mod_weekly, only_sig = T) %>%
+  filter(variable == "GenderMale") 
+```
+
+The above model was also used to assess a possible gender pay gap. As shown in the preceding two tables, there is a significant difference in pay between men and women. Annually, men earn £`r annual_gender_coef$Estimate %>% round(2)` more than women. Per week, men earn £`r weekly_gender_coef$Estimate %>% round(2)` more than women.
+
+We next explored whether outsourcing compounds this gender pay gap by adding an interaction term into the previous models so that 
 
 $$
-Outsourcing = Ethnicity
-$$ where
-
--   Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
-    -   Not outsourced (reference category)
-    -   Outsourced
--   Ethnicity is a cateorical variable indicating whether the respondent is White British, with two levels:
-    -   White British
-    -   Non-White-British
-
-Next, we constructed a generalised linear model predicting whether a person was outsourced based on aggregated ethnicity groupings. The formula for this model is again:
-
-$$
-Outsourcing = Ethnicity
+Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing + Gender:Outsourcing
 $$
 
-but here, ethnicity is categorical variable with eight levels:
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+# Annual income
 
--   White British (reference category)
--   Arab/British Arab
--   Asian/Asian British
--   Black/African/Caribbean/Black British
--   Mixed/Multiple ethnic group
--   Other ethnic groupo
--   Prefer not to say
--   White other
+# H1
+mod_annual_int <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
 
-Finally, we constructed a third generalised linear model predicting whether a person was outsourced based on disaggregated ethnicity groupings. The formula for this model is again:
+summary(mod_annual_int)
+
+# F and p
+anova_test <- anova(mod_annual, mod_annual_int)
+f_annual <- anova_test[2,"F"] %>% round(2)
+p_annual <- anova_test[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova_test[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual_int)$r.squared,2)
+
+# Weekly income
+
+# H1
+mod_weekly_int <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod_weekly_int)
+
+# F and p
+anova_test <- anova(mod_weekly, mod_weekly_int)
+
+f_weekly <-  anova_test[2,"F"] %>% round(2)
+p_weekly <- anova_test[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ", round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova_test[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly_int)$r.squared,2)
+
+```
+
+For both models, adding the interaction effect did not improve model fit (*R^2^* = `r rsquare_weekly`, *F*(`r dfs_weekly[[1]]`, `r dfs_weekly[[2]]`) = `r f_weekly`, *p* `r p_weekly`). The tables below show the coefficients for each model.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Outsourcing: Outsourced',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say',
+  'Interaction: Outsourcing x Gender Male',
+  'Interaction: Outsourcing x Gender Other',
+  'Interaction: Outsourcing x Gender Prefer not to say'
+)
+  
+tab_model(mod_annual_int, pred.labels = labels, dv.labels = "Annual income")
+tab_model(mod_weekly_int, pred.labels = labels, dv.labels = "Weekly income")
+
+```
+
+The plot below illustrate the main effect that men are paid more than women, outsourced men and women are paid less than non-outsourced men and women, and that the difference in pay between men and women is not significantly different for outsourced people compared to non-outsourced people.
+
+```{r}
+sjPlot::plot_model(mod_annual_int, type = "pred", legend.title="", terms = c("outsourcing_status","Gender"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+### Demographic models
+
+#### Ethnicity
+
+Several regressions were run to assess the likelihood of being outsourced from demographics. These models underlie the claims in the report in relation to ethnicity, migration, and gender.
+
+The overall model was defined as: 
 
 $$
-Outsourcing = Ethnicity
+Outsourcing = Ethnicity + Age + Gender + Education + Region + Migration
 $$
 
-but here, ethnicity is categorical variable with 21 levels:
+where
 
--   English/Welsh/Scottish/Northern Irish/British (reference category)
--   Irish
--   Gypsy or Irish Traveller
--   Roma
--   Any other White background
--   White and Black Caribbean
--   White and Black African
--   White and Asian
--   Any other Mixed/Multiple ethnic background
--   Indian
--   Pakistani
--   Bangladeshi
--   Chinese
--   Any other Asian background
--   African
--   Caribbean
--   Any other Black, Black British, or Caribbean background
--   Arab
--   Any other ethnic group
--   Don't think of myself as any of these
--   Prefer not to say
+- Outsourcing is a categorical variable indicating whether the respondent is outsourced, with two levels:
+  - Not outsourced (reference category)
+  - Outsourced
+- Age is a continuous numeric variable indicating the respondent's age
+- Gender is a categorical variable with three levels: 
+  - Female (reference category)
+  - Male
+  - Other
+- Education is a categorical variable indicating whether the respondent has a degree, with three levels:
+  - No (reference category)
+  - Yes
+  - Don't know
+- Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
+  - I was born in the UK (reference category)
+  - Within the last year
+  - Within the last 3 years
+  - Within the last 5 years
+  - Within the last 10 years
+  - Within the last 15 years
+  - Within the last 20 years
+  - Within the last 30 years
+  - More than 30 years ago
+  - Prefer not to say
+- Region is a categorical variable indicating the respodent's region of residence, with 12 levels:
+  - London (reference category)
+  - East Midlands
+  - East of England
+  - North East
+  - North West
+  - Northern Ireland
+  - Scotland
+  - South East
+  - South West
+  - Wales
+  - West Midlands
+  - Yorkshire and the Humber
 
-### Migration models
 
-We constructed a generalised linear model predicting whether a person was outsourced based on wehther the person was born in the UK. The formula for this model is:
+For this exploration we modelled ethnicity in three ways.
+
+1. As a categorical variable with two levels:
+    - White British (reference category)
+    - Not White British
+    
+2. As a categorical variable with eight levels:
+    - White British (reference category)
+    - Arab/British Arab
+    - Asian/Asian British
+    - Black/African/Caribbean/Black British
+    - Mixed/Multiple ethnic group
+    - Other ethnic groupo
+    - Prefer not to say
+    - White other
+    
+3. As a categorical variable with 21 levels:
+    - English/Welsh/Scottish/Northern Irish/British (reference category)
+    - Irish
+    - Gypsy or Irish Traveller
+    - Roma
+    - Any other White background
+    - White and Black Caribbean
+    - White and Black African
+    - White and Asian
+    - Any other Mixed/Multiple ethnic background
+    - Indian
+    - Pakistani
+    - Bangladeshi
+    - Chinese
+    - Any other Asian background
+    - African
+    - Caribbean
+    - Any other Black, Black British, or Caribbean background
+    - Arab
+    - Any other ethnic group
+    - Don't think of myself as any of these
+    - Prefer not to say
+
+All models were run with a quasibinomial distribution to account for the survey weights. Because quasibinomial models don't involve likelihoods, model fit could not be determined using information criteria. Instead, we use Tjur's pseudo *R^2^* to appraise model fit. This approach uses predicted probabilities from the model to calculate the average predicted probability for each level of the outcome variable, then takes the difference in this average between the two levels. The result is a figure between 0 and 1 that estimates how different the average predicted probability in the outsourced group is from the average predicted probability in the not outsourced group. Values closer to 1 indicate the averages are more different and therefore that the model is more accurate in discriminating between the two groups.
+
+```{r ethnicity-binary}
+#| output: false
+#| warning: false
+#| message: false
+mod2 <- glm(outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+
+tjur2 <- data %>%
+  mutate(pred = predict(mod2, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod2, only_sig=T)
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+```
+
+For model 1, the value of Tjur's pseudo *R^2^* is `r tjur2 %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Ethnicity: Not White',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+
+tab_model(mod2, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r ethnicity-aggregated}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+
+tjur <- data %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+```
+
+For model 2, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r ethnicity-disaggregated}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+# Test waht amount of variacne the unweighted would explain - similar
+# test <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, family="binomial")
+# with(summary(test), 1 - deviance/null.deviance)
+
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+```
+
+For model 3, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+#### Migration 
+
+We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
+
+```{r migration-binary}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+```
+
+The value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+#### Gender
+
+```{r}
+gender_coefs <- coefs %>%
+  filter(variable == "GenderMale")
+```
+
+We used the same generalised linear model as in the previous section to estimate the effect of Gender on outsourcing, where Gender is a categorical variable with four levels:
+
+- Female (reference category)
+- Male
+- Prefer not to say
+- Other
+
+The model indicates that men are `r gender_coefs$or %>% round(2)` times more likely to be outsourced than women.
+
+#### Ethnicity-migration interaction
+
+We next explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models by adding an interaction effect to the previous model so that the model formula is:
 
 $$
-Outsourcing = Migration
-$$ where Migration is a categorical variable with two levels:
-
--   Born in UK
--   Not born in UK
-
-This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
-
-### Ethnicity-migration interaction
-
-We explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models. We did this stepwise to ascertain whether entering an interaction term imporved model fit. Model 1 was defined as:
-
-$$
-Outsourcing = Ethnicity + Migration
-$$ Model 2 was defined as:
-
-$$
-Outsourcing = Ethnicity + Migration + Ethnicity:Migration
-$$ where Ethnicity:Migration represents the interaction term. Adding an interaction term improved model fit.
-
-We did this for both the aggregated eight-level ethnicity variable as well as the disaggregated 21-level variable.
-
-### Ethnicity-outsourced interaction
-
-A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income.
-
-First we examined the interaction of a binary ethnicity variable with outsourcing:
-
-$$
-Income Group = Ethnicity * Outsourcing
-$$ where ethnicity was a binary categorical variable with levels:
-
--   White British
--   Non-White-British
-
-Next we estimated using the same formula but this time with the eight-level aggregated ethnicity variable.
-
-Finally, we conducted the same analysis using the 21-level disaggregated ethnicity variable.
-
-### Gender
-
-We used a generalised linear model to predict outsourcing from gender. The formula for this model is:
-
-$$
-Outsourcing = Gender
+Outsourcing = Ethnicity + Age + Gender + Educaton + Region + Migration + Ethnicity:Migration
 $$
 
-where Gender is a categorical variable with four levels:
+where Ethnicity:Migration represents the interaction term. 
 
--   Female (reference category)
--   Male
--   Prefer not to say
--   Other
+
+We did this twice: first for the aggregated eight-level ethnicity variable, and then for the disaggregated 21-level variable. 
+
+```{r migration-ethnicity-interaction}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  #filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+```
+
+
+For model 1, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Interaction: Not born in UK x Arab/Arab British',
+  'Interaction: Not born in UK x Asian/Asian British',
+  'Interaction: Not born in UK x Black/African/Caribbean/Black British',
+  'Interaction: Not born in UK x Mixed/Multiple ethnic group',
+  'Interaction: Not born in UK x Other ethnic group',
+  'Interaction: Not born in UK x Prefer not to say',
+  'Interaction: Not born in UK x White other'
+  
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "BORNUK_binary")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+To explore the interaction we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+
+1. Among people born in the UK, Asian/Asian British people are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than White British people.
+2. Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "White British - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than White British people.
+3. Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than Black/African/Caribbean/Black British people.
+  
+The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+```{r}
+ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of migration for particular ethnicities, we find that:
+
+1. Among White British people, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2. Among people of Mixed/Multiple ethnic group, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+3. Among people who preferred not to say their ethnicity, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Prefer not to say") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+
+
+The plot below visualises these effects.
+
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_binary"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+
+```{r migration-ethnicity_disaggregated-interaction}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+coefs_all <- extract_glm_coefs(mod)
+
+```
+
+For model 2, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  "Interaction: Not born in UK x Irish",
+  "Interaction: Not born in UK x Gypsy or Irish Traveller",
+  # "Interaction: Not born in UK x Roma",
+  "Interaction: Not born in UK x Any other White background",
+  "Interaction: Not born in UK x White and Black Caribbean",
+  "Interaction: Not born in UK x White and Black African",
+  "Interaction: Not born in UK x White and Asian",
+  "Interaction: Not born in UK x Any other Mixed/Multiple ethnic background",
+  "Interaction: Not born in UK x Indian",
+  "Interaction: Not born in UK x Pakistani",
+  "Interaction: Not born in UK x Bangladeshi",
+  "Interaction: Not born in UK x Chinese",
+  "Interaction: Not born in UK x Any other Asian background",
+  "Interaction: Not born in UK x African",
+  "Interaction: Not born in UK x Caribbean",
+  "Interaction: Not born in UK x Any other Black, Black British, or Caribbean background",
+  "Interaction: Not born in UK x Arab",
+  "Interaction: Not born in UK x Any other ethnic group",
+  "Interaction: Not born in UK x Don't think of myself as any of these",
+  "Interaction: Not born in UK x Prefer not to say"
+
+  
+)
+
+tab_model(mod, 
+          pred.labels = labels,
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "BORNUK_binary")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Again for this model we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+
+1. Among people born in the UK, Pakistani workers are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than English/Welsh/Scottish/Northern Irish/British workers.
+
+No other differences were significant. The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+```
+```{r}
+ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed_disaggregated")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of migration for particular ethnicities, we find that:
+
+1. Among English/Welsh/Scottish/Northern Irish/British workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2. Among Mixed White and Asian workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK (**NB n < 50 for this group**).
+
+No other differences were significant. The plot below visualises these findings.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","BORNUK_binary"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+#### Ethnicity-outsourced interaction
+
+A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income. 
+
+$$
+Income Group = Outsourcing + Ethnicity + Age + Gender + Education + Region + Migration + Outsourcing:Ethnicity
+$$
+As in preceding sections, we consturcted three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(income_group ~ outsourcing_status * Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  # filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(income_group) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
+```
+
+The value of Tjur's pseudo *R^2^* for model 1 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Outsourcing: Outsourced',
+  'Ethnicity: Not White',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say',
+  'Interaction: Outsourcing x Ethnicity'
+)
+
+tab_model(mod, 
+          pred.labels = labels,
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+
+```{r out-ethn-agg-int}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  # filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(income_group) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+# Test what amount of variance the unweighted model would explain - similar(ish)
+# test <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, family="binomial")
+# summary(test)
+# 
+# with(summary(test), 1 - deviance/null.deviance)
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
+```
+
+The value of Tjur's pseudo *R^2^* for model 2 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Outsourcing: Outsourced',
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say',
+  'Interaction: Outsourcing x Arab/British Arab',
+  'Interaction: Outsourcing x Asian/Asian British',
+  'Interaction: Outsourcing x Black/African/Caribbean/Black British',
+  'Interaction: Outsourcing x Mixed/Multiple ethnic group',
+  'Interaction: Outsourcing x Other ethnic group',
+  'Interaction: Outsourcing x Prefer not to say',
+  'Interaction: Outsourcing x White other'
+)
+
+tab_model(mod, 
+          pred.labels = labels,
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "outsourcing_status", nuisance = c("BORNUK_labelled"))
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+To explore the interaction we calculated estimated marginal means of the ethnicity x outsourcing effect. Examining the effect of ethnicity within each level of outsourcing, we find that:
+
+- Among people who are outsourced, people of Mixed/Multiple ethnic group are `r sig_cons %>% pull(or) %>% round(2)` times more likely than Black/African/Caribbean/Black British people to be in the low income group. 
+
+No other significant differences were observed. The plot below visualises this.
+
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+```{r}
+ems <- emmeans(mod, specs = "outsourcing_status", by = "Ethnicity_collapsed", nuisance = c("BORNUK_labelled"))
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of outsourcing within each ethnicity, we find that:
+
+1. Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2. Among people of Mixed/Multiple ethnic groups, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+
+For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
+
+The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","outsourcing_status"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+```{r out-ethn-disagg-int}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(income_group) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+# Test what amount of variance the unweighted model would explain - similar(ish)
+# test <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, family="binomial")
+# summary(test)
+# 
+# with(summary(test), 1 - deviance/null.deviance)
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
+```
+
+The value of Tjur's pseudo *R^2^* for model 3 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Outsourcing: Outsourced',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say',
+  "Interaction: Outsourcing x Irish",
+  "Interaction: Outsourcing x Gypsy or Irish Traveller",
+  "Interaction: Outsourcing x Roma",
+  "Interaction: Outsourcing x Any other White background",
+  "Interaction: Outsourcing x White and Black Caribbean",
+  "Interaction: Outsourcing x White and Black African",
+  "Interaction: Outsourcing x White and Asian",
+  "Interaction: Outsourcing x Any other Mixed/Multiple ethnic background",
+  "Interaction: Outsourcing x Indian",
+  "Interaction: Outsourcing x Pakistani",
+  "Interaction: Outsourcing x Bangladeshi",
+  "Interaction: Outsourcing x Chinese",
+  "Interaction: Outsourcing x Any other Asian background",
+  "Interaction: Outsourcing x African",
+  "Interaction: Outsourcing x Caribbean",
+  "Interaction: Outsourcing x Any other Black, Black British, or Caribbean background",
+  "Interaction: Outsourcing x Arab",
+  "Interaction: Outsourcing x Any other ethnic group",
+  "Interaction: Outsourcing x Don't think of myself as any of these",
+  "Interaction: Outsourcing x Prefer not to say"
+  )
+
+tab_model(mod, 
+          pred.labels = labels,
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE,
+          show.ci = FALSE)
+```
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "outsourcing_status", nuisance = c("BORNUK_labelled"))
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+No other significant differences were observed when examining the effect of ethnicity within each level of outsourcing. The plot below visualises this.
+
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+```{r}
+ems <- emmeans(mod, specs = "outsourcing_status", by = "Ethnicity_collapsed_disaggregated", nuisance = c("BORNUK_labelled"))
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of outsourcing within each ethnicity, we find that:
+
+1. Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2. Among people of Mixed White and Asian ethnicity, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers (**NB n < 50 for this group**)
+
+For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
+
+The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","outsourcing_status"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
 
 # Analysis - Study 2
 
