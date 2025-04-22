@@ -640,7 +640,29 @@ tab_model(mod_weekly_int, pred.labels = labels, dv.labels = "Weekly income")
 
 ```
 
-The plot below illustrates the main effect that men are paid more than women, outsourced men and women are paid less than non-outsourced men and women, and that the difference in pay between men and women is not significantly different for outsourced people compared to non-outsourced people.
+```{r}
+ems <- emmeans(mod_annual_int, specs = "Gender", by = "outsourcing_status", nuisance = "BORNUK_labelled")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05)
+
+```
+```{r}
+ems <- emmeans(mod_annual_int, specs = "outsourcing_status", by = "Gender", nuisance = "BORNUK_labelled")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons2 <- cons %>% filter(p.value < .05) 
+
+```
+
+
+The interaction term is non-significant. Estimated marginal means show that:
+
+- Among not outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Not outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+- Among outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+- Among men, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Male") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
+- Among women, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Female") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
+
+
+The plot below illustrates the main effects that men are paid more than women and that outsourced men and women are paid less than non-outsourced men and women. The lack of interaction indicates that the difference in pay between men and women does not significantly differ between outsourced and non-outsourced people.
 
 ```{r}
 sjPlot::plot_model(mod_annual_int, type = "pred", legend.title="", terms = c("outsourcing_status","Gender"), dodge=0.5) +#
@@ -1037,6 +1059,142 @@ We used the same generalised linear model as in the previous section to estimate
 -   Other
 
 The model indicates that men are `r gender_coefs$or %>% round(2)` times more likely to be outsourced than women.
+
+#### Age
+
+```{r}
+age_coefs <- coefs %>%
+  filter(variable == "Age")
+  
+```
+
+Again using the same model, we found that age was a significant predictor of the likelihood of being outsourced. The model indicates that for each year older a worker is, they are `r age_coefs$or %>% round(2)` times as likely (i.e. `r (1-age_coefs$or %>% round(2))*100`% less likely) to be outsourced.
+
+We also explored how age predicted whether a person was on low pay. The model formula is:
+
+$$
+Income Group =  Age + Outsourcing + Ethnicity + Gender + Education + Region + Migration
+$$
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary, income_data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- income_data %>%
+  filter(!is.na(income_group)) %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(income_group) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig = T)
+```
+
+The value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients. The result indicates that Age weakly but significantly influences whether a worker is in the low income group. For each year older a worker is, they are `r coefs %>% filter(variable=="Age") %>% pull(or) %>% round(3)` times more likely to be in the low income group. 
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Age',
+  'Outsourcing: Outsourced',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Not born in the UK'
+)
+
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Low income group membership",
+          show.r2 = FALSE)
+```
+
+
+<!-- #### Age-outsourcing interaction -->
+
+<!-- ```{r} -->
+<!-- mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + income_group, income_data %>% filter(!is.na(income_group)), weights = NatRepemployees, family="quasibinomial") -->
+<!-- summary(mod) -->
+
+<!-- tjur <- income_data %>% -->
+<!--   filter(!is.na(Ethnicity_collapsed_disaggregated)) %>% -->
+<!--   filter(!is.na(income_group)) %>% -->
+<!--   mutate(pred = predict(mod, type = "response")) %>% -->
+<!--   group_by(outsourcing_status) %>% -->
+<!--   summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>% -->
+<!--   summarise(tjur_r2 = diff(weighted_mean)) %>% -->
+<!--   pull() -->
+
+<!-- coefs <- extract_glm_coefs(mod, only_sig=T) -->
+
+<!-- mod2 <- update(mod, ~. + Age:income_group) -->
+<!-- summary(mod2) -->
+
+<!-- tjur2 <- income_data %>% -->
+<!--   filter(!is.na(Ethnicity_collapsed_disaggregated)) %>% -->
+<!--   filter(!is.na(income_group)) %>% -->
+<!--   mutate(pred = predict(mod2, type = "response")) %>% -->
+<!--   group_by(outsourcing_status) %>% -->
+<!--   summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>% -->
+<!--   summarise(tjur_r2 = diff(weighted_mean)) %>% -->
+<!--   pull() -->
+
+<!-- coefs2 <- extract_glm_coefs(mod2, only_sig=T) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- ems <- emtrends(mod2, var = "Age", specs = "income_group", rg.limit=15000)#, nuisance = c("BORNUK_labelled")) -->
+<!-- cons <- summary(contrast(ems, "pairwise",adjust="tukey")) -->
+<!-- sig_cons <- cons %>% filter(p.value < .05) %>% -->
+<!--   mutate( -->
+<!--     or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison) -->
+<!--   ) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- sjPlot::plot_model(mod2, type="int", terms=c("Age","income_group")) -->
+<!-- ``` -->
+
 
 #### Ethnicity-migration interaction
 
@@ -1661,6 +1819,9 @@ sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_col
   xlab("") + ylab("Likelihood of being outsourced") +
   theme_minimal() 
 ```
+
+
+
 
 # Analysis - Study 2
 
