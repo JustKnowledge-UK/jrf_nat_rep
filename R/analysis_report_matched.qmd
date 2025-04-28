@@ -1,0 +1,1707 @@
+---
+title: "Analysis: Report matched"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+format: 
+  html:
+    page-layout: full
+    self-contained: true
+    code-fold: true
+    # code-fold: true
+    # code-tools: false
+    #code-summary: "Code"
+    toc: true
+    toc-depth: 5
+execute: 
+  echo: true
+  warning: false
+number-sections: true
+---
+
+```{r packages}
+library(haven)
+library(poLCA)
+library(Hmisc)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(skimr)
+library(kableExtra)
+#library(MASS)
+library(wesanderson)
+library(ggrepel)
+library(here)
+library(emmeans)
+#library(devtools)
+#install_version("sjstats", version = "0.18.2")
+library(sjstats)
+library(readr)
+library(sjPlot)
+library(nnet)
+library(apaTables)
+```
+
+```{r palette}
+rm(list = ls())
+options(scipen = 999)
+colours <- wes_palette("GrandBudapest2",4,"discrete")
+better_colours <- c('#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462')
+many_colours <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928','#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f')
+```
+
+```{r functions}
+extract_glm_coefs <- function(mod, only_sig=F, decimal_places = 3){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") %>% # specify new variable to add rownames to 
+    mutate(
+    or = round(exp(Estimate), decimal_places), .after=Estimate
+    )
+}
+
+extract_lm_coefs <- function(mod, only_sig = F){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") # specify new variable to add rownames to 
+}
+
+get_pvalue <- function(model){
+  f_value <- summary(model)$fstatistic
+  p_value <- pf(f_value['value'], f_value['numdf'], f_value['dendf'], lower.tail = F)
+  attributes(p_value) <- NULL
+  return(p_value)
+}
+
+```
+
+```{r data, output=FALSE}
+data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
+
+# Specify data to be used in income analysis
+income_data <- filter(data, income_drop_all==0)
+```
+
+# Outsourced workers are paid £2,951 less a year
+
+"Overall, we find that outsourced workers are paid £2,951 less a year, and £63 less a week, than non-outsourced workers."
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+
+# Annual income
+# Intercept only
+mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+
+summary(mod_annual)
+
+# F and p
+f_annual <- round(anova(mod_base, mod_annual)[2,"F"],2)
+p_annual <- anova(mod_base, mod_annual)[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova(mod_base, mod_annual)[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual)$r.squared,2)
+
+# Weekly income
+# Intercept only
+mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_weekly)
+
+# F and p
+f_weekly <- round(anova(mod_base, mod_weekly)[2,"F"],2)
+p_weekly <- anova(mod_base, mod_weekly)[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ",round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova(mod_base, mod_weekly)[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly)$r.squared,2)
+
+```
+
+The annual income model was statistically significant (*R^2^* = `r rsquare_annual`, *F*(`r dfs_annual[[1]]`, `r dfs_annual[[2]]`) = `r f_annual`, *p* `r p_annual`). The table below shows the coefficients for the annual income model.
+
+```{r}
+#| label: tbl-income-annual
+#| tbl-cap: "Linear regression predicting annual income"
+
+labels <- c(
+  'Intercept',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Outsourcing: Outsourced',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+  
+tab_model(mod_annual, pred.labels = labels, dv.labels = "Annual income")
+```
+
+As expected, the model statistics for weekly income model were identical to the those of the annual income model. The model was statistically significant (*R^2^* = `r rsquare_weekly`, *F*(`r dfs_weekly[[1]]`, `r dfs_weekly[[2]]`) = `r f_weekly`, *p* `r p_weekly`). The table below shows the coefficients for the weekly income model.
+
+```{r}
+#| label: tbl-income-weekly
+#| tbl-cap: "Linear regression predicting weekly income"
+tab_model(mod_weekly, pred.labels = labels, dv.labels = "Weekly income")
+```
+
+# Outsourced workers are paid less across most sectors and in most jobs
+
+## Sectors
+
+```{r sector-bubble-weekly}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+summary_weekly <- sector_summary_pay %>%
+  group_by(SectorName_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup()
+
+write_csv(sector_summary_pay, file="../outputs/data/sector_summary_pay_weekly.csv")
+
+plot_data <- sector_summary_pay %>%
+  drop_na(SectorName_short) %>%
+  droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, N, .desc = FALSE))
+
+# outsourced <- plot_data %>%
+#   filter(outsourcing_status == 'Outsourced') %>%
+#   mutate(
+#     rank = rank(desc(perc))
+#   )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+        ) %>%
+  arrange(desc(SectorName_short))
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(SectorName_short, n) %>%
+  group_by(SectorName_short) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  ) 
+
+plot_data %>%
+  # mutate(
+  #   SectorName = as.factor(SectorName)
+  # ) %>%
+  ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status)) +
+    geom_point(position = "dodge") + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_blank())+
+      #coord_flip() +
+  scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 100)) +
+  scale_colour_manual(values=colours) +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+  geom_label_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=3) +
+  guides(size=FALSE) + # remove size legend as gauging size is difficult 
+  xlab("Weighted average weekly income") + ylab("Sector") +
+  labs(caption = "Size of bubble represents the size of the respective workforce within the sector")
+
+sectors_of_interest <- unique(plot_data$SectorName_labelled)
+sectors_of_interest <- sectors_of_interest[1:13] %>%
+  stringr::str_to_title()
+```
+
+## Minor sub groups across sectors
+
+```{r}
+#| height: 20
+#| width: 10
+unit_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+# write_csv(unit_occ_summary_pay, file="../outputs/data/minor_group_occupation_summary_pay_weekly_across_sectors.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_weekly <- unit_occ_summary_pay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_weekly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+# write_csv(paid_less, file="../outputs/data/minor_group_occupation_weekly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(UnitOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+  distinct(UnitOccupation_labelled, N) %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average weekly income") + ylab("Unit occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+# ggsave(here('outputs','figures','occupation_pay_plots','unit_occupation_pay_plot_all_sectors.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+## Minor subgroups within sectors
+
+```{r}
+#| height: 10
+#| width: 10
+unit_occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  )  %>%
+  ungroup()
+
+summary_weekly <- unit_occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+# write_csv(unit_occ_in_sect_summary_pay, file="../outputs/data/minor_group_occupation_in_sector_summary_pay_weekly.csv")
+
+
+unit_subset <- summary_weekly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(SectorName_labelled, UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+# write_csv(paid_less, file="../outputs/data/minor_group_occupation_in_sector_weekly_pay_penalty.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- unit_subset %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(UnitOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+      distinct(UnitOccupation_labelled, N) %>%
+      mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      dplyr::select(UnitOccupation_labelled, n) %>%
+      group_by(UnitOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+      #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average weekly income") + ylab("Unit occupation") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    # ggsave(here('outputs','figures','occupation_pay_plots',paste0('unit_occupation_pay_plot_weekly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
+
+## Major subgroups across sectors
+
+```{r}
+#| height: 20
+#| width: 10
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+# write_csv(major_occ_summary_pay, file="../outputs/data/major_subgroup_across_sectors_occupation_summary_pay_weekly.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_weekly <- major_occ_summary_pay %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_weekly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(MajorsubgroupOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+# write_csv(paid_less, file="../outputs/data/major_subgroup_occupation_weekly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+  distinct(MajorsubgroupOccupation_labelled, N) %>%
+  mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average weekly income") + ylab("Major sub group occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+# ggsave(here('outputs','figures','occupation_pay_plots','major_subgroup_occupation_all_sectors_pay_plot.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+## Major subgroups within sectors
+
+```{r}
+#| height: 10
+#| width: 10
+occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  ) 
+
+summary_weekly <- occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+# write_csv(occ_in_sect_summary_pay, file="../outputs/data/major_subgroup_occupation_in_sector_summary_pay_weekly.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- occ_in_sect_summary_pay %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(MajorsubgroupOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, outsourcing_status, N) %>%
+      distinct(MajorsubgroupOccupation_labelled, N) %>%
+      mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(MajorsubgroupOccupation_labelled = forcats::fct_reorder(MajorsubgroupOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        MajorsubgroupOccupation_labelled = factor(MajorsubgroupOccupation_labelled, levels = levels(not_outsourced_levels$MajorsubgroupOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      dplyr::select(MajorsubgroupOccupation_labelled, n) %>%
+      group_by(MajorsubgroupOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, MajorsubgroupOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, MajorsubgroupOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average weekly income") + ylab("Major subgroup occupation") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    # ggsave(here('outputs','figures','occupation_pay_plots',paste0('major_subgroup_occupation_pay_plot_weekly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
+
+# This group of workers is varied, spread across sectors and regions (chapter 2)
+
+```{r sector-summary-3}
+sector_summary_3 <- data %>%
+  #filter(income_drop_all == 0) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    # avg_income = mean(income_annual_all, na.rm=T),
+    # wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+# write_csv(sector_summary_3, file="../outputs/data/sector_summary_3.csv")
+```
+
+The plot below shows the proportion of outsourced and not outsourced workers within each sector. I.e. this is showing what sectors have higher and lower proportions of outsourced workers.
+
+```{r sector-plot-2}
+plot_data <- sector_summary_3 %>%
+  drop_na(SectorName_short) %>%
+    droplevels() %>%
+  ungroup()
+
+# Filter for 'outsourced' level and reorder SectorName_short
+not_outsourced_levels <- plot_data %>%
+  filter(outsourcing_status == 'Not outsourced') %>%
+  mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+
+outsourced <- plot_data %>%
+  filter(outsourcing_status == 'Outsourced') %>%
+  mutate(
+    rank = rank(desc(perc))
+  )
+
+# Apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+         )
+
+# annotation_df <- plot_data %>%
+#   dplyr::select(SectorName_short, outsourcing_status, perc, n
+# mutate(
+  
+annotation_df <- plot_data %>%
+  filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(SectorName_short, N) %>%
+  mutate(
+    ypos = 80
+  )
+
+ggplot(plot_data, aes(SectorName_short, perc, fill = outsourcing_status)) +
+  geom_col() +
+  geom_text(inherit.aes=F,data=annotation_df, aes(x=SectorName_short, y=ypos, label = paste0("N = ", N)), hjust=1, nudge_y = 15) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  scale_y_continuous(breaks=seq(0,100,10))
+
+# sector_key <- data.frame("number" = seq(1,length(unique(plot_data$SectorName_labelled)),1),
+#                           "Sector" = levels(plot_data$SectorName_labelled))
+# 
+# sector_key %>%
+#   kable() %>%
+#   kable_styling(full_width = F)
+```
+
+The top three Sectors with the highest proportion of outsourced workers are:
+
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==3])` (note that N = 31)
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==4])`
+-   `r unique(plot_data$SectorName_labelled[plot_data$SectorName==22])`
+
+Note that for an undefined sector ('Not found') contained one of the largest proportions of outsourced workers (`r round(plot_data$perc[which(plot_data$SectorName==16 & plot_data$outsourcing_status=="Outsourced")],0)`% of workers in the 'Not found' category were outsourced).
+
+A key takeaway here is that whereas the total outsourced population is 17%, this figure varies by sector, from 0% for Mining... and Extraterritoral organisations... all the way to `r round(outsourced[which(outsourced$rank==1),'perc'],0)`% for `r outsourced[which(outsourced$rank==1),'SectorName_short']`, with 5 out 20 sectors having at least 20% of their workforce outsourced.
+
+The plot below shows the proportion of workers within each region who are outsourced.
+
+```{r}
+region_statistics_2 <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Region, outsourcing_status) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    n = n(),
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing status` = outsourcing_status
+  ) %>%
+  ungroup()
+
+reg_levels <- region_statistics_2 %>%
+  filter(`Outsourcing status` == "Outsourced") %>%
+  mutate(
+    Region = forcats::fct_reorder(Region, Percentage, .desc=FALSE)
+  )
+
+annotation_df <- region_statistics_2 %>%
+  filter(`Outsourcing status` == "Not outsourced") %>%
+  dplyr::select(Region, N) %>%
+  mutate(
+    ypos = 100
+  )
+
+region_statistics_2 %>%
+  mutate(
+    Region = factor(Region, levels = levels(reg_levels$Region))
+  ) %>%
+  ggplot(., aes(Region, Percentage, fill = `Outsourcing status`)) +
+  geom_col(colour="black") +
+  geom_text(inherit.aes=F, data = annotation_df, aes(Region, ypos, label = paste0("N=",N)), hjust=1, nudge_y = -2) +
+  coord_flip() +
+  scale_fill_manual(values=many_colours) +
+  theme_minimal()
+
+# readr::write_csv(region_statistics_2, file = "../outputs/data/region_stats_2.csv")
+
+region_statistics_2_1 <- region_statistics_2 %>% 
+  filter(`Outsourcing status` == "Outsourced" & Region != "London")
+
+london_perc <- region_statistics_2[which(region_statistics_2$Region == "London" & region_statistics_2["Outsourcing status"] == "Outsourced"), "Percentage"]
+```
+
+```{r}
+region_statistics_3 <- data %>%
+  filter(outsourcing_status == "Outsourced") %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Region) %>%
+  summarise(
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+# readr::write_csv(region_statistics_3, file = "../outputs/data/region_stats_3.csv")
+
+```
+
+We can also explore how the the entire outsourced workforce in the UK is distributed across the country. The table below shows the percentage of outsourced workers in each region as a proportion of the total UK workforce. They show where the UK's outsourced workforce is concentrated. 
+
+```{r}
+#| label: tbl-region-distr
+#| tbl-cap: "Distribution of outsourced workers across regions"
+region_statistics_3 %>%
+  mutate(
+    Region = haven::as_factor(Region)
+    ) %>%
+  arrange(desc(Percentage)) %>%
+  knitr::kable(.,digits = 2) %>%
+  kable_styling(full_width = F)
+```
+
+# Our data indicates a racialised picture of outsourcing in the UK
+
+All models were run with a quasibinomial distribution to account for the survey weights. Because quasibinomial models don't involve likelihoods, model fit could not be determined using information criteria. Instead, we use Tjur's pseudo *R^2^* to appraise model fit. This approach uses predicted probabilities from the model to calculate the average predicted probability for each level of the outcome variable, then takes the difference in this average between the two levels. The result is a figure between 0 and 1 that estimates how different the average predicted probability in the outsourced group is from the average predicted probability in the not outsourced group. Values closer to 1 indicate the averages are more different and therefore that the model is more accurate in discriminating between the two groups.
+
+```{r ethnicity-binary}
+#| output: false
+#| warning: false
+#| message: false
+mod2 <- glm(outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+
+tjur2 <- data %>%
+  mutate(pred = predict(mod2, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod2, only_sig=T)
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+```
+
+For model 1, the value of Tjur's pseudo *R^2^* is `r tjur2 %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Ethnicity: Not White',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+
+tab_model(mod2, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r ethnicity-aggregated}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+
+tjur <- data %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+```
+
+For model 2, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r ethnicity-disaggregated}
+#| output: false
+#| warning: false
+#| message: false
+
+mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+# Test waht amount of variacne the unweighted would explain - similar
+# test <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, family="binomial")
+# with(summary(test), 1 - deviance/null.deviance)
+
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+```
+
+For model 3, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
+
+```{r migration-binary}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+```
+
+The value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber'
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r migration-ethnicity-interaction}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  #filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+```
+
+For model 1, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Interaction: Not born in UK x Arab/Arab British',
+  'Interaction: Not born in UK x Asian/Asian British',
+  'Interaction: Not born in UK x Black/African/Caribbean/Black British',
+  'Interaction: Not born in UK x Mixed/Multiple ethnic group',
+  'Interaction: Not born in UK x Other ethnic group',
+  'Interaction: Not born in UK x Prefer not to say',
+  'Interaction: Not born in UK x White other'
+  
+)
+
+tab_model(mod, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "BORNUK_binary")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+To explore the interaction we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+
+1.  Among people born in the UK, Asian/Asian British people are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than White British people.
+2.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "White British - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than White British people.
+3.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than Black/African/Caribbean/Black British people.
+
+The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+```{r}
+ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of migration for particular ethnicities, we find that:
+
+1.  Among White British people, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2.  Among people of Mixed/Multiple ethnic group, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+3.  Among people who preferred not to say their ethnicity, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Prefer not to say") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+
+The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_binary"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+```{r migration-ethnicity_disaggregated-interaction}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+tjur <- data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  mutate(pred = predict(mod, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+coefs_all <- extract_glm_coefs(mod)
+
+```
+
+For model 2, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+
+```{r}
+labels <- c(
+  'Intercept',
+  'Migration: Not born in the UK',
+  "Ethnicity: Irish",
+  "Ethnicity: Gypsy or Irish Traveller",
+  "Ethnicity: Roma",
+  "Ethnicity: Any other White background",
+  "Ethnicity: White and Black Caribbean",
+  "Ethnicity: White and Black African",
+  "Ethnicity: White and Asian",
+  "Ethnicity: Any other Mixed/Multiple ethnic background",
+  "Ethnicity: Indian",
+  "Ethnicity: Pakistani",
+  "Ethnicity: Bangladeshi",
+  "Ethnicity: Chinese",
+  "Ethnicity: Any other Asian background",
+  "Ethnicity: African",
+  "Ethnicity: Caribbean",
+  "Ethnicity: Any other Black, Black British, or Caribbean background",
+  "Ethnicity: Arab",
+  "Ethnicity: Any other ethnic group",
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  "Interaction: Not born in UK x Irish",
+  "Interaction: Not born in UK x Gypsy or Irish Traveller",
+  # "Interaction: Not born in UK x Roma",
+  "Interaction: Not born in UK x Any other White background",
+  "Interaction: Not born in UK x White and Black Caribbean",
+  "Interaction: Not born in UK x White and Black African",
+  "Interaction: Not born in UK x White and Asian",
+  "Interaction: Not born in UK x Any other Mixed/Multiple ethnic background",
+  "Interaction: Not born in UK x Indian",
+  "Interaction: Not born in UK x Pakistani",
+  "Interaction: Not born in UK x Bangladeshi",
+  "Interaction: Not born in UK x Chinese",
+  "Interaction: Not born in UK x Any other Asian background",
+  "Interaction: Not born in UK x African",
+  "Interaction: Not born in UK x Caribbean",
+  "Interaction: Not born in UK x Any other Black, Black British, or Caribbean background",
+  "Interaction: Not born in UK x Arab",
+  "Interaction: Not born in UK x Any other ethnic group",
+  "Interaction: Not born in UK x Don't think of myself as any of these",
+  "Interaction: Not born in UK x Prefer not to say"
+
+  
+)
+
+tab_model(mod, 
+          pred.labels = labels,
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+
+```{r}
+ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "BORNUK_binary")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Again for this model we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+
+1.  Among people born in the UK, Pakistani workers are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than English/Welsh/Scottish/Northern Irish/British workers.
+
+No other differences were significant. The plot below visualises these effects.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+```{r}
+ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed_disaggregated")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05) %>%
+  mutate(
+    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+  )
+```
+
+Examining the effect of migration for particular ethnicities, we find that:
+
+1.  Among English/Welsh/Scottish/Northern Irish/British workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+2.  Among Mixed White and Asian workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK (**NB n \< 50 for this group**).
+
+No other differences were significant. The plot below visualises these findings.
+
+```{r}
+sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","BORNUK_binary"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+# Outsourced workers are more likely to be men, but women are more likely to be low-paid outsourced workers
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+gender_coefs <- coefs %>%
+  filter(variable == "GenderMale")
+```
+
+The same model as the previous was used to estimate the effect of Gender on outsourcing, and indicates that men are `r gender_coefs$or %>% round(2)` times more likely to be outsourced than women.
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+
+# Annual income
+# Intercept only
+mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+
+summary(mod_annual)
+
+# F and p
+f_annual <- round(anova(mod_base, mod_annual)[2,"F"],2)
+p_annual <- anova(mod_base, mod_annual)[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova(mod_base, mod_annual)[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual)$r.squared,2)
+
+# Weekly income
+# Intercept only
+mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+# H1
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+summary(mod_weekly)
+
+# F and p
+f_weekly <- round(anova(mod_base, mod_weekly)[2,"F"],2)
+p_weekly <- anova(mod_base, mod_weekly)[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ",round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova(mod_base, mod_weekly)[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly)$r.squared,2)
+
+```
+
+
+```{r}
+annual_gender_coef <- extract_lm_coefs(mod_annual, only_sig = T) %>%
+  filter(variable == "GenderMale") 
+
+weekly_gender_coef <- extract_lm_coefs(mod_weekly, only_sig = T) %>%
+  filter(variable == "GenderMale") 
+```
+
+Exploring a possible gender pay gap, as shown in @tbl-income-annual and @tbl-income-weekly there is a significant difference in pay between men and women. Annually, men earn £`r annual_gender_coef$Estimate %>% round(2)` more than women. Per week, men earn £`r weekly_gender_coef$Estimate %>% round(2)` more than women.
+
+We next explored whether outsourcing compounds this gender pay gap by adding an outsourcing:gender interaction term into the previous models.
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+# Annual income
+
+# H1
+mod_annual_int <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
+
+summary(mod_annual_int)
+
+# F and p
+anova_test <- anova(mod_annual, mod_annual_int)
+f_annual <- anova_test[2,"F"] %>% round(2)
+p_annual <- anova_test[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova_test[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual_int)$r.squared,2)
+
+# Weekly income
+
+# H1
+mod_weekly_int <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
+summary(mod_weekly_int)
+
+# F and p
+anova_test <- anova(mod_weekly, mod_weekly_int)
+
+f_weekly <-  anova_test[2,"F"] %>% round(2)
+p_weekly <- anova_test[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ", round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova_test[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly_int)$r.squared,2)
+
+```
+
+For both models, adding the interaction effect did not improve model fit (*R^2^* = `r rsquare_weekly`, *F*(`r dfs_weekly[[1]]`, `r dfs_weekly[[2]]`) = `r f_weekly`, *p* `r p_weekly`). The tables below show the coefficients for each model.
+
+```{r}
+#| label: tbl-annual-income-out-gen-int
+#| tbl-cap: "Linear regression predicting annual income with outsourcing:gender interaction term"
+labels <- c(
+  'Intercept',
+  'Age',
+  'Gender: Male',
+  'Gender: Other',
+  'Gender: Prefer not to say',
+  'Education: Has degree',
+  "Education: Don't know",
+  'Ethnicity: Arab/British Arab',
+  'Ethnicity: Asian/Asian British',
+  'Ethnicity: Black/African/Caribbean/Black British',
+  'Ethnicity: Mixed/Multiple ethnic group',
+  'Ethnicity: Other ethnic group',
+  'Ethnicity: Prefer not to say',
+  'Ethnicity: White other',
+  'Region: East Midlands',
+  'Region: East of England',
+  'Region: North East',
+  'Region: North West',
+  'Region: Northern Ireland',
+  'Region: Scotland',
+  'Region: South East',
+  'Region: South West',
+  'Region: Wales',
+  'Region: West Midlands',
+  'Region: Yorkshire and the Humber',
+  'Outsourcing: Outsourced',
+  'Migration: Arrived within the last year',
+  'Migration: Arrived within the last 3 years',
+  'Migration: Arrived within the last 5 years',
+  'Migration: Arrived within the last 10 years',
+  'Migration: Arrived within the last 15 years',
+  'Migration: Arrived within the last 20 years',
+  'Migration: Arrived within the last 30 years',
+  'Migration: Arrived more than 30 years ago',
+  'Migration: Prefer not to say',
+  'Interaction: Outsourcing x Gender Male',
+  'Interaction: Outsourcing x Gender Other',
+  'Interaction: Outsourcing x Gender Prefer not to say'
+)
+  
+tab_model(mod_annual_int, pred.labels = labels, dv.labels = "Annual income")
+
+
+```
+
+```{r}
+#| label: tbl-weekly-income-out-gen-int
+#| tbl-cap: "Linear regression predicting weekly income with outsourcing:gender interaction term"
+
+tab_model(mod_weekly_int, pred.labels = labels, dv.labels = "Weekly income")
+```
+
+
+```{r}
+ems <- emmeans(mod_annual_int, specs = "Gender", by = "outsourcing_status", nuisance = "BORNUK_labelled")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons <- cons %>% filter(p.value < .05)
+
+```
+```{r}
+ems <- emmeans(mod_annual_int, specs = "outsourcing_status", by = "Gender", nuisance = "BORNUK_labelled")
+cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
+sig_cons2 <- cons %>% filter(p.value < .05) 
+
+```
+
+The interaction term is non-significant. Estimated marginal means show that:
+
+- Among not outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Not outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+- Among outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+- Among men, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Male") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
+- Among women, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Female") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
+
+
+The plot below illustrates the main effects that men are paid more than women and that outsourced men and women are paid less than non-outsourced men and women. The lack of interaction indicates that the difference in pay between men and women does not significantly differ between outsourced and non-outsourced people.
+
+```{r}
+sjPlot::plot_model(mod_annual_int, type = "pred", legend.title="", terms = c("outsourcing_status","Gender"), dodge=0.5) +#
+  
+  coord_flip() +
+  xlab("") + ylab("Likelihood of being outsourced") +
+  theme_minimal() 
+```
+
+# Age
+
+```{r}
+#| output: false
+#| warning: false
+#| message: false
+mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
+summary(mod)
+
+coefs <- extract_glm_coefs(mod, only_sig=T)
+
+age_coefs <- coefs %>%
+  filter(variable == "Age")
+  
+```
+
+We found that age was a significant predictor of the likelihood of being outsourced. The model indicates that for each year older a worker is, they are `r age_coefs$or %>% round(2)` times as likely (i.e. `r (1-age_coefs$or %>% round(2))*100`% less likely) to be outsourced.
