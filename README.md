@@ -7,6 +7,8 @@
 
 [Click here for the methodology document](https://justknowledge-uk.github.io/jrf_nat_rep/R/methodology)
 
+[Click here for analysis code presented matching the report structure](https://justknowledge-uk.github.io/jrf_nat_rep/R/analysis_report_matched)
+
 ## Study 1 - Nationally Representative Survey
 
 This repository contains the data and analysis underlying JRF's Nationally Representative survey of workers in the UK. The survey covered personal demographics, employment demographics (e.g. occupation, hours worked, pay), and the outsourced diagnostic questions. The main objectives of the analysis were to produce an accurate estimate of the size and demographic makeup of the outsourced worker population in the UK.
