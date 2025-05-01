@@ -29,9 +29,9 @@ There are 14 of these variables to which we add a few demographic variables for 
 
 ```{r}
 library(tidyverse)
-
+#setwd("~/repos/JRF Nat Rep/Experiential")
 # Read data
-data <- read_csv("data/2025-01-21 - clean_data_jrf_experiential.csv")
+data <- read_csv("../data/2025-04-16 - clean_data_jrf_experiential.csv")
 
 # reduced dataset
 data_processed <- data %>%
@@ -1070,4 +1070,53 @@ Reverse_Sex_Crosstab <- crosstable(person_level %>%
 
 Reverse_Sex_Crosstab
 
+#bornUK
+
+Reverse_BornUK_Crosstab <- crosstable(person_level %>% 
+                               select(neg_category, BORNUK), 
+                             by = neg_category,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Reverse_BornUK_Crosstab
+
+```
+
+# Who reports being paid less
+
+```{r}
+
+library(crosstable) 
+library(flextable)
+
+Paid_Less_Cross <- crosstable(data_processed %>% 
+                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Income_Group, Education_Band, BORNUK), 
+                             by = Pros_And_Cons_Pay,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+Paid_Less_Cross
+
+```
+
+```{r}
+entitlements_Cross <- crosstable(data_processed %>% 
+                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Income_Group, Education_Band, BORNUK), 
+                             by = Pros_And_Cons_Pay,
+                             total = "both",
+                             showNA = "no", 
+                             funs = c(median, mean, "std dev" = sd),
+                             percent_digits = 2, 
+                             percent_pattern = "{n} ({p_row})") %>%
+   as_flextable()
+
+entitlements_Cross
 ```
