@@ -110,7 +110,7 @@ data = pd.read_csv(file)
 
 data.loc[data['Region']=='Yorkshire and the Humber','Region'] = 'Yorkshire and The Humber'
 
-data_gpd = regions_filled.merge(data, how='left', left_on='rgn23m', right_on='Region')
+data_gpd = regions_filled.merge(data, how='left', left_on='rgn23nm', right_on='Region')
 ```
 
 
