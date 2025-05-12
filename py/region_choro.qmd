@@ -8,9 +8,11 @@ import pandas as pd
 import os
 import glob
 import geopandas as gpd
-import matplotlib as mpl
+import matplotlib as mpl 
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import matplotlib.pyplot as plt
+import requests
+import janitor
 ```
 
 ```{python}
@@ -30,15 +32,31 @@ data.loc[data['Region']=='Yorkshire and the Humber','Region'] = 'Yorkshire and T
 
 ```{python}
 # regions
-pattern = os.path.join('..','Data','RGN_23_boundaries', '*.shp') # use ultra-generalised to make it look nicer zoomed out
-files = glob.glob(pattern)
-region_boundaries = gpd.read_file(files[0])
+base_url = 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Regions_December_2023_Boundaries_EN_BGC/FeatureServer/0/query'
 
-# countries
-pattern = os.path.join('..','Data','CTRY_23_boundaries','*.shp')
-files = glob.glob(pattern)
-country_boundaries = gpd.read_file(files[0])
+# Parameters
+params = {
+    "where": "1=1",  # Retrieve all records
+    "outFields": "*",  # "*" specifies all fields
+    "outSR": "4326",
+    "f": "geojson",
+    "resultOffset": 0,  # For pagination
+    "resultRecordCount": 2000
+}
 
+# Send request
+response = requests.get(base_url, params=params)
+
+# Read the response content as geopandas df
+region_boundaries = gpd.read_file(response.content)
+
+base_url = 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/ArcGIS/rest/services/Countries_December_2023_Boundaries_UK_BGC/FeatureServer/0/query'
+
+# Send request
+response = requests.get(base_url, params=params)
+
+# Read the response content as geopandas df
+country_boundaries = gpd.read_file(response.content)
 
 # Combine regions and countries to incorporate wales
 country_boundaries_altered = country_boundaries.drop('CTRY23NMW',axis=1) # drop welsh name column
@@ -46,11 +64,13 @@ country_boundaries_altered.rename(columns={'CTRY23CD': 'RGN23CD', 'CTRY23NM': 'R
 regions_filled = pd.concat([region_boundaries, country_boundaries_altered]) # combine the two dfs
 regions_filled = regions_filled[regions_filled.RGN23NM != "England"] # drop England so that we don't double plot it
 
+# Tidy column names
+regions_filled = janitor.clean_names(regions_filled)
 ```
 
 ```{python}
-# merge data
-data_gpd = regions_filled.merge(data, how='left', left_on='RGN23NM', right_on='Region')
+# merge data to plot
+data_gpd = regions_filled.merge(data, how='left', left_on='rgn23nm', right_on='Region')
 ```
 
 # Proportion of workers who are outsourced in each region
@@ -66,6 +86,7 @@ fig.savefig('../outputs/figures/outsourcing_by_region.svg', format='svg')
 fig.savefig('../outputs/figures/outsourcing_by_region.png', format='png')
 ```
 
+## Same again but with London removed
 
 ```{python}
 subset_gpd = data_gpd[data_gpd['Region'] != 'London']
@@ -82,7 +103,6 @@ fig.savefig('../outputs/figures/outsourcing_by_region_excl_london.png', format='
 
 # Distribution of outsourced workers across the UK
 
-
 ```{python}
 # distribution data
 file = os.path.join('..', 'outputs','data','region_stats_3.csv')
@@ -90,7 +110,7 @@ data = pd.read_csv(file)
 
 data.loc[data['Region']=='Yorkshire and the Humber','Region'] = 'Yorkshire and The Humber'
 
-data_gpd = regions_filled.merge(data, how='left', left_on='RGN23NM', right_on='Region')
+data_gpd = regions_filled.merge(data, how='left', left_on='rgn23m', right_on='Region')
 ```
 
 
