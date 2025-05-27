@@ -277,6 +277,8 @@ data <- data %>%
   )
 ```
 
+
+
 ## Labels
 
 Applying haven::as_factor() to the whole dataset is inappropriate because it makes data wrangling a lot more cumbersome; for example, writing out labels for conditioning becomes very long, and plots become very busy with many level names (e.g., for occupation variables, ethnicity, etc.). However, some variables *need* to be have their labels extracted because these vars could ostensibly be numeric ones, and leaving them in their unlabelled state risks confusion later on (e.g., with age, org size). It is therefore necessary to translate the numeric-type variables to their labels, replacing the old values, whilst for the factor-like variables to keep a version of the variable unlabelled.
@@ -406,95 +408,6 @@ duplicate_label <- function(data, variables){
 
 
 data <- duplicate_label(data, variables_to_duplicate)
-```
-
-## Ethnicity
-
-We have many ethnicity categories, which is great for disaggregation but challenging for visualising and determining general trends. Here we make a second ethnicity category that collapses ethnicity into fewer, broader categories. The super-categories are formed as follows:
-
-**White**
-
--   English / Welsh / Scottish / Northern Irish / British,
--   Irish
-
-**White other**
-
--   Gypsy or Irish Traveller
--   Roma
--   Any other White background
-
-**Black African**
-
--   African
--   White and Black African
-
-**Black Caribbean**
-
--   Caribbean
--   White and Black Caribbean
-
-**Black other**
-
--   Any other Black, Black British, or Caribbean background
-
-**South Asian**
-
--   Indian
--   Pakistani
--   Bangladeshi
-
-**East Asian**
-
--   Chinese
-
-**Arab**
-
--   Arab
-
-**Mixed other**
-
--   White and Asian
--   Any other Mixed / Multiple ethnic background
-
-**Other**
-
--   Any other ethnic group
--   Any other Asian background
--   Don't think of myself as any of these
--   Prefer not to say
--   NA
-
-```{r}
-data <- data %>%   
-  mutate(     
-    Ethnicity_collapsed = forcats::fct_collapse(Ethnicity_labelled,
-                                                "White" = c("English / Welsh / Scottish / Northern Irish / British",
-                                                            "Irish"),
-                                                "White other" = c("Gypsy or Irish Traveller",
-                                                                  "Roma",
-                                                                  "Any other White background"),
-                                                "Black African" = c("African",
-                                                                    "White and Black African"),
-                                                "Black Caribbean" = c("Caribbean",
-                                                                      "White and Black Caribbean"),
-                                                "Black other" = c("Any other Black, Black British, or Caribbean background"),     
-                                                "South Asian" = c("Indian",
-                                                                  "Pakistani", 
-                                                                  "Bangladeshi"),
-                                                "East Asian" = c("Chinese"),
-                                                "Arab" = "Arab",
-                                                "Mixed other" = c("White and Asian",
-                                                                  "Any other Mixed / Multiple ethnic background"),
-                                                "Other" = c("Any other ethnic group",
-                                                            "Any other Asian background",
-                                                            "Don’t think of myself as any of these",
-                                                            "Prefer not to say")
-    ),
-    Ethnicity_collapsed = replace_na(Ethnicity_collapsed, "Other"), # allocate NA responses to 'Other' group
-    Ethnicity_collapsed = forcats::fct_relevel(Ethnicity_collapsed, "White") # make White the reference category
-  ) %>%
-  relocate(Ethnicity_collapsed, .after = Ethnicity_labelled) # put the new var after the old one
-
 ```
 
 ## Income
@@ -1365,10 +1278,12 @@ data <- data %>%
       Ethnicity %in% c(18) ~ "Arab/British Arab",
       # Handling missing or ambiguous categories
       Ethnicity %in% c(19)  ~ "Other ethnic group",
+      # Don't think of myself as any of these
+      Ethnicity %in% c(20) ~ "Don't think of myself as any of these",
       #prefer not to say
-      Ethnicity %in% c(20,21) ~ "Prefer not to say",
+      Ethnicity %in% c(21) ~ "Prefer not to say",
       # Default case for any unmatched entries
-      TRUE ~ "Prefer not to say"
+      TRUE ~ NA
     )
   )
 
@@ -1377,7 +1292,7 @@ data$Ethnicity_collapsed <- relevel(factor(data$Ethnicity_collapsed), ref = "Whi
 
 data <- data %>%
   mutate(
-    Has_Degree = factor(Has_Degree, levels = c("No", "Yes", "Don't know"))
+    Has_Degree = factor(Has_Degree, levels = c("Yes", "No", "Don't know"))
   )
 
 # make binary born uk var
@@ -1393,17 +1308,29 @@ data <- data %>%
   ) 
 
 # make binary ethnicity var
+# but keep don't think of myself and prefer not to say as separate
 ethnicities <- as.vector(unique(data$Ethnicity_collapsed))
-non_white_ethnicities <- ethnicities[!(ethnicities %in% "White British")]
+white_ethnicities <- ethnicities[ethnicities %in% c("White British", "White other")]
+non_categories <- c("Don't think of myself as any of these","Prefer not to say")
+non_white_ethnicities <- ethnicities[!(ethnicities %in% white_ethnicities) & !(ethnicities %in% non_categories)]
 
 # Will throw NA warning. I think this OK but investigate how to avoid the problem
 data <- data %>%
   mutate(
     Ethnicity_binary = forcats::fct_collapse(Ethnicity_collapsed,
-                                      "White British" = c("White British"),
-                                      "Non-White British" = non_white_ethnicities)
+                                      "White" = c("White British","White other"),
+                                      "Non-White" = non_white_ethnicities,
+                                      "Don't think of myself as any of these" =  "Don't think of myself as any of these",
+                                      "Prefer not to say" = "Prefer not to say")
   )
 
+data <- data %>%
+  # mutate(
+  #   Gender = haven::as_factor(Gender)
+  # ) %>%
+  mutate(
+    Gender = factor(Gender, levels = c("Male","Female","Other","Prefer not to say"))
+  )
 ```
 
 ## Save
