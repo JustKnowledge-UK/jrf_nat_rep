@@ -92,12 +92,9 @@ We have also produced crosstabs for the following variables:
 
 The crosstabulations are very long. It would be useful to further reduce the number of variables just to those which are of interest to the final write up. e.g. \< 20 variables *plus* demographics or however many you think can be reasonably discussed in the report.
 
--   [x] Morgan provide a list of the final set of variables of interest
--   [x] The list has been reduced from 172 variables to 88 but its probably still took long. Cel to reduce using Chi2 tests
-
 ## By Low Pay {collapse="true"}
 
-```{r}
+```{r, collapse = T}
 # Create the crosstable and convert it to flextable
 Income_Crosstab<- crosstable(data %>% 
                 select(-any_of(text_vars)), 
