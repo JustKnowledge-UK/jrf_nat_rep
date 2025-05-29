@@ -40,6 +40,7 @@ library(readr)
 library(sjPlot)
 library(nnet)
 library(apaTables)
+library(survey)
 ```
 
 ```{r palette}
@@ -80,7 +81,7 @@ get_pvalue <- function(model){
 ```
 
 ```{r data, output=FALSE}
-data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
+data <- readRDS("../Data/2025-05-28 - Cleaned_data.rds")
 
 # Specify data to be used in income analysis
 income_data <- filter(data, income_drop_all==0)
@@ -374,17 +375,19 @@ To investigate the pay gap been outsourced and non-outsourced workers we constru
 
 $$
 Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing
-$$ where
+$$ 
+
+where
 
 -   Income is a continuous numeric variable indicating a the respondent's income (weekly or annual, in different models)
 -   Age is a continuous numeric variable indicating the respondent's age
 -   Gender is a categorical variable with three levels:
-    -   Female (reference category)
-    -   Male
+    -   Male (reference category)
+    -   Female
     -   Other
 -   Education is a categorical variable indicating whether the respondent has a degree, with three levels:
-    -   No (reference category)
-    -   Yes
+    - Yes (reference category)
+    -   No
     -   Don't know
 -   Ethnicity is a categorical variable with eight levels:
     -   White British (reference category)
@@ -392,9 +395,10 @@ $$ where
     -   Asian/Asian British
     -   Black/African/Caribbean/Black British
     -   Mixed/Multiple ethnic group
-    -   Other ethnic groupo
+    -   Other ethnic group
     -   Prefer not to say
     -   White other
+    - Don't think of myself as any of these
 -   Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
     -   I was born in the UK (reference category)
     -   Within the last year
@@ -430,9 +434,12 @@ $$ where
 
 # Annual income
 # Intercept only
-mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
+
+mod_base <- lm(income_annual_all ~ 1, mod_data, weights = NatRepemployees)
 # H1
-mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, mod_data, weights = NatRepemployees)
 
 summary(mod_annual)
 
@@ -452,9 +459,9 @@ rsquare_annual <- round(summary(mod_annual)$r.squared,2)
 
 # Weekly income
 # Intercept only
-mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+mod_base <- lm(income_weekly_all ~ 1, mod_data, weights = NatRepemployees)
 # H1
-mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, mod_data, weights = NatRepemployees)
 summary(mod_weekly)
 
 # F and p
@@ -479,14 +486,15 @@ The annual income model was statistically significant (*R^2^* = `r rsquare_annua
 labels <- c(
   'Intercept',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Ethnicity: Arab/British Arab',
   'Ethnicity: Asian/Asian British',
   'Ethnicity: Black/African/Caribbean/Black British',
+  "Ethnicity: Don't think of myself as any of these",
   'Ethnicity: Mixed/Multiple ethnic group',
   'Ethnicity: Other ethnic group',
   'Ethnicity: Prefer not to say',
@@ -527,13 +535,13 @@ tab_model(mod_weekly, pred.labels = labels, dv.labels = "Weekly income")
 
 ```{r}
 annual_gender_coef <- extract_lm_coefs(mod_annual, only_sig = T) %>%
-  filter(variable == "GenderMale") 
+  filter(variable == "GenderFemale")
 
 weekly_gender_coef <- extract_lm_coefs(mod_weekly, only_sig = T) %>%
-  filter(variable == "GenderMale") 
+  filter(variable == "GenderFemale") 
 ```
 
-The above model was also used to assess a possible gender pay gap. As shown in the preceding two tables, there is a significant difference in pay between men and women. Annually, men earn £`r annual_gender_coef$Estimate %>% round(2)` more than women. Per week, men earn £`r weekly_gender_coef$Estimate %>% round(2)` more than women.
+The above model was also used to assess a possible gender pay gap. As shown in the preceding two tables, there is a significant difference in pay between men and women. Annually, women earn £`r annual_gender_coef$Estimate %>% round(2) %>% abs()` less than men. Per week, women earn £`r weekly_gender_coef$Estimate %>% round(2) %>% abs()` less than men.
 
 We next explored whether outsourcing compounds this gender pay gap by adding an interaction term into the previous models so that
 
@@ -545,8 +553,11 @@ $$
 #| output: false
 #| warning: false
 #| message: false
-# Annual income
+#| 
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
 
+# Annual income
 # H1
 mod_annual_int <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled + Gender:outsourcing_status, income_data, weights = NatRepemployees)
 
@@ -597,7 +608,7 @@ For both models, adding the interaction effect did not improve model fit (*R^2^*
 labels <- c(
   'Intercept',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
   'Education: Has degree',
@@ -605,6 +616,7 @@ labels <- c(
   'Ethnicity: Arab/British Arab',
   'Ethnicity: Asian/Asian British',
   'Ethnicity: Black/African/Caribbean/Black British',
+  "Ethnicity: Don't think of myself as any of these",
   'Ethnicity: Mixed/Multiple ethnic group',
   'Ethnicity: Other ethnic group',
   'Ethnicity: Prefer not to say',
@@ -630,7 +642,7 @@ labels <- c(
   'Migration: Arrived within the last 30 years',
   'Migration: Arrived more than 30 years ago',
   'Migration: Prefer not to say',
-  'Interaction: Outsourcing x Gender Male',
+  'Interaction: Outsourcing x Gender Female',
   'Interaction: Outsourcing x Gender Other',
   'Interaction: Outsourcing x Gender Prefer not to say'
 )
@@ -646,6 +658,7 @@ cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
 sig_cons <- cons %>% filter(p.value < .05)
 
 ```
+
 ```{r}
 ems <- emmeans(mod_annual_int, specs = "outsourcing_status", by = "Gender", nuisance = "BORNUK_labelled")
 cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
@@ -691,12 +704,12 @@ where
     -   Outsourced
 -   Age is a continuous numeric variable indicating the respondent's age
 -   Gender is a categorical variable with three levels:
-    -   Female (reference category)
-    -   Male
+    -   Male (reference category)
+    -   Female
     -   Other
 -   Education is a categorical variable indicating whether the respondent has a degree, with three levels:
-    -   No (reference category)
-    -   Yes
+    -   Yes (reference category)
+    -   No
     -   Don't know
 -   Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
     -   I was born in the UK (reference category)
@@ -725,16 +738,20 @@ where
 
 For this exploration we modelled ethnicity in three ways.
 
-1.  As a categorical variable with two levels:
-    -   White British (reference category)
-    -   Not White British
+1.  As a categorical variable with four levels:
+    -   White (reference category)
+    -   Not White 
+    - Don't think of myself as any of these
+    - Prefer not say
+    
 2.  As a categorical variable with eight levels:
     -   White British (reference category)
     -   Arab/British Arab
     -   Asian/Asian British
     -   Black/African/Caribbean/Black British
+    -   Don't think of myself as any of these
     -   Mixed/Multiple ethnic group
-    -   Other ethnic groupo
+    -   Other ethnic group
     -   Prefer not to say
     -   White other
 3.  As a categorical variable with 21 levels:
@@ -760,36 +777,76 @@ For this exploration we modelled ethnicity in three ways.
     -   Don't think of myself as any of these
     -   Prefer not to say
 
-All models were run with a quasibinomial distribution to account for the survey weights. Because quasibinomial models don't involve likelihoods, model fit could not be determined using information criteria. Instead, we use Tjur's pseudo *R^2^* to appraise model fit. This approach uses predicted probabilities from the model to calculate the average predicted probability for each level of the outcome variable, then takes the difference in this average between the two levels. The result is a figure between 0 and 1 that estimates how different the average predicted probability in the outsourced group is from the average predicted probability in the not outsourced group. Values closer to 1 indicate the averages are more different and therefore that the model is more accurate in discriminating between the two groups.
+We used `svyglm()` from the `survey` package to construct survey-weighted generalised linear models. This approach allows us to take into account survey weights to produce design-based standard errors by assuming a 'quasibinomial' distribution to the data. Specifically, the survey-weighted data contains overdispersion; the variance is greater than expected by a binomial distribution (which assumes variance = mean(1 - mean)). The quasibinomial distribution estimates a dispersion parameter that allows the variance to be greater than expected by the true binomial distribution. For more information see Lumley, Thomas, and Alastair Scott. ‘Fitting Regression Models to Survey Data’. Statistical Science 32, no. 2 (2017): 265–780.
 
-```{r ethnicity-binary}
+We used Rao–Scott adjusted Wald tests to compare nested survey-weighted models fit using a quasibinomial family. This method accounts for the survey design and is appropriate given that quasi-likelihood models do not support likelihood-ratio testing. For more information see Rao, J. N. K., and A. J. Scott. ‘On Chi-Squared Tests for Multiway Contingency Tables with Cell Proportions Estimated from Survey Data’. The Annals of Statistics 12, no. 1 (March 1984): 46–60. https://doi.org/10.1214/aos/1176346391.
+
+
+```{r}
 #| output: false
 #| warning: false
 #| message: false
-mod2 <- glm(outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
 
-tjur2 <- data %>%
-  mutate(pred = predict(mod2, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
 
-coefs <- extract_glm_coefs(mod2, only_sig=T)
+# Step 1: Create a survey design object
+design <- svydesign(
+  ids = ~1,                                
+  weights = ~NatRepemployees,          
+  data = mod_data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ 1,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+# summary(mod_svy2)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
 ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
+
 ```
 
-For model 1, the value of Tjur's pseudo *R^2^* is `r tjur2 %>% round(3)`. The table below shows the model coefficients.
+For model 1, a saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
   'Intercept',
   'Ethnicity: Not White',
+  "Ethnicity: Don't think of myself as any of these",
+  "Ethnicity: Prefer not to say",
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -814,32 +871,67 @@ labels <- c(
 )
 
 
-tab_model(mod2, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
 
+
+
 ```{r ethnicity-aggregated}
 #| output: false
 #| warning: false
 #| message: false
-mod <- glm(outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
 
-tjur <- data %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
 
-coefs <- extract_glm_coefs(mod, only_sig=T)
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
 
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,            
+  data = mod_data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ 1,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+# summary(mod_svy2)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
 ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 
 ```
 
-For model 2, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+For model 2, a saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
@@ -847,15 +939,16 @@ labels <- c(
   'Ethnicity: Arab/British Arab',
   'Ethnicity: Asian/Asian British',
   'Ethnicity: Black/African/Caribbean/Black British',
+  "Ethnicity: Don't think of myself as any of these",
   'Ethnicity: Mixed/Multiple ethnic group',
   'Ethnicity: Other ethnic group',
   'Ethnicity: Prefer not to say',
   'Ethnicity: White other',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -879,7 +972,7 @@ labels <- c(
   'Migration: Prefer not to say'
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
@@ -890,29 +983,53 @@ tab_model(mod,
 #| warning: false
 #| message: false
 
-mod <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
 
-# Test waht amount of variacne the unweighted would explain - similar
-# test <- glm(outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, family="binomial")
-# with(summary(test), 1 - deviance/null.deviance)
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ 1,
+  design = design,
+  family = quasibinomial()
+)
 
-tjur <- data %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
 
-coefs <- extract_glm_coefs(mod, only_sig=T)
+# summary(mod_svy2)
 
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
 ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 
 ```
 
-For model 3, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+For model 3, a saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
@@ -938,10 +1055,10 @@ labels <- c(
   "Ethnicity: Don't think of myself as any of these",
   "Ethnicity: Prefer not to say",
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -965,40 +1082,73 @@ labels <- c(
   'Migration: Prefer not to say'
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
 
+
+
 #### Migration
 
-We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" become "Not born in UK".
+We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" and "Prefer not to say" become "Not born in UK".
 
-```{r migration-binary}
+```{r}
 #| output: false
 #| warning: false
 #| message: false
-mod <- glm(outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
 
-tjur <- data %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
 
-coefs <- extract_glm_coefs(mod, only_sig=T)
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
+
+
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ 1,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-The value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
   'Intercept',
   'Migration: Not born in the UK',
+  'Migration: Prefer not to say',
   "Ethnicity: Irish",
   "Ethnicity: Gypsy or Irish Traveller",
   "Ethnicity: Roma",
@@ -1020,10 +1170,10 @@ labels <- c(
   "Ethnicity: Don't think of myself as any of these",
   "Ethnicity: Prefer not to say",
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1038,7 +1188,7 @@ labels <- c(
   'Region: Yorkshire and the Humber'
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
@@ -1048,17 +1198,17 @@ tab_model(mod,
 
 ```{r}
 gender_coefs <- coefs %>%
-  filter(variable == "GenderMale")
+  filter(variable == "GenderFemale")
 ```
 
 We used the same generalised linear model as in the previous section to estimate the effect of Gender on outsourcing, where Gender is a categorical variable with four levels:
 
--   Female (reference category)
--   Male
+-   Male (reference category)
+-   Female
 -   Prefer not to say
 -   Other
 
-The model indicates that men are `r gender_coefs$or %>% round(2)` times more likely to be outsourced than women.
+The model indicates that women are `r gender_coefs$or %>% round(2)` times as likely (i.e. `r 100 * (1 - gender_coefs$or %>% round(2))`% less likely) to be outsourced than men.
 
 #### Age
 
@@ -1081,22 +1231,48 @@ $$
 #| warning: false
 #| message: false
 
-mod <- glm(income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary, income_data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-tjur <- income_data %>%
-  filter(!is.na(income_group)) %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(income_group) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  income_group ~ 1,
+  design = design,
+  family = quasibinomial()
+)
 
-coefs <- extract_glm_coefs(mod, only_sig = T)
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-The value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients. The result indicates that Age weakly but significantly influences whether a worker is in the low income group. For each year older a worker is, they are `r coefs %>% filter(variable=="Age") %>% pull(or) %>% round(3)` times more likely to be in the low income group. 
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
@@ -1123,10 +1299,10 @@ labels <- c(
   "Ethnicity: Any other ethnic group",
   "Ethnicity: Don't think of myself as any of these",
   "Ethnicity: Prefer not to say",
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1139,11 +1315,12 @@ labels <- c(
   'Region: Wales',
   'Region: West Midlands',
   'Region: Yorkshire and the Humber',
-  'Migration: Not born in the UK'
+  'Migration: Not born in the UK',
+  'Migration: Prefer not to say'
 )
 
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Low income group membership",
           show.r2 = FALSE)
@@ -1195,10 +1372,9 @@ tab_model(mod,
 <!-- sjPlot::plot_model(mod2, type="int", terms=c("Age","income_group")) -->
 <!-- ``` -->
 
-
 #### Ethnicity-migration interaction
 
-We next explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models by adding an interaction effect to the previous model so that the model formula is:
+We next explored whether there was an interaction between ethnicity and migration in predicting outsourcing using generalised linear models by adding an interaction effect to the model predicting outsourcing above so that the model formula is:
 
 $$
 Outsourcing = Ethnicity + Age + Gender + Educaton + Region + Migration + Ethnicity:Migration
@@ -1208,43 +1384,76 @@ where Ethnicity:Migration represents the interaction term.
 
 We did this twice: first for the aggregated eight-level ethnicity variable, and then for the disaggregated 21-level variable.
 
-```{r migration-ethnicity-interaction}
+##### Ethnicity 8
+
+```{r}
 #| output: false
 #| warning: false
 #| message: false
-mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
 
-tjur <- data %>%
-  #filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-coefs <- extract_glm_coefs(mod, only_sig=T)
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
 
+summary(mod_svy1)
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-For model 1, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
+
 
 ```{r}
 labels <- c(
   'Intercept',
   'Migration: Not born in the UK',
+  'Migration: Prefer not to say',
   'Ethnicity: Arab/British Arab',
   'Ethnicity: Asian/Asian British',
   'Ethnicity: Black/African/Caribbean/Black British',
+  "Ethnicity: Don't think of myself as any of these",
   'Ethnicity: Mixed/Multiple ethnic group',
   'Ethnicity: Other ethnic group',
   'Ethnicity: Prefer not to say',
   'Ethnicity: White other',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1259,96 +1468,345 @@ labels <- c(
   'Region: Yorkshire and the Humber',
   'Interaction: Not born in UK x Arab/Arab British',
   'Interaction: Not born in UK x Asian/Asian British',
+  'Interaction: Prefer not to say x Asian/Asian British',
   'Interaction: Not born in UK x Black/African/Caribbean/Black British',
+  'Interaction: Prefer not to say x Black/African/Caribbean/Black British',
+  "Interaction: Not born in UK x Don't think of myself as any of these",
   'Interaction: Not born in UK x Mixed/Multiple ethnic group',
+  'Interaction: Prefer not to say x Mixed/Multiple ethnic group',
   'Interaction: Not born in UK x Other ethnic group',
   'Interaction: Not born in UK x Prefer not to say',
-  'Interaction: Not born in UK x White other'
+  'Interaction: Prefer not to say x Prefer not to say',
+  'Interaction: Not born in UK x White other',
+  'Interaction: Prefer not to say x White other'
   
 )
 
-tab_model(mod, 
-          pred.labels = labels, 
+tab_model(mod_svy2, 
+          pred.labels = labels,
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
 
+###### Post-hoc
+
+We explored the interaction effect using targeted contrasts comparing
+
+1. The effect of each ethnicity versus "White British" within each level of migration.
+2. The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
+
+Contrasts were calculated using `survey::svycontrast()` and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995). Results were only considered where the sample for the contrast was greater than 10.
+
 ```{r}
-ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "BORNUK_binary")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed)
+bor_levels <- levels(mod_data$BORNUK_binary)
+
+# Set reference levels for clarity:
+ref_eth <- "White British"
+ref_bor <- "Born in UK"
+
+partA_results <- list()
+
+for (bor in bor_levels) {
+  for (eth in eth_levels) {
+    if (eth == ref_eth) next  # skip comparing ref to itself
+    if (!paste0("Ethnicity_collapsed", eth) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for ethnicity (if not ref)
+    if (eth != ref_eth) {
+      vec[paste0("Ethnicity_collapsed", eth)] <- 1
+    }
+
+    # Interaction term (only needed if BORNUK != ref)
+    if (bor != ref_bor) {
+      interaction_name <- paste0("BORNUK_binary", bor, ":", "Ethnicity_collapsed", eth)
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partA_results[[paste0(bor, ": ", eth, " vs ", ref_eth)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+# Make into df
+partA_df <- bind_rows(
+  lapply(names(partA_results), function(name) {
+    res <- partA_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partA_df <- partA_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(BORNUK_binary, Ethnicity_collapsed) %>%
+  rename(cell_n = n)
+
+partA_df <- partA_df %>%
+  separate(contrast, into = c("BORNUK_binary", "ethnicity"), sep = ": ", remove = FALSE) %>%
+  separate(ethnicity, into = c("test_ethn","ref_ethn"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("BORNUK_binary", "test_ethn" = "Ethnicity_collapsed")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partA <- partA_df %>% filter(p_adj < 0.05)
+
 ```
 
-To explore the interaction we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+Exploring the effect of each ethnicity versus "White British" within each level of migration, we found that, among people not born in the UK, White other workers were `r sig_partA[which(sig_partA$test_ethn == "White other"), "OR"] %>% round(2)` times as likely (i.e., `r 100 * (1-(sig_partA[which(sig_partA$test_ethn == "White other"), "OR"] %>% round(2)))`% less likely) to be outsourced than "White British" people.
 
-1.  Among people born in the UK, Asian/Asian British people are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than White British people.
-2.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "White British - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than White British people.
-3.  Among people not born in the UK, White other workers are `r sig_cons %>% filter(BORNUK_binary == "Not born in UK") %>% filter(contrast == "(Black/African/Caribbean/Black British) - White other") %>% pull(or) %>% round(2)` as likely to be outsourced than Black/African/Caribbean/Black British people.
-
-The plot below visualises these effects.
+No differences by ethnicity were observed among people born in the UK.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ Ethnicity_collapsed * BORNUK_binary,
+               type = "response")  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+#                       "Pakistani",
+#                       "White and Black African")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = BORNUK_binary, x = prob, colour = Ethnicity_collapsed)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of outsourcing",
+    y = "Migration",
+    colour = "Ethnicity"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
 ```{r}
-ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed)
+bor_levels <- levels(mod_data$BORNUK_binary)
+
+# Set reference levels for clarity:
+ref_eth <- "White British"
+ref_bor <- "Born in UK"
+
+partB_results <- list()
+
+for (eth in eth_levels) {
+  for (bor in bor_levels) {
+    if (bor == ref_bor) next  # skip comparing ref to itself
+    if (!paste0("BORNUK_binary", bor) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for BORNUK (if not ref)
+    vec[paste0("BORNUK_binary", bor)] <- 1
+
+    # Interaction term (only if ethnicity != ref)
+    if (eth != ref_eth) {
+      interaction_name <- paste0("BORNUK_binary", bor, ":", "Ethnicity_collapsed", eth)
+      # Catch flipped ordering, just in case
+      if (!interaction_name %in% coefs) {
+        alt_name <- paste0("Ethnicity_collapsed", eth, ":", "BORNUK_binary", bor)
+        if (alt_name %in% coefs) interaction_name <- alt_name
+      }
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partB_results[[paste0(eth, ": ", bor, " vs ", ref_bor)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+
+# Make into df
+partB_df <- bind_rows(
+  lapply(names(partB_results), function(name) {
+    res <- partB_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partB_df <- partB_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(BORNUK_binary, Ethnicity_collapsed) %>%
+  rename(cell_n = n)
+
+partB_df <- partB_df %>%
+  separate(contrast, into = c("ethnicity","BORNUK_binary"), sep = ": ", remove = FALSE) %>%
+  separate(BORNUK_binary, into = c("test_born","ref_born"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("ethnicity" = "Ethnicity_collapsed", "test_born" = "BORNUK_binary")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partB <- partB_df %>% filter(p_adj < 0.05)
+
 ```
 
-Examining the effect of migration for particular ethnicities, we find that:
+Examining the effect of "Not born in UK" versus "Born in UK" within each ethnicity, we found  
 
-1.  Among White British people, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-2.  Among people of Mixed/Multiple ethnic group, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-3.  Among people who preferred not to say their ethnicity, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed == "Prefer not to say") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
+- among "White British", workers not born in the UK are `r sig_partB[which(sig_partB$ethnicity == "White British" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
+- among people of Mixed/multiple ethnic groups, workers not born in UK are `r sig_partB[which(sig_partB$ethnicity == "Mixed/Multiple ethnic group" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
 
-The plot below visualises these effects.
+No significant differences between people born and not born in the UK were observed for any other ethnicities. The figure below shows these effects.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","BORNUK_binary"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ BORNUK_binary * Ethnicity_collapsed,
+               type = "response")  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+#                       "Pakistani",
+#                       "White and Black African")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = Ethnicity_collapsed, x = prob, colour = BORNUK_binary)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of outsourcing",
+    y = "Ethnicity",
+    colour = "Born in UK?"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
-```{r migration-ethnicity_disaggregated-interaction}
+##### Ethnicity 21
+
+
+```{r}
 #| output: false
 #| warning: false
 #| message: false
-mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
 
-tjur <- data %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(outsourcing_status) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-coefs <- extract_glm_coefs(mod, only_sig=T)
-coefs_all <- extract_glm_coefs(mod)
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
 
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-For model 2, the value of Tjur's pseudo *R^2^* is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
+
 
 ```{r}
 labels <- c(
   'Intercept',
   'Migration: Not born in the UK',
+  'Migration: Prefer not to say',
   "Ethnicity: Irish",
   "Ethnicity: Gypsy or Irish Traveller",
   "Ethnicity: Roma",
@@ -1370,10 +1828,10 @@ labels <- c(
   "Ethnicity: Don't think of myself as any of these",
   "Ethnicity: Prefer not to say",
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1387,84 +1845,309 @@ labels <- c(
   'Region: West Midlands',
   'Region: Yorkshire and the Humber',
   "Interaction: Not born in UK x Irish",
+  "Interaction: Prefer not to say x Irish",
   "Interaction: Not born in UK x Gypsy or Irish Traveller",
-  # "Interaction: Not born in UK x Roma",
+  # "Interaction: Not born in UK x Roma", # Roma not estimable because rank deficient
   "Interaction: Not born in UK x Any other White background",
+  "Interaction: Prefer not to say x Any other White background",
   "Interaction: Not born in UK x White and Black Caribbean",
+  "Interaction: Prefer not to say x White and Black Caribbean",
   "Interaction: Not born in UK x White and Black African",
+  "Interaction: Prefer not to say x White and Black African",
   "Interaction: Not born in UK x White and Asian",
   "Interaction: Not born in UK x Any other Mixed/Multiple ethnic background",
+  "Interaction: Prefer not to say x Any other Mixed/Multiple ethnic background",
   "Interaction: Not born in UK x Indian",
+  "Interaction: Prefer not to say x Indian",
   "Interaction: Not born in UK x Pakistani",
+  "Interaction: Prefer not to say x Pakistani",
   "Interaction: Not born in UK x Bangladeshi",
+  "Interaction: Prefer not to say x Bangladeshi",
   "Interaction: Not born in UK x Chinese",
   "Interaction: Not born in UK x Any other Asian background",
+  "Interaction: Prefer not to say x Any other Asian background",
   "Interaction: Not born in UK x African",
+  "Interaction: Prefer not to say x African",
   "Interaction: Not born in UK x Caribbean",
+  "Interaction: Prefer not to say x Caribbean",
   "Interaction: Not born in UK x Any other Black, Black British, or Caribbean background",
+  "Interaction: Prefer not to say x Any other Black, Black British, or Caribbean background",
+  
   "Interaction: Not born in UK x Arab",
   "Interaction: Not born in UK x Any other ethnic group",
   "Interaction: Not born in UK x Don't think of myself as any of these",
-  "Interaction: Not born in UK x Prefer not to say"
+  "Interaction: Not born in UK x Prefer not to say",
+  "Interaction: Prefer not to say x Prefer not to say"
 
   
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels,
           dv.labels = "Outsourcing",
-          show.r2 = FALSE)
+          show.r2 = FALSE,
+          title = "Note: Migration x Roma not estimable as model matrix rank deficient")
 ```
 
+###### Post-hoc
+
 ```{r}
-ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "BORNUK_binary")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed_disaggregated)
+bor_levels <- levels(mod_data$BORNUK_binary)
+
+# Set reference levels for clarity:
+ref_eth <- "English / Welsh / Scottish / Northern Irish / British"
+ref_bor <- "Born in UK"
+
+partA_results <- list()
+
+for (bor in bor_levels) {
+  for (eth in eth_levels) {
+    if (eth == ref_eth) next  # skip comparing ref to itself
+    if (!paste0("Ethnicity_collapsed_disaggregated", eth) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for ethnicity (if not ref)
+    if (eth != ref_eth) {
+      vec[paste0("Ethnicity_collapsed_disaggregated", eth)] <- 1
+    }
+
+    # Interaction term (only needed if BORNUK != ref)
+    if (bor != ref_bor) {
+      interaction_name <- paste0("BORNUK_binary", bor, ":", "Ethnicity_collapsed_disaggregated", eth)
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partA_results[[paste0(bor, ": ", eth, " vs ", ref_eth)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+# Make into df
+partA_df <- bind_rows(
+  lapply(names(partA_results), function(name) {
+    res <- partA_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partA_df <- partA_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(BORNUK_binary, Ethnicity_collapsed_disaggregated) %>%
+  rename(cell_n = n)
+
+partA_df <- partA_df %>%
+  separate(contrast, into = c("BORNUK_binary", "ethnicity"), sep = ": ", remove = FALSE) %>%
+  separate(ethnicity, into = c("test_ethn","ref_ethn"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("BORNUK_binary", "test_ethn" = "Ethnicity_collapsed_disaggregated")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partA <- partA_df %>% filter(p_adj < 0.05)
+
+
 ```
 
-Again for this model we calculated estimated marginal means of the ethnicity x migration effect. Examining the effect of ethnicity within each level of migration, we find that:
+We explored the interaction effect using targeted contrasts comparing
 
-1.  Among people born in the UK, Pakistani workers are `r sig_cons %>% filter(BORNUK_binary == "Born in UK") %>% pull(or) %>% round(2)` times more likely to be outsourced than English/Welsh/Scottish/Northern Irish/British workers.
+1. The effect of each ethnicity versus "English / Welsh / Scottish / Northern Irish / British" within each level of migration.
+2. The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
 
-No other differences were significant. The plot below visualises these effects.
+Contrasts were calculated using survey::svycontrast() and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995) and results were only considered where the sample for the contrast was greater than 10.
+
+Exploring the effect of each ethnicity versus "English / Welsh / Scottish / Northern Irish / British" within each level of migration, we found that, among people born in the UK
+
+- White and Black African people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "White and Black African"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
+- Pakistani people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "Pakistani"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
+
+Among people not born in the UK, no significant differences between ethnicities were observed. The figure below shows the effects for "English / Welsh / Scottish / Northern Irish / British", "White and Black African", and Pakistani respondents.
+
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("BORNUK_binary","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ Ethnicity_collapsed_disaggregated * BORNUK_binary,
+               type = "response")  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+                      "Pakistani",
+                      "White and Black African")
+ems_df %>%
+  filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = BORNUK_binary, x = prob, colour = Ethnicity_collapsed_disaggregated)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of outsourcing",
+    y = "Migration",
+    colour = "Ethnicity"
+  ) +
   theme_minimal() +
-  theme(
-    legend.position = "none"
-  )
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
 ```{r}
-ems <- emmeans(mod, specs = "BORNUK_binary", by = "Ethnicity_collapsed_disaggregated")
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed_disaggregated)
+bor_levels <- levels(mod_data$BORNUK_binary)
+
+# Set reference levels for clarity:
+ref_eth <- "English / Welsh / Scottish / Northern Irish / British"
+ref_bor <- "Born in UK"
+
+partB_results <- list()
+
+for (eth in eth_levels) {
+  for (bor in bor_levels) {
+    if (bor == ref_bor) next  # skip comparing ref to itself
+    if (!paste0("BORNUK_binary", bor) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for BORNUK (if not ref)
+    vec[paste0("BORNUK_binary", bor)] <- 1
+
+    # Interaction term (only if ethnicity != ref)
+    if (eth != ref_eth) {
+      interaction_name <- paste0("BORNUK_binary", bor, ":", "Ethnicity_collapsed_disaggregated", eth)
+      # Catch flipped ordering, just in case
+      if (!interaction_name %in% coefs) {
+        alt_name <- paste0("Ethnicity_collapsed_disaggregated", eth, ":", "BORNUK_binary", bor)
+        if (alt_name %in% coefs) interaction_name <- alt_name
+      }
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partB_results[[paste0(eth, ": ", bor, " vs ", ref_bor)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+
+# Make into df
+partB_df <- bind_rows(
+  lapply(names(partB_results), function(name) {
+    res <- partB_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partB_df <- partB_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(BORNUK_binary, Ethnicity_collapsed_disaggregated) %>%
+  rename(cell_n = n)
+
+partB_df <- partB_df %>%
+  separate(contrast, into = c("ethnicity","BORNUK_binary"), sep = ": ", remove = FALSE) %>%
+  separate(BORNUK_binary, into = c("test_born","ref_born"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("ethnicity" = "Ethnicity_collapsed_disaggregated", "test_born" = "BORNUK_binary")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partB <- partB_df %>% filter(p_adj < 0.05)
+
 ```
 
-Examining the effect of migration for particular ethnicities, we find that:
+Examining the effect of "Not born in UK" versus "Born in UK" within each level of ethnicity, we found that among "English / Welsh / Scottish / Northern Irish / British", workers not born in the UK are `r sig_partB[which(sig_partB$ethnicity == "English / Welsh / Scottish / Northern Irish / British" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
 
-1.  Among English/Welsh/Scottish/Northern Irish/British workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK
-2.  Among Mixed White and Asian workers, people not born in the UK are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` more likely to be outsourced than people born in the UK (**NB n \< 50 for this group**).
-
-No other differences were significant. The plot below visualises these findings.
+No significant differences between people born and not born in the UK were observed for any other ethnicities. The figure below shows these effects.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","BORNUK_binary"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ BORNUK_binary * Ethnicity_collapsed_disaggregated,
+               type = "response")  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+ggplot(ems_df, aes(y = Ethnicity_collapsed_disaggregated, x = prob, colour = BORNUK_binary)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of outsourcing",
+    y = "Ethnicity",
+    colour = "Born in UK?"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
+
 
 #### Ethnicity-outsourced interaction
 
@@ -1472,40 +2155,74 @@ A generalised linear model was constructed to test whether the interaction betwe
 
 $$
 Income Group = Outsourcing + Ethnicity + Age + Gender + Education + Region + Migration + Outsourcing:Ethnicity
-$$ As in preceding sections, we consturcted three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
+$$ 
+
+As in preceding sections, we constructed three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
+
+##### Ethnicity binary
 
 ```{r}
 #| output: false
 #| warning: false
 #| message: false
 
-mod <- glm(income_group ~ outsourcing_status * Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_binary))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-tjur <- income_data %>%
-  filter(!is.na(income_group)) %>%
-  # filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(income_group) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
 
-coefs <- extract_glm_coefs(mod, only_sig = T)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_binary,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-The value of Tjur's pseudo *R^2^* for model 1 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A model including the ethnicity:outsourcing interaction term was not a significant improvement on a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
+
 
 ```{r}
 labels <- c(
   'Intercept',
   'Outsourcing: Outsourced',
   'Ethnicity: Not White',
+  "Ethnicity: Don't think of myself as any of these",
+  'Ethnicity: Prefer not to say',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1527,42 +2244,67 @@ labels <- c(
   'Migration: Arrived within the last 30 years',
   'Migration: Arrived more than 30 years ago',
   'Migration: Prefer not to say',
-  'Interaction: Outsourcing x Ethnicity'
+  'Interaction: Outsourced x Non-White',
+  "Interaction: Outsourced x Don't think of myself as any of these",
+  "Interaction: Outsourced x Prefer not to say"
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels,
-          dv.labels = "Outsourcing",
+          dv.labels = "Low income group",
           show.r2 = FALSE)
 ```
 
-```{r out-ethn-agg-int}
+##### Ethnicity 8
+
+```{r}
 #| output: false
 #| warning: false
 #| message: false
 
-mod <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-tjur <- income_data %>%
-  filter(!is.na(income_group)) %>%
-  # filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(income_group) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
 
-# Test what amount of variance the unweighted model would explain - similar(ish)
-# test <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, family="binomial")
-# summary(test)
-# 
-# with(summary(test), 1 - deviance/null.deviance)
 
-coefs <- extract_glm_coefs(mod, only_sig = T)
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+  design = design,
+  family = quasibinomial()
+)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-The value of Tjur's pseudo *R^2^* for model 2 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
@@ -1571,15 +2313,16 @@ labels <- c(
   'Ethnicity: Arab/British Arab',
   'Ethnicity: Asian/Asian British',
   'Ethnicity: Black/African/Caribbean/Black British',
+  "Ethnicity: Don't think of myself as any of these",
   'Ethnicity: Mixed/Multiple ethnic group',
   'Ethnicity: Other ethnic group',
   'Ethnicity: Prefer not to say',
   'Ethnicity: White other',
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1601,97 +2344,345 @@ labels <- c(
   'Migration: Arrived within the last 30 years',
   'Migration: Arrived more than 30 years ago',
   'Migration: Prefer not to say',
-  'Interaction: Outsourcing x Arab/British Arab',
-  'Interaction: Outsourcing x Asian/Asian British',
-  'Interaction: Outsourcing x Black/African/Caribbean/Black British',
-  'Interaction: Outsourcing x Mixed/Multiple ethnic group',
-  'Interaction: Outsourcing x Other ethnic group',
-  'Interaction: Outsourcing x Prefer not to say',
-  'Interaction: Outsourcing x White other'
+  'Interaction: Outsourced x Arab/British Arab',
+  'Interaction: Outsourced x Asian/Asian British',
+  'Interaction: Outsourced x Black/African/Caribbean/Black British',
+  "Interaction: Outsourced x Don't think of myself as any of these",
+  'Interaction: Outsourced x Mixed/Multiple ethnic group',
+  'Interaction: Outsourced x Other ethnic group',
+  'Interaction: Outsourced x Prefer not to say',
+  'Interaction: Outsourced x White other'
 )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels,
-          dv.labels = "Outsourcing",
+          dv.labels = "Low income group",
           show.r2 = FALSE)
 ```
 
+###### Post-hoc
+
+We explored the interaction effect using targeted contrasts comparing
+
+1. The effect of each ethnicity versus "White British" within each level of outsourcing
+2. The effect of outsourcing within each level of ethnicity
+
+Contrasts were calculated using `survey::svycontrast()` and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995). Results were only considered where the sample for the contrast was greater than 10.
+
 ```{r}
-ems <- emmeans(mod, specs = "Ethnicity_collapsed", by = "outsourcing_status", nuisance = c("BORNUK_labelled"))
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed)
+out_levels <- levels(mod_data$outsourcing_status)
+
+# Set reference levels for clarity:
+ref_eth <- "White British"
+ref_out <- "Not outsourced"
+
+partA_results <- list()
+
+for (out in out_levels) {
+  for (eth in eth_levels) {
+    if (eth == ref_eth) next  # skip comparing ref to itself
+    if (!paste0("Ethnicity_collapsed", eth) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for ethnicity (if not ref)
+    if (eth != ref_eth) {
+      vec[paste0("Ethnicity_collapsed", eth)] <- 1
+    }
+
+    # Interaction term (only needed if BORNUK != ref)
+    if (out != ref_out) {
+      interaction_name <- paste0("outsourcing_status", out, ":", "Ethnicity_collapsed", eth)
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partA_results[[paste0(out, ": ", eth, " vs ", ref_eth)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+# Make into df
+partA_df <- bind_rows(
+  lapply(names(partA_results), function(name) {
+    res <- partA_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partA_df <- partA_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(outsourcing_status, Ethnicity_collapsed) %>%
+  rename(cell_n = n)
+
+partA_df <- partA_df %>%
+  separate(contrast, into = c("outsourcing_status", "ethnicity"), sep = ": ", remove = FALSE) %>%
+  separate(ethnicity, into = c("test_ethn","ref_ethn"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("outsourcing_status", "test_ethn" = "Ethnicity_collapsed")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partA <- partA_df %>% filter(p_adj < 0.05)
+
 ```
 
-To explore the interaction we calculated estimated marginal means of the ethnicity x outsourcing effect. Examining the effect of ethnicity within each level of outsourcing, we find that:
+Examining the effect of ethnicity within each level of outsourcing, we find that:
 
--   Among people who are outsourced, people of Mixed/Multiple ethnic group are `r sig_cons %>% pull(or) %>% round(2)` times more likely than Black/African/Caribbean/Black British people to be in the low income group.
+- Among people who are outsourced, people of "Mixed/Multiple ethnic group" are `r sig_partA[which(sig_partA$test_ethn == "Mixed/Multiple ethnic group"), "OR"] %>% round(2)` times more likely to be in the low income group than White British people.
+-   Among people who are not outsourced, people of "Other ethnic group" are `r sig_partA[which(sig_partA$test_ethn == "Other ethnic group"), "OR"]` times as likely (i.e. `r 100 * (1-(sig_partA[which(sig_partA$test_ethn == "Other ethnic group"), "OR"]))`% less likely) than White British people to be in the low income group (**NB** sample size for this cell is 11).
 
 No other significant differences were observed. The plot below visualises this.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+# Explcitly specify the data that was used because something happens that drops the prior weights otherwise
+data_used <- model.frame(mod_svy2)
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ outsourcing_status *Ethnicity_collapsed ,
+               type = "response", nuisance = c("BORNUK_labelled"),
+               data = data_used)  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+#                       "Pakistani",
+#                       "White and Black African")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = outsourcing_status, x = prob, colour = Ethnicity_collapsed)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of being in the low income group",
+    y = "Outsourcing",
+    colour = "Ethnicity"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
+
 ```{r}
-ems <- emmeans(mod, specs = "outsourcing_status", by = "Ethnicity_collapsed", nuisance = c("BORNUK_labelled"))
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed)
+out_levels <- levels(mod_data$outsourcing_status)
+
+# Set reference levels for clarity:
+ref_eth <- "White British"
+ref_out <- "Not outsourced"
+
+partB_results <- list()
+
+for (eth in eth_levels) {
+  for (out in out_levels) {
+    if (out == ref_out) next  # skip comparing ref to itself
+    if (!paste0("outsourcing_status", out) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for BORNUK (if not ref)
+    vec[paste0("outsourcing_status", out)] <- 1
+
+    # Interaction term (only if ethnicity != ref)
+    if (eth != ref_eth) {
+      interaction_name <- paste0("outsourcing_status", out, ":", "Ethnicity_collapsed", eth)
+      # Catch flipped ordering, just in case
+      if (!interaction_name %in% coefs) {
+        alt_name <- paste0("Ethnicity_collapsed", eth, ":", "outsourcing_status", out)
+        if (alt_name %in% coefs) interaction_name <- alt_name
+      }
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partB_results[[paste0(eth, ": ", out, " vs ", ref_out)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+
+# Make into df
+partB_df <- bind_rows(
+  lapply(names(partB_results), function(name) {
+    res <- partB_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partB_df <- partB_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(outsourcing_status, Ethnicity_collapsed) %>%
+  rename(cell_n = n)
+
+partB_df <- partB_df %>%
+  separate(contrast, into = c("ethnicity","outsourcing_status"), sep = ": ", remove = FALSE) %>%
+  separate(outsourcing_status, into = c("test_out","ref_out"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("ethnicity" = "Ethnicity_collapsed", "test_out" = "outsourcing_status")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partB <- partB_df %>% filter(p_adj < 0.05)
+
 ```
 
 Examining the effect of outsourcing within each ethnicity, we find that:
 
-1.  Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "White British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
-2.  Among people of Mixed/Multiple ethnic groups, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed == "Mixed/Multiple ethnic group") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+1.  Among White British people, outsourced workers are `r sig_partB[which(sig_partB$ethnicity == "White British"), "OR"] %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2.  Among people of Mixed/Multiple ethnic groups, outsourced workers are `r sig_partB[which(sig_partB$ethnicity == "Mixed/Multiple ethnic group"), "OR"] %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
 
 For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
 
 The plot below visualises these effects.
 
+
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed","outsourcing_status"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+data_used <- model.frame(mod_svy2)
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ outsourcing_status * Ethnicity_collapsed ,
+               type = "response", nuisance = c("BORNUK_labelled"),
+               data = data_used)  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+#                       "Pakistani",
+#                       "White and Black African")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = Ethnicity_collapsed, x = prob, colour = outsourcing_status)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of being in the low income group",
+    y = "Ethnicity",
+    colour = "Outsourcing"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
-```{r out-ethn-disagg-int}
+##### Ethnicity 21
+
+```{r}
 #| output: false
 #| warning: false
 #| message: false
 
-mod <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, weights = NatRepemployees, family="quasibinomial")
-summary(mod)
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated))
+  
+design <- svydesign(
+  ids = ~1,                             
+  weights = ~NatRepemployees,             
+  data = mod_data
+)
 
-tjur <- income_data %>%
-  filter(!is.na(income_group)) %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
-  mutate(pred = predict(mod, type = "response")) %>%
-  group_by(income_group) %>%
-  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
-  summarise(tjur_r2 = diff(weighted_mean)) %>%
-  pull()
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
 
-# Test what amount of variance the unweighted model would explain - similar(ish)
-# test <- glm(income_group ~ outsourcing_status * Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, income_data, family="binomial")
-# summary(test)
-# 
-# with(summary(test), 1 - deviance/null.deviance)
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed_disaggregated,
+  design = design,
+  family = quasibinomial()
+)
 
-coefs <- extract_glm_coefs(mod, only_sig = T)
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
-The value of Tjur's pseudo *R^2^* for model 3 is `r tjur %>% round(3)`. The table below shows the model coefficients.
+A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 labels <- c(
@@ -1718,10 +2709,10 @@ labels <- c(
   "Ethnicity: Don't think of myself as any of these",
   "Ethnicity: Prefer not to say",
   'Age',
-  'Gender: Male',
+  'Gender: Female',
   'Gender: Other',
   'Gender: Prefer not to say',
-  'Education: Has degree',
+  "Education: Don't have degree",
   "Education: Don't know",
   'Region: East Midlands',
   'Region: East of England',
@@ -1743,85 +2734,307 @@ labels <- c(
   'Migration: Arrived within the last 30 years',
   'Migration: Arrived more than 30 years ago',
   'Migration: Prefer not to say',
-  "Interaction: Outsourcing x Irish",
-  "Interaction: Outsourcing x Gypsy or Irish Traveller",
-  "Interaction: Outsourcing x Roma",
-  "Interaction: Outsourcing x Any other White background",
-  "Interaction: Outsourcing x White and Black Caribbean",
-  "Interaction: Outsourcing x White and Black African",
-  "Interaction: Outsourcing x White and Asian",
-  "Interaction: Outsourcing x Any other Mixed/Multiple ethnic background",
-  "Interaction: Outsourcing x Indian",
-  "Interaction: Outsourcing x Pakistani",
-  "Interaction: Outsourcing x Bangladeshi",
-  "Interaction: Outsourcing x Chinese",
-  "Interaction: Outsourcing x Any other Asian background",
-  "Interaction: Outsourcing x African",
-  "Interaction: Outsourcing x Caribbean",
-  "Interaction: Outsourcing x Any other Black, Black British, or Caribbean background",
-  "Interaction: Outsourcing x Arab",
-  "Interaction: Outsourcing x Any other ethnic group",
-  "Interaction: Outsourcing x Don't think of myself as any of these",
-  "Interaction: Outsourcing x Prefer not to say"
+  "Interaction: Outsourced x Irish",
+  "Interaction: Outsourced x Gypsy or Irish Traveller",
+  "Interaction: Outsourced x Roma",
+  "Interaction: Outsourced x Any other White background",
+  "Interaction: Outsourced x White and Black Caribbean",
+  "Interaction: Outsourced x White and Black African",
+  "Interaction: Outsourced x White and Asian",
+  "Interaction: Outsourced x Any other Mixed/Multiple ethnic background",
+  "Interaction: Outsourced x Indian",
+  "Interaction: Outsourced x Pakistani",
+  "Interaction: Outsourced x Bangladeshi",
+  "Interaction: Outsourced x Chinese",
+  "Interaction: Outsourced x Any other Asian background",
+  "Interaction: Outsourced x African",
+  "Interaction: Outsourced x Caribbean",
+  "Interaction: Outsourced x Any other Black, Black British, or Caribbean background",
+  "Interaction: Outsourced x Arab",
+  "Interaction: Outsourced x Any other ethnic group",
+  "Interaction: Outsourced x Don't think of myself as any of these",
+  "Interaction: Outsourced x Prefer not to say"
   )
 
-tab_model(mod, 
+tab_model(mod_svy2, 
           pred.labels = labels,
           dv.labels = "Outsourcing",
           show.r2 = FALSE,
           show.ci = FALSE)
 ```
 
+###### Post-hoc
+
+We explored the interaction effect using targeted contrasts comparing
+
+1. The effect of each ethnicity versus "White British" within each level of outsourcing
+2. The effect of outsourcing within each level of ethnicity
+
+Contrasts were calculated using `survey::svycontrast()` and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995). Results were only considered where the sample for the contrast was greater than 10.
+
 ```{r}
-ems <- emmeans(mod, specs = "Ethnicity_collapsed_disaggregated", by = "outsourcing_status", nuisance = c("BORNUK_labelled"))
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed_disaggregated)
+out_levels <- levels(mod_data$outsourcing_status)
+
+# Set reference levels for clarity:
+ref_eth <- "English / Welsh / Scottish / Northern Irish / British"
+ref_out <- "Not outsourced"
+
+partA_results <- list()
+
+for (out in out_levels) {
+  for (eth in eth_levels) {
+    if (eth == ref_eth) next  # skip comparing ref to itself
+    if (!paste0("Ethnicity_collapsed_disaggregated", eth) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for ethnicity (if not ref)
+    if (eth != ref_eth) {
+      vec[paste0("Ethnicity_collapsed_disaggregated", eth)] <- 1
+    }
+
+    # Interaction term (only needed if BORNUK != ref)
+    if (out != ref_out) {
+      interaction_name <- paste0("outsourcing_status", out, ":", "Ethnicity_collapsed_disaggregated", eth)
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partA_results[[paste0(out, ": ", eth, " vs ", ref_eth)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+# Make into df
+partA_df <- bind_rows(
+  lapply(names(partA_results), function(name) {
+    res <- partA_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partA_df <- partA_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(outsourcing_status, Ethnicity_collapsed_disaggregated) %>%
+  rename(cell_n = n)
+
+partA_df <- partA_df %>%
+  separate(contrast, into = c("outsourcing_status", "ethnicity"), sep = ": ", remove = FALSE) %>%
+  separate(ethnicity, into = c("test_ethn","ref_ethn"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("outsourcing_status", "test_ethn" = "Ethnicity_collapsed_disaggregated")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partA <- partA_df %>% filter(p_adj < 0.05)
+
 ```
 
-No other significant differences were observed when examining the effect of ethnicity within each level of outsourcing. The plot below visualises this.
+Examining the effect of ethnicity within each level of outsourcing, we find that:
+
+- Among people who are outsourced, "White and Asian" people are `r sig_partA[which(sig_partA$test_ethn == "White and Asian"), "OR"] %>% round(2)` times more likely to be in the low income group than White British people (**NB** sample is 12 for this cell).
+-   Among people who are not outsourced, people of "Any other ethnic group" are `r sig_partA[which(sig_partA$test_ethn == "Any other ethnic group"), "OR"]` times as likely (i.e. `r 100 * (1-(sig_partA[which(sig_partA$test_ethn == "Any other ethnic group"), "OR"]))`% less likely) than White British people to be in the low income group (**NB** sample size for this cell is 11).
+
+No other significant differences were observed. The plot below visualises this.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("outsourcing_status","Ethnicity_collapsed_disaggregated"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
+# Explcitly specify the data that was used because something happens that drops the prior weights otherwise
+data_used <- model.frame(mod_svy2)
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ outsourcing_status*Ethnicity_collapsed_disaggregated,
+               type = "response", nuisance = c("BORNUK_labelled"),
+               data = data_used)  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British",
+                      "White and Asian",
+                      "Any other ethnic group")
+ems_df %>%
+  filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = outsourcing_status, x = prob, colour = Ethnicity_collapsed_disaggregated)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of being in the low income group",
+    y = "Outsourcing",
+    colour = "Ethnicity"
+  ) +
   theme_minimal() +
-  theme(
-    legend.position = "none"
-  )
+  theme(axis.text.y = element_text(size = 10))
+
 ```
 
 ```{r}
-ems <- emmeans(mod, specs = "outsourcing_status", by = "Ethnicity_collapsed_disaggregated", nuisance = c("BORNUK_labelled"))
-cons <- summary(contrast(ems, "pairwise",adjust="tukey"))
-sig_cons <- cons %>% filter(p.value < .05) %>%
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy2))
+eth_levels <- levels(mod_data$Ethnicity_collapsed_disaggregated)
+out_levels <- levels(mod_data$outsourcing_status)
+
+# Set reference levels for clarity:
+ref_eth <- "English / Welsh / Scottish / Northern Irish / British"
+ref_out <- "Not outsourced"
+
+partB_results <- list()
+
+for (eth in eth_levels) {
+  for (out in out_levels) {
+    if (out == ref_out) next  # skip comparing ref to itself
+    if (!paste0("outsourcing_status", out) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for BORNUK (if not ref)
+    vec[paste0("outsourcing_status", out)] <- 1
+
+    # Interaction term (only if ethnicity != ref)
+    if (eth != ref_eth) {
+      interaction_name <- paste0("outsourcing_status", out, ":", "Ethnicity_collapsed_disaggregated", eth)
+      # Catch flipped ordering, just in case
+      if (!interaction_name %in% coefs) {
+        alt_name <- paste0("Ethnicity_collapsed_disaggregated", eth, ":", "outsourcing_status", out)
+        if (alt_name %in% coefs) interaction_name <- alt_name
+      }
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy2, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partB_results[[paste0(eth, ": ", out, " vs ", ref_out)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+
+# Make into df
+partB_df <- bind_rows(
+  lapply(names(partB_results), function(name) {
+    res <- partB_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partB_df <- partB_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
   mutate(
-    or = 1 / exp(estimate), .after=estimate # 1 / or because we want to express comparison - white(ref) (contrast expresses white(ref) - comparison)
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
   )
+
+cell_sizes <- mod_data %>%
+  count(outsourcing_status, Ethnicity_collapsed_disaggregated) %>%
+  rename(cell_n = n)
+
+partB_df <- partB_df %>%
+  separate(contrast, into = c("ethnicity","outsourcing_status"), sep = ": ", remove = FALSE) %>%
+  separate(outsourcing_status, into = c("test_out","ref_out"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("ethnicity" = "Ethnicity_collapsed_disaggregated", "test_out" = "outsourcing_status")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partB <- partB_df %>% filter(p_adj < 0.05)
+
 ```
 
 Examining the effect of outsourcing within each ethnicity, we find that:
 
-1.  Among White British people, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
-2.  Among people of Mixed White and Asian ethnicity, outsourced workers are `r sig_cons %>% filter(Ethnicity_collapsed_disaggregated == "White and Asian") %>% pull(or) %>% round(2)` times more likely to be in the low income group than non-outsourced workers (**NB n \< 50 for this group**)
+1.  Among "English / Welsh / Scottish / Northern Irish / British", outsourced workers are `r sig_partB[which(sig_partB$ethnicity == "English / Welsh / Scottish / Northern Irish / British"), "OR"] %>% round(2)` times more likely to be in the low income group than non-outsourced workers.
+2.  Among people of "White and Asian" ethnicity, outsourced workers are `r sig_partB[which(sig_partB$ethnicity == "White and Asian"), "OR"] %>% round(2)` times more likely to be in the low income group than non-outsourced workers (**NB** sample for this cell is 12).
 
 For all other ethnicities, there is no significant difference between outsourced and non-outsourced people in the odds of being in the low income group.
 
 The plot below visualises these effects.
 
 ```{r}
-sjPlot::plot_model(mod, type = "pred", legend.title="", terms = c("Ethnicity_collapsed_disaggregated","outsourcing_status"), dodge=0.5) +#
-  
-  coord_flip() +
-  xlab("") + ylab("Likelihood of being outsourced") +
-  theme_minimal() 
+# Explcitly specify the data that was used because something happens that drops the prior weights otherwise
+data_used <- model.frame(mod_svy2)
+# Get estimated marginal means on the response (probability) scale
+ems <- emmeans(mod_svy2,
+               ~ outsourcing_status*Ethnicity_collapsed_disaggregated,
+               type = "response", nuisance = c("BORNUK_labelled"),
+               data = data_used)  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British",
+#                       "White and Asian",
+#                       "Any other ethnic group")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y =Ethnicity_collapsed_disaggregated , x = prob, colour = outsourcing_status)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of being in the low income group",
+    y = "Ethnicity",
+    colour = "Outsourcing"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
 ```
-
-
-
 
 # Analysis - Study 2
 
