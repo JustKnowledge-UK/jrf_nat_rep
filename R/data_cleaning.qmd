@@ -1297,14 +1297,15 @@ data <- data %>%
 
 # make binary born uk var
 categories <- as.vector(unique(data$BORNUK_labelled))
-non_categories <- categories[!(categories %in% "I was born in the UK")]
+non_categories <- categories[!(categories %in% c("I was born in the UK","Prefer not to say"))]
 
 # Will throw NA warning. I think this OK but investigate how to avoid the problem
 data <- data %>%
   mutate(
     BORNUK_binary = forcats::fct_collapse(BORNUK_labelled,
                                       "Born in UK" = "I was born in the UK",
-                                      "Not born in UK" = non_categories)
+                                      "Not born in UK" = non_categories,
+                                      "Prefer not to say" = "Prefer not to say")
   ) 
 
 # make binary ethnicity var
