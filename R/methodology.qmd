@@ -4,6 +4,7 @@ author:
   - Jolyon Miles-Wilson
   - Celestin Okoroji
 date: "`r format(Sys.time(), '%e %B %Y')`"
+always_allow_html: true
 format: 
   html:
     page-layout: full
@@ -13,10 +14,15 @@ format:
     code-summary: "Code"
     toc: true
     toc-depth: 5
+  docx:  # or use `word:` – both work
+    toc: true
+    toc-depth: 5
 execute: 
   echo: false
   warning: false
 number-sections: true
+
+
 ---
 
 ```{r packages}
@@ -364,6 +370,33 @@ Together, these three sub groups form the classification of 'outsourced workers'
 A 'low pay' binary variable was created by implementing an income threshold below which respondents were considered to be on a relatively low income. In line with with the [Organisation for Economic Co-operation and Development](https://www.oecd.org/en/data/indicators/incidence-of-low-and-high-pay.html), we set the threshold at two-thirds median weekly income. The two-thirds threshold was based on the weekly median income for respondents' region to account for regional variations in earnings.
 
 Regional weekly median income values were drawn from the [Annual Survey of Hours and Earnings](https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup) (2023 provisional edition). Respondents whose reported weekly income was less than or equal to two-thirds of the median weekly income in their region were assigned to the 'low pay' group, while those whose reported weekly income was greater than two-thirds of the median weekly income in their region were assigned to the 'not low pay' group.
+
+## Aggregating ethnicity
+
+For reference, the table below provides a disambiguation of how ethnicities have been grouped in this analysis.
+
+For analyses using the disaggregated (survey) categories with 21 levels, the reference category is "English / Welsh / Scottish / Northern Irish / British".
+
+For analyses using the aggregated categories with 9 levels, the reference category is "White British"
+
+For analyses using teh aggregated categories with 4 levels, the reference category is "White".
+
+```{r}
+ethnicity_cat <- data %>%
+  dplyr::select(contains("ethnicity")) %>%
+  distinct() %>%
+  arrange(Ethnicity) %>%
+  dplyr::select(-c(1:2,Ethnicity_collapsed_disaggregated))
+
+ethn_colnames = c(
+  "Ethnicity: Survey (21 levels)",
+  "Ethnicity: Aggregated (9 levels)",
+  "Ethnicity: Binary (4 levels)"
+)
+ethnicity_cat %>%
+  kable(col.names = ethn_colnames) %>%
+  kable_styling(full_width=FALSE)
+```
 
 ## Models
 
@@ -1384,7 +1417,7 @@ where Ethnicity:Migration represents the interaction term.
 
 We did this twice: first for the aggregated eight-level ethnicity variable, and then for the disaggregated 21-level variable.
 
-##### Ethnicity 8
+##### Ethnicity 9
 
 ```{r}
 #| output: false
@@ -2255,7 +2288,7 @@ tab_model(mod_svy2,
           show.r2 = FALSE)
 ```
 
-##### Ethnicity 8
+##### Ethnicity 9
 
 ```{r}
 #| output: false
