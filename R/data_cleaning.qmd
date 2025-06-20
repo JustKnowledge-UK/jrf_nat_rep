@@ -1072,7 +1072,8 @@ data <- data %>%
     Region_four_fifths =  Region_median_income * .8,
     Region_two_thirds = Region_median_income * (2/3),
     UK_median = ashe_data %>% filter(Region == "United Kingdom") %>% pull(Region_median_income),
-    UK_four_fifths = UK_median * 0.8
+    UK_four_fifths = UK_median * 0.8,
+    Region_four_thirds = Region_median_income * (4/3)
   )
 
 
@@ -1128,9 +1129,10 @@ data %>%
 data <- data %>%
   mutate(
     income_group = case_when(income_weekly_all <= Region_two_thirds  ~ "Low",
-                             income_weekly_all > Region_two_thirds ~ "Not low",
-                             TRUE ~ NA),
-    income_group = factor(income_group, levels = c("Not low","Low"), exclude=NA)
+                                 income_weekly_all <= Region_four_thirds ~ "Mid",
+                                 income_weekly_all > Region_four_thirds ~ "High",
+                                 TRUE ~ NA),
+    income_group = factor(income_group, levels = c("Low", "Mid","High"), exclude=NA)
   ) %>%
   ungroup()
 
