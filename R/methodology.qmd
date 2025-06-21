@@ -47,6 +47,8 @@ library(sjPlot)
 library(nnet)
 library(apaTables)
 library(survey)
+library(svyVGAM)
+library(aod)
 ```
 
 ```{r palette}
@@ -84,10 +86,47 @@ get_pvalue <- function(model){
   return(p_value)
 }
 
+
+# Modified from https://tech.popdata.org/pma-data-hub/posts/2021-08-15-covid-analysis/
+
+tidy.svyVGAM <- function(
+  x, 
+  conf.int = FALSE, 
+  conf.level = 0.95,
+  exponentiate = FALSE, 
+  ...
+){
+  ret <- as_tibble(summary(x)$coeftable, rownames = "term")
+  colnames(ret) <- c("term", "estimate", "std.error", "statistic", "p.value")
+  coefs <- tibble::enframe(stats::coef(x), name = "term", value = "estimate")
+  ret <- left_join(coefs, ret, by = c("term", "estimate"))
+  
+  if (conf.int){
+    ci <- broom:::broom_confint_terms(x, level = conf.level, ...)
+    ret <- dplyr::left_join(ret, ci, by = "term")
+  }
+  if (exponentiate){
+    ret <- broom:::exponentiate(ret)
+  }
+
+  # Split on last colon
+  ret <- ret %>%
+    mutate(
+      y.level = ifelse(str_detect(term, ":"), sub(".*:(.+)$", "\\1", term), NA),
+      term = ifelse(str_detect(term, ":"), sub(":(?!.*:).*$", "", term, perl = TRUE), term)
+    ) %>%
+    arrange(y.level) %>%
+    relocate(y.level, .before = term)
+  
+  ret
+}
+
+
+
 ```
 
 ```{r data, output=FALSE}
-data <- readRDS("../Data/2025-05-28 - Cleaned_data.rds")
+data <- readRDS("../Data/2025-06-20 - Cleaned_data.rds")
 
 # Specify data to be used in income analysis
 income_data <- filter(data, income_drop_all==0)
@@ -1263,37 +1302,88 @@ $$
 #| output: false
 #| warning: false
 #| message: false
+# 
+# mod_data <- income_data %>%
+#   filter(!is.na(Ethnicity_collapsed))
+#   
+# design <- svydesign(
+#   ids = ~1,                             
+#   weights = ~NatRepemployees,             
+#   data = mod_data
+# )
+# 
+# # Step 2: Fit the model with quasibinomial family
+# mod_svy1 <- svyglm(
+#   income_group ~ 1,
+#   design = design,
+#   family = quasibinomial()
+# )
+# 
+# # Step 2: Fit the model with quasibinomial family
+# mod_svy2 <- svyglm(
+#   income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary,
+#   design = design,
+#   family = quasibinomial()
+# )
+# 
+# coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+# 
+# wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+# 
+# # F and p
+# f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+# p <- wald[["p"]] %>% as.numeric()
+# 
+# if(p < .001){
+#   p = "< .001"
+# } else{
+#   p = paste0("= ",round(p,3))
+# }
+# 
+# # Degrees of freedom
+# dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
+```
+
+```{r}
+# Alternative for 3-level variable
 
 mod_data <- income_data %>%
   filter(!is.na(Ethnicity_collapsed))
-  
+
 design <- svydesign(
-  ids = ~1,                             
-  weights = ~NatRepemployees,             
+  ids = ~1,
+  weights = ~NatRepemployees,
   data = mod_data
 )
 
-# Step 2: Fit the model with quasibinomial family
-mod_svy1 <- svyglm(
-  income_group ~ 1,
-  design = design,
-  family = quasibinomial()
-)
-
-# Step 2: Fit the model with quasibinomial family
-mod_svy2 <- svyglm(
+mod_svy2 <- svyVGAM::svy_vglm(
   income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary,
   design = design,
-  family = quasibinomial()
+  family = multinomial(refLevel = "Low")  # Replace "Low" with your reference category
 )
 
-coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+summary(mod_svy2)
 
-wald <- anova(mod_svy1,mod_svy2, method = "Wald")
 
-# F and p
-f <- round(wald[["Ftest"]] %>% as.numeric(),2)
-p <- wald[["p"]] %>% as.numeric()
+# Extract coefficients and vcov
+coefs <- coef(mod_svy2)
+vcovs <- vcov(mod_svy2)
+
+# Remove intercepts
+non_intercept_idx <- !grepl("(Intercept)", names(coefs))
+
+# Subset coefficients and vcov accordingly
+coefs_non_intercept <- coefs[non_intercept_idx]
+vcovs_non_intercept <- vcovs[non_intercept_idx, non_intercept_idx]
+
+# Perform Wald test
+wald <- wald.test(
+  Sigma = vcovs_non_intercept, 
+  b = coefs_non_intercept, 
+  L = diag(length(coefs_non_intercept))
+)
+wald_stats <- wald[["result"]][["chi2"]]
+p <- wald_stats[3]
 
 if(p < .001){
   p = "< .001"
@@ -1301,62 +1391,81 @@ if(p < .001){
   p = paste0("= ",round(p,3))
 }
 
-# Degrees of freedom
-dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
+
 ```
 
-A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
-labels <- c(
-  'Intercept',
-  'Age',
-  'Outsourcing: Outsourced',
-  "Ethnicity: Irish",
-  "Ethnicity: Gypsy or Irish Traveller",
-  "Ethnicity: Roma",
-  "Ethnicity: Any other White background",
-  "Ethnicity: White and Black Caribbean",
-  "Ethnicity: White and Black African",
-  "Ethnicity: White and Asian",
-  "Ethnicity: Any other Mixed/Multiple ethnic background",
-  "Ethnicity: Indian",
-  "Ethnicity: Pakistani",
-  "Ethnicity: Bangladeshi",
-  "Ethnicity: Chinese",
-  "Ethnicity: Any other Asian background",
-  "Ethnicity: African",
-  "Ethnicity: Caribbean",
-  "Ethnicity: Any other Black, Black British, or Caribbean background",
-  "Ethnicity: Arab",
-  "Ethnicity: Any other ethnic group",
-  "Ethnicity: Don't think of myself as any of these",
-  "Ethnicity: Prefer not to say",
-  'Gender: Female',
-  'Gender: Other',
-  'Gender: Prefer not to say',
-  "Education: Don't have degree",
-  "Education: Don't know",
-  'Region: East Midlands',
-  'Region: East of England',
-  'Region: North East',
-  'Region: North West',
-  'Region: Northern Ireland',
-  'Region: Scotland',
-  'Region: South East',
-  'Region: South West',
-  'Region: Wales',
-  'Region: West Midlands',
-  'Region: Yorkshire and the Humber',
-  'Migration: Not born in the UK',
-  'Migration: Prefer not to say'
-)
+tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
 
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% 
+  kable(digits = 3) %>% 
+  kable_styling() %>%
+  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
+```
 
-tab_model(mod_svy2, 
-          pred.labels = labels, 
-          dv.labels = "Low income group membership",
-          show.r2 = FALSE)
+# HERE
+
+```{r}
+# labels <- c(
+#   'Intercept',
+#   'Age',
+#   'Outsourcing: Outsourced',
+#   "Ethnicity: Irish",
+#   "Ethnicity: Gypsy or Irish Traveller",
+#   "Ethnicity: Roma",
+#   "Ethnicity: Any other White background",
+#   "Ethnicity: White and Black Caribbean",
+#   "Ethnicity: White and Black African",
+#   "Ethnicity: White and Asian",
+#   "Ethnicity: Any other Mixed/Multiple ethnic background",
+#   "Ethnicity: Indian",
+#   "Ethnicity: Pakistani",
+#   "Ethnicity: Bangladeshi",
+#   "Ethnicity: Chinese",
+#   "Ethnicity: Any other Asian background",
+#   "Ethnicity: African",
+#   "Ethnicity: Caribbean",
+#   "Ethnicity: Any other Black, Black British, or Caribbean background",
+#   "Ethnicity: Arab",
+#   "Ethnicity: Any other ethnic group",
+#   "Ethnicity: Don't think of myself as any of these",
+#   "Ethnicity: Prefer not to say",
+#   'Gender: Female',
+#   'Gender: Other',
+#   'Gender: Prefer not to say',
+#   "Education: Don't have degree",
+#   "Education: Don't know",
+#   'Region: East Midlands',
+#   'Region: East of England',
+#   'Region: North East',
+#   'Region: North West',
+#   'Region: Northern Ireland',
+#   'Region: Scotland',
+#   'Region: South East',
+#   'Region: South West',
+#   'Region: Wales',
+#   'Region: West Midlands',
+#   'Region: Yorkshire and the Humber',
+#   'Migration: Not born in the UK',
+#   'Migration: Prefer not to say'
+# )
+# 
+# 
+# tab_model(mod_svy2, 
+#           pred.labels = labels, 
+#           dv.labels = "Low income group membership",
+#           show.r2 = FALSE)
 ```
 
 
@@ -2288,6 +2397,110 @@ tab_model(mod_svy2,
           show.r2 = FALSE)
 ```
 
+# 3-level
+
+```{r}
+#| message: false
+#| output: false
+#| # Alternative for 3-level variable
+
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_binary)) %>%
+  filter(Ethnicity_binary %in% c("White","Non-White")) %>%
+  dplyr::mutate(
+Ethnicity_binary = factor(Ethnicity_binary, levels = c("White","Non-White")))
+
+design <- svydesign(
+  ids = ~1,
+  weights = ~NatRepemployees,
+  data = mod_data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_binary,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+summary(mod_svy2)
+
+
+# Extract coefficients and vcov
+coefs <- coef(mod_svy2)
+vcovs <- vcov(mod_svy2)
+coef_names <- grep("outsourcing_status.*:Ethnicity_binary", names(coefs), value = TRUE)
+
+# Extract coefficients and covariance sub-matrix
+L <- coefs[coef_names]
+V <- vcovs[coef_names, coef_names]
+
+# Wald statistic
+W <- t(L) %*% solve(V) %*% L
+
+# Degrees of freedom: number of parameters tested
+df <- length(L)
+
+# p-value
+p <- pchisq(W, df, lower.tail = FALSE)
+
+# Output
+W
+p
+
+# # Remove intercepts
+# non_intercept_idx <- !grepl("(Intercept)", names(coefs))
+# 
+# # Subset coefficients and vcov accordingly
+# coefs_non_intercept <- coefs[non_intercept_idx]
+# vcovs_non_intercept <- vcovs[non_intercept_idx, non_intercept_idx]
+# 
+# # Perform Wald test
+# wald <- wald.test(
+#   Sigma = vcovs_non_intercept, 
+#   b = coefs_non_intercept, 
+#   L = diag(length(coefs_non_intercept))
+# )
+# wald_stats <- wald[["result"]][["chi2"]]
+# p <- wald_stats[3]
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+
+```
+
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
+
+```{r}
+tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
+
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% 
+  kable(digits = 3) %>% 
+  kable_styling() %>%
+  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
+```
+
 ##### Ethnicity 9
 
 ```{r}
@@ -2392,6 +2605,408 @@ tab_model(mod_svy2,
           dv.labels = "Low income group",
           show.r2 = FALSE)
 ```
+
+
+# 3-level
+
+```{r}
+# Alternative for 3-level variable
+
+ethns_to_drop <- c("Don't think of myself as any of these", "Prefer not to say")
+
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed)) %>%
+  filter(!(Ethnicity_collapsed %in% ethns_to_drop)) %>%
+  mutate(Ethnicity_collapsed = droplevels(Ethnicity_collapsed))
+
+design <- svydesign(
+  ids = ~1,
+  weights = ~NatRepemployees,
+  data = mod_data
+)
+
+mod_svy1 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+
+# Extract coefficients and vcov
+coefs <- coef(mod_svy2)
+vcovs <- vcov(mod_svy2)
+coef_names <- grep("outsourcing_status.*:Ethnicity_collapsed", names(coefs), value = TRUE)
+
+# Extract coefficients and covariance sub-matrix
+L <- coefs[coef_names]
+V <- vcovs[coef_names, coef_names]
+
+# Wald statistic
+W <- t(L) %*% solve(V) %*% L
+
+# Degrees of freedom: number of parameters tested
+df <- length(L)
+
+# p-value
+p <- pchisq(W, df, lower.tail = FALSE)
+
+# Output
+W
+p
+# 
+# # Extract coefficients and vcov
+# coefs <- coef(mod_svy2)
+# vcovs <- vcov(mod_svy2)
+# 
+# # Remove intercepts
+# non_intercept_idx <- !grepl("(Intercept)", names(coefs))
+# 
+# # Subset coefficients and vcov accordingly
+# coefs_non_intercept <- coefs[non_intercept_idx]
+# vcovs_non_intercept <- vcovs[non_intercept_idx, non_intercept_idx]
+# 
+# # Perform Wald test
+# wald <- wald.test(
+#   Sigma = vcovs_non_intercept, 
+#   b = coefs_non_intercept, 
+#   L = diag(length(coefs_non_intercept))
+# )
+# wald_stats <- wald[["result"]][["chi2"]]
+# p <- wald_stats[3]
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+
+```
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
+
+
+```{r}
+tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
+
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% 
+  kable(digits = 3) %>% 
+  kable_styling() %>%
+  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
+```
+
+## Bootstrapped
+
+```{r}
+reps <- 500
+# STEP 1: Create bootstrap replicate weights
+boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = reps)
+
+# Model 1: without interaction
+mod_svy_boot_no_inter <- svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = boot_design,
+  family = multinomial(refLevel = "Low")
+)
+
+# Model 2: with interaction
+mod_svy_boot_inter <- svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+  design = boot_design,
+  family = multinomial(refLevel = "Low")
+)
+
+# Extract coefficients and vcov from model with interaction
+coefs <- coef(mod_svy_boot_inter)
+vcovs <- vcov(mod_svy_boot_inter)
+
+# Get names of interaction terms
+interaction_names <- grep("outsourcing_status.*:Ethnicity_collapsed", names(coefs), value = TRUE)
+
+# Subset coefficients and vcov for interaction terms
+L <- coefs[interaction_names]
+V <- vcovs[interaction_names, interaction_names]
+
+# Wald statistic
+W <- t(L) %*% solve(V) %*% L
+df <- length(L)
+p_value <- pchisq(W, df, lower.tail = FALSE)
+
+# Print results
+cat("Wald test statistic:", W, "\n")
+cat("Degrees of freedom:", df, "\n")
+cat("p-value:", p_value, "\n")
+
+
+```
+```{r}
+
+tidy_mod <- tidy.svyVGAM(mod_svy_boot_inter, exponentiate = TRUE, conf.int = TRUE)
+
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% 
+  kable(digits = 3) %>% 
+  kable_styling() %>%
+  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
+```
+
+
+# Attempt at posthoc
+
+```{r}
+# Create new data for prediction
+# Get levels of interaction factors
+outsourcing_levels <- levels(design$variables$outsourcing_status)
+ethnicity_levels <- levels(design$variables$Ethnicity_collapsed)
+
+# Fix covariates at their means or reference levels:
+mean_age <- mean(design$variables$Age, na.rm = TRUE)
+mode_gender <- names(sort(table(design$variables$Gender), decreasing = TRUE))[1]
+mode_degree <- names(sort(table(design$variables$Has_Degree), decreasing = TRUE))[1]
+mode_region <- names(sort(table(design$variables$Region), decreasing = TRUE))[1]
+mode_BORNUK <- names(sort(table(design$variables$BORNUK_labelled), decreasing = TRUE))[1]
+
+newdata <- expand.grid(
+  outsourcing_status = outsourcing_levels,
+  Ethnicity_collapsed = ethnicity_levels,
+  Age = mean_age,
+  Gender = mode_gender,
+  Has_Degree = mode_degree,
+  Region = mode_region,
+  BORNUK_labelled = mode_BORNUK
+)
+
+# Define bootstrap function
+
+set.seed(123)
+
+B <- 500  # Number of bootstrap replicates
+pred_array <- array(NA, dim = c(nrow(newdata), length(levels(design$variables$income_group)), B),
+                    dimnames = list(NULL, levels(design$variables$income_group), NULL))
+
+for (b in 1:B) {
+  # Bootstrap replicate survey design (example for bootstrap replicates)
+  boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = 1)
+
+  # Fit model to bootstrap design
+  mod_boot <- svyVGAM::svy_vglm(
+    income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+    design = boot_design,
+    family = multinomial(refLevel = "Low")
+  )
+  
+  # Extract the underlying vglm object
+  mod_boot_vglm <- mod_boot$fit
+  
+  # Predict using the underlying vglm model
+  preds <- predict(mod_boot_vglm, newdata = newdata, type = "response")
+  
+  pred_array[, , b] <- preds
+}
+
+# Summarise predictions
+
+# Mean predicted probabilities
+pred_mean <- apply(pred_array, c(1, 2), mean)
+
+# 95% percentile CIs
+pred_lower <- apply(pred_array, c(1, 2), quantile, probs = 0.025)
+pred_upper <- apply(pred_array, c(1, 2), quantile, probs = 0.975)
+
+# Combine into a data frame for easier viewing
+
+results <- as_tibble(pred_mean) %>%
+  mutate(row = 1:nrow(pred_mean)) %>%
+  pivot_longer(cols = -row, names_to = "income_group", values_to = "mean_prob") %>%
+  mutate(
+    lower = as.vector(pred_lower),
+    upper = as.vector(pred_upper),
+    outsourcing_status = rep(newdata$outsourcing_status, each = ncol(pred_mean)),
+    Ethnicity_collapsed = rep(newdata$Ethnicity_collapsed, each = ncol(pred_mean))
+  )
+
+
+
+ggplot(results, aes(x = outsourcing_status, y = mean_prob, fill = income_group)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = lower, ymax = upper), position = position_dodge(width = 0.9), width = 0.2) +
+  facet_wrap(~ Ethnicity_collapsed) +
+  labs(title = "Bootstrap Predicted Probabilities with 95% CI",
+       y = "Predicted Probability", x = "Outsourcing Status") +
+  theme_minimal()
+
+
+```
+```{r}
+# Pairwise - outsorucig within ethnictiy
+
+# Assume pred_array from previous bootstrap loop exists:
+# dim(pred_array) = [nrow(newdata), n_outcome, B]
+
+# Helper to get index rows for each group combo
+get_rows <- function(outsource_val, eth_val) {
+  which(newdata$outsourcing_status == outsource_val & newdata$Ethnicity_collapsed == eth_val)
+}
+
+outsourcing_levels <- levels(newdata$outsourcing_status)
+ethnicity_levels <- levels(newdata$Ethnicity_collapsed)
+income_levels <- dimnames(pred_array)[[2]]
+B <- dim(pred_array)[3]
+
+results_diff <- list()
+
+for (eth in ethnicity_levels) {
+  for (income_cat in income_levels) {
+    # Get rows for each outsourcing level within this ethnicity
+    rows <- sapply(outsourcing_levels, get_rows, eth_val = eth)
+    
+    # Extract predicted probs for these groups from pred_array
+    # rows is a vector with one row per outsourcing_status
+    # For each bootstrap replicate:
+    diffs <- matrix(NA, nrow = B, ncol = length(outsourcing_levels)*(length(outsourcing_levels)-1)/2)
+    colnames(diffs) <- c()
+    
+    # Calculate pairwise differences between outsourcing statuses
+    # We'll do all pairs, but often just Yes vs No is enough
+    comp_idx <- 1
+    for (i in 1:(length(outsourcing_levels)-1)) {
+      for (j in (i+1):length(outsourcing_levels)) {
+        diffs[, comp_idx] <- pred_array[rows[i], income_cat, ] - pred_array[rows[j], income_cat, ]
+        colnames(diffs)[comp_idx] <- paste0(outsourcing_levels[i], " - ", outsourcing_levels[j])
+        comp_idx <- comp_idx + 1
+      }
+    }
+    
+    # Summarize differences
+    for (k in 1:ncol(diffs)) {
+      diff_mean <- mean(diffs[, k])
+      diff_lower <- quantile(diffs[, k], 0.025)
+      diff_upper <- quantile(diffs[, k], 0.975)
+      # Two-sided p-value from bootstrap: proportion of samples crossing zero
+      p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
+      
+      results_diff[[length(results_diff) + 1]] <- data.frame(
+        Ethnicity_collapsed = eth,
+        income_group = income_cat,
+        comparison = colnames(diffs)[k],
+        mean_diff = diff_mean,
+        lower_CI = diff_lower,
+        upper_CI = diff_upper,
+        p_value = p_val
+      )
+    }
+  }
+}
+
+results_diff_df <- bind_rows(results_diff)
+
+# View results
+print(results_diff_df)
+
+
+
+ggplot(results_diff_df, aes(x = comparison, y = mean_diff, ymin = lower_CI, ymax = upper_CI, color = income_group)) +
+  geom_pointrange(position = position_dodge(width = 0.5)) +
+  facet_wrap(~ Ethnicity_collapsed) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(title = "Differences in Predicted Probability by Outsourcing Status (within Ethnicity)",
+       y = "Difference in Predicted Probability",
+       x = "Comparison") +
+  theme_minimal()
+
+```
+
+```{r}
+# ethnicity within outsroucign status
+results_diff2 <- list()
+
+reference_ethnicity <- "White British"
+
+for (outsource in outsourcing_levels) {
+  for (income_cat in income_levels) {
+    # Find the row index for the reference ethnicity within this outsourcing_status
+    ref_row <- which(newdata$Ethnicity_collapsed == reference_ethnicity & newdata$outsourcing_status == outsource)
+    
+    # Skip if reference row not found
+    if (length(ref_row) == 0) next
+    
+    # Get indices for all other ethnicities (excluding reference)
+    other_ethnicities <- setdiff(ethnicity_levels, reference_ethnicity)
+    other_rows <- sapply(other_ethnicities, function(eth) {
+      which(newdata$Ethnicity_collapsed == eth & newdata$outsourcing_status == outsource)
+    })
+    
+    # Initialize matrix for differences (B rows, one column per ethnicity compared to reference)
+    diffs <- matrix(NA, nrow = B, ncol = length(other_ethnicities))
+    colnames_vec <- character(length(other_ethnicities))
+    
+    for (i in seq_along(other_ethnicities)) {
+      diffs[, i] <- pred_array[other_rows[i], income_cat, ] - pred_array[ref_row, income_cat, ]
+      colnames_vec[i] <- paste0(other_ethnicities[i], " - ", reference_ethnicity)
+    }
+    colnames(diffs) <- colnames_vec
+    
+    # Summarize differences
+    for (k in seq_len(ncol(diffs))) {
+      diff_mean <- mean(diffs[, k])
+      diff_lower <- quantile(diffs[, k], 0.025)
+      diff_upper <- quantile(diffs[, k], 0.975)
+      p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
+      
+      results_diff2[[length(results_diff2) + 1]] <- data.frame(
+        outsourcing_status = outsource,
+        income_group = income_cat,
+        comparison = colnames(diffs)[k],
+        mean_diff = diff_mean,
+        lower_CI = diff_lower,
+        upper_CI = diff_upper,
+        p_value = p_val
+      )
+    }
+  }
+}
+
+results_diff2_df <- dplyr::bind_rows(results_diff2)
+
+
+results_diff2_df$income_group <- factor(results_diff2_df$income_group, levels = c("Low", "Mid", "High"))
+
+ggplot(results_diff2_df, aes(y = comparison, x = mean_diff, xmin = lower_CI, xmax = upper_CI, color = income_group)) +
+  geom_pointrange(position = position_dodge(width = 0.5)) +
+  facet_wrap(~ outsourcing_status) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(title = "Differences in Predicted Probability by Ethnicity (within Outsourcing Status)",
+       x = "Difference in Predicted Probability",
+       y = "Ethnicity Comparison") +
+  theme_minimal()
+
+
+```
+
 
 ###### Post-hoc
 
@@ -2794,6 +3409,110 @@ tab_model(mod_svy2,
           dv.labels = "Outsourcing",
           show.r2 = FALSE,
           show.ci = FALSE)
+```
+
+# 3-level
+
+```{r}
+# Alternative for 3-level variable
+
+ethns_to_drop <- c("Don't think of myself as any of these", "Prefer not to say")
+
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
+  filter(!(Ethnicity_collapsed_disaggregated %in% ethns_to_drop)) %>%
+  mutate(Ethnicity_collapsed_disaggregated = droplevels(Ethnicity_collapsed_disaggregated))
+
+design <- svydesign(
+  ids = ~1,
+  weights = ~NatRepemployees,
+  data = mod_data
+)
+
+mod_svy1 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed_disaggregated,
+  design = design,
+  family = multinomial(refLevel = "Low")
+)
+
+
+# Extract coefficients and vcov
+coefs <- coef(mod_svy2)
+vcovs <- vcov(mod_svy2)
+coef_names <- grep("outsourcing_status.*:Ethnicity_collapsed_disaggregated", names(coefs), value = TRUE)
+
+# Extract coefficients and covariance sub-matrix
+L <- coefs[coef_names]
+V <- vcovs[coef_names, coef_names]
+
+# Wald statistic
+W <- t(L) %*% solve(V) %*% L
+
+# Degrees of freedom: number of parameters tested
+df <- length(L)
+
+# p-value
+p <- pchisq(W, df, lower.tail = FALSE)
+
+# Output
+W
+p
+# 
+# # Extract coefficients and vcov
+# coefs <- coef(mod_svy2)
+# vcovs <- vcov(mod_svy2)
+# 
+# # Remove intercepts
+# non_intercept_idx <- !grepl("(Intercept)", names(coefs))
+# 
+# # Subset coefficients and vcov accordingly
+# coefs_non_intercept <- coefs[non_intercept_idx]
+# vcovs_non_intercept <- vcovs[non_intercept_idx, non_intercept_idx]
+# 
+# # Perform Wald test
+# wald <- wald.test(
+#   Sigma = vcovs_non_intercept, 
+#   b = coefs_non_intercept, 
+#   L = diag(length(coefs_non_intercept))
+# )
+# wald_stats <- wald[["result"]][["chi2"]]
+# p <- wald_stats[3]
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+
+```
+
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
+
+```{r}
+tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
+
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% 
+  kable(digits = 3) %>% 
+  kable_styling() %>%
+  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
 
 ###### Post-hoc
