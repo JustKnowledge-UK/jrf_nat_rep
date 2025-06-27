@@ -1132,7 +1132,7 @@ data <- data %>%
                                  income_weekly_all <= Region_four_thirds ~ "Mid",
                                  income_weekly_all > Region_four_thirds ~ "High",
                                  TRUE ~ NA),
-    income_group = factor(income_group, levels = c("Low", "Mid","High"), exclude=NA)
+    income_group = factor(income_group, levels = c("Mid", "Low","High"), exclude=NA)
   ) %>%
   ungroup()
 
