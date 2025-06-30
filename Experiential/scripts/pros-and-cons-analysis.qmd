@@ -29,9 +29,10 @@ There are 14 of these variables to which we add a few demographic variables for 
 
 ```{r}
 library(tidyverse)
-#setwd("~/repos/JRF Nat Rep/Experiential")
+setwd("~/repos/JRF Nat Rep")
 # Read data
-data <- read_csv("../data/2025-04-16 - clean_data_jrf_experiential.csv")
+
+data <- read_csv("./Experiential/data/2025-06-30 - clean_data_jrf_experiential.csv")
 
 # reduced dataset
 data_processed <- data %>%
@@ -39,7 +40,7 @@ data_processed <- data %>%
   select(
     starts_with("pro"),
     Sex, Age, Ethnicity_Collapsed, Region, Education_Band,
-    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+    Annual_Income, income_group, OutsourcedNonOL, BORNUK, income_drop, Ethnicity_binary, BORNUK_binary
   )
 ```
 
@@ -70,7 +71,7 @@ data_processed <- data %>%
     # Recoded numeric variables
     contains("_numeric"),
     Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
-    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+    Annual_Income, income_group, OutsourcedNonOL, BORNUK
   )
 
 
@@ -427,7 +428,7 @@ regression_data <- data_processed %>%
 
 #relevel
 regression_data$Sex<-relevel(regression_data$Sex, ref = "Male")
-regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White")
+regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White British")
 
 # Run regression models for each theme
 model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed, regression_data)
@@ -526,7 +527,7 @@ regression_data <- data_processed %>%
   # Select demographic variables and numeric pros/cons variables
   select(
     # Demographic variables (adjust column names to match your actual data)
-    Sex, Ethnicity_Collapsed, Age, Region, Education_Band, Income_Group, OutsourcedNonOL,
+    Sex, Ethnicity_Collapsed, Age, Region, Education_Band, income_group, OutsourcedNonOL,
     # All of the recoded variables
     contains("_numeric")
   ) %>%
@@ -543,7 +544,7 @@ regression_data <- data_processed %>%
 
 #relevel
 regression_data$Sex<-relevel(regression_data$Sex, ref = "Male")
-regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White")
+regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White British")
 
 # Run regression models for each theme
 model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, regression_data)
@@ -713,11 +714,11 @@ library(flextable)
 
 # Create the crosstab by Income Group
 Income_Crosstab <- crosstable(person_level %>% 
-                               select(neg_category, num_neg, Income_Group), 
-                             by = Income_Group,
+                               select(neg_category, num_neg, income_group), 
+                             by = income_group,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -731,7 +732,7 @@ Ethnicity_Crosstab <- crosstable(person_level %>%
                              by = Ethnicity_Collapsed,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -744,7 +745,7 @@ Sex_Crosstab <- crosstable(person_level %>%
                              by = Sex,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -759,7 +760,7 @@ Migration_Crosstab <- crosstable(person_level %>%
                              by = BORNUK,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -785,7 +786,7 @@ paid_less_group <- person_level %>%
 ggplot(paid_less_group, aes(x = neg_category, y = percent, fill = neg_category)) +
   geom_bar(stat = "identity", alpha = 0.8) +
   geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
-  labs(title = "Percentage of People Paid Less Reporting Negative Responses",
+  labs(title = "Percentage of People Who Say They Are Paid Less Reporting Negative Responses",
        x = "Number of Negative Responses (-1s)",
        y = "Percentage of People Paid Less") +
   scale_fill_brewer(palette = "Reds") +
@@ -920,7 +921,7 @@ rights_data <- data %>%
     starts_with("Rights"),
     contains("_numeric"),
     Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
-    Annual_Income, Income_Group, OutsourcedNonOL, BORNUK
+    Annual_Income, income_group, OutsourcedNonOL, BORNUK
   )
 
 # Calculate negative experiences count and categorize
@@ -1032,11 +1033,11 @@ library(flextable)
 
 # Create the crosstab by Income Group
 Reverse_Income_Crosstab <- crosstable(person_level %>% 
-                               select(neg_category, Income_Group), 
+                               select(neg_category, income_group), 
                              by = neg_category,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -1050,7 +1051,7 @@ Reverse_Ethnicity_Crosstab <- crosstable(person_level %>%
                              by = neg_category,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -1063,7 +1064,7 @@ Reverse_Sex_Crosstab <- crosstable(person_level %>%
                              by = neg_category,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                            funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -1077,7 +1078,7 @@ Reverse_BornUK_Crosstab <- crosstable(person_level %>%
                              by = neg_category,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -1094,11 +1095,11 @@ library(crosstable)
 library(flextable)
 
 Paid_Less_Cross <- crosstable(data_processed %>% 
-                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Income_Group, Education_Band, BORNUK), 
+                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, income_group, Education_Band, BORNUK), 
                              by = Pros_And_Cons_Pay,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
@@ -1109,11 +1110,11 @@ Paid_Less_Cross
 
 ```{r}
 entitlements_Cross <- crosstable(data_processed %>% 
-                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Income_Group, Education_Band, BORNUK), 
+                               select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, income_group, Education_Band, BORNUK), 
                              by = Pros_And_Cons_Pay,
                              total = "both",
                              showNA = "no", 
-                             funs = c(median, mean, "std dev" = sd),
+                             funs = c("median", "mean", "std dev" = "sd"),
                              percent_digits = 2, 
                              percent_pattern = "{n} ({p_row})") %>%
    as_flextable()
