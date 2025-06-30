@@ -10,7 +10,7 @@ library(janitor)
 rm(list=ls())
 
 #import data
-raw_data <- read_sav("./data/UK23626 - JRF - Outsourced workers - Experiential data excluding firm names.sav")
+raw_data <- read_sav("./Experiential/data/UK23626 - JRF - Outsourced workers - Experiential data excluding firm names.sav")
 
 raw_data <- haven::as_factor(raw_data)
 skim(raw_data)
@@ -233,7 +233,7 @@ min_holiday_entitlement <- 28
 non_working_weeks <- min_holiday_entitlement/5
 working_weeks <- weeks_in_year - non_working_weeks
 
-##create income var based on previous code
+##create income var based on previous code used in Nat Rep
 # annual income
 raw_data <- raw_data %>%
   mutate(Self_Report_Annual_Salary = case_when(
@@ -419,104 +419,6 @@ raw_data <- raw_data %>%
 ################################
 
 library(Hmisc)
-
-# x <- raw_data
-# 
-# # calculate the mean and sd, and 3x sd
-# mean = Hmisc::wtd.mean(x$Annual_Income, weights=x$Outsourced, na.rm=T) # NOTE on assumption that 'Outsourced' is the weighting variable
-# std = sqrt(Hmisc::wtd.var(x$Annual_Income,weights=x$Outsourced,na.rm = T))
-# Tmin = mean-(3*std)
-# Tmax = mean+(3*std)
-# 
-# # identify the first set of outliers
-# outliers <- which(x$Annual_Income < Tmin | x$Annual_Income > Tmax)
-# outlier_count <- length(outliers) # count how many removed this iteration
-# all_outlier_ids <- x$ID[outliers] # list of ids removed (to be removed from data later)
-# 
-# # initialise some variables, i.e. iteration 0
-# count <- 0 # iteration counter
-# total_cases_removed <- 0 # total cases removed
-# 
-# cat("Iteration ", count, ": ", outlier_count, " outliers\n")
-# 
-# # Take a look at the distribution
-# par(mfrow = c(1, 3)) # this lets us plot three plots in a row
-# hist(x$Annual_Income, main = "Histogram") 
-# # mark the mean and sds for the histogram
-# abline(v = mean, col='red', lwd = 3)
-# abline(v = Tmin, col='blue', lwd = 3)
-# abline(v = Tmax, col='blue', lwd = 3)
-# boxplot(x$Annual_Income, main = "Boxplot")
-# qqnorm(x$Annual_Income, main = "Normal Q-Q plot")
-# mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
-# 
-# # Remove outliers
-# # While there are still outliers detected, remove the outliers and recalculate 
-# # mean, sd, and 3*sd and remove the outliers based on these new figures.
-# while(length(outliers) != 0){
-#   count <- count + 1
-#   x <- x[-outliers,] # remove the outliers identified in the previous iteration
-#   
-#   # recalculate
-#   mean = Hmisc::wtd.mean(x$Annual_Income, weights=x$Outsourced, na.rm=T)
-#   std = sqrt(Hmisc::wtd.var(x$Annual_Income,weights=x$Outsourced,na.rm = T))
-#   Tmin = mean - (3 * std)
-#   Tmax = mean + (3 * std)
-#   outliers <- which(x$Annual_Income < Tmin | x$Annual_Income > Tmax)
-#   outlier_ids <- x$ID[outliers] # get outlier ids
-#   all_outlier_ids <- append(all_outlier_ids, outlier_ids) # add removed outliers to outlier list
-#   total_cases_removed <- total_cases_removed + outlier_count # count total
-#   
-#   outlier_count <- length(outliers) # count how many removed this iteration
-#   cat("Iteration ", count, ": ", outlier_count, " outliers\n")
-#   
-#   # Replot distributions to see how they've changed
-#   par(mfrow = c(1, 3))
-#   hist(x$Annual_Income, main = "Histogram") 
-#   abline(v = mean, col='red', lwd = 3)
-#   abline(v = Tmin, col='blue', lwd = 3)
-#   abline(v = Tmax, col='blue', lwd = 3)
-#   boxplot(x$Annual_Income, main = "Boxplot")
-#   qqnorm(x$Annual_Income, main = "Normal Q-Q plot")
-#   mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
-# }
-# 
-# # Drop the cases identified as outliers from data
-# raw_data <- raw_data %>%
-#   mutate(
-#     income_drop = ifelse(ID %in% all_outlier_ids, 1, 0 )
-#   )
-# 
-# # Check this looks right
-# sum(raw_data$income_drop, na.rm = T) # this should be equal to all_outlier_ids
-# 
-# # test that income_drop does what it should
-# # This should look the same as the last iteration above#
-# x <- raw_data %>%
-#   filter(income_drop == 0)
-# 
-# # calculate the mean and sd, and 3x sd
-# mean = Hmisc::wtd.mean(x$Annual_Income, weights=x$Outsourced, na.rm=T) # NOTE on assumption that 'Outsourced' is the weighting variable
-# std = sqrt(Hmisc::wtd.var(x$Annual_Income,weights=x$Outsourced,na.rm = T))
-# Tmin = mean-(3*std)
-# Tmax = mean+(3*std)
-# 
-# # Take a look at the distribution
-# par(mfrow = c(1, 3)) # this lets us plot three plots in a row
-# hist(x$Annual_Income, main = "Histogram") 
-# # mark the mean and sds for the histogram
-# abline(v = mean, col='red', lwd = 3)
-# abline(v = Tmin, col='blue', lwd = 3)
-# abline(v = Tmax, col='blue', lwd = 3)
-# boxplot(x$Annual_Income, main = "Boxplot")
-# qqnorm(x$Annual_Income, main = "Normal Q-Q plot")
-# mtext(paste0("Iteration ", count, ": ", outlier_count, " outlier(s)"), side = 1, line = -2, outer = TRUE)
-# 
-# cat("Total removed: ", total_cases_removed, "(", round(100*(total_cases_removed/nrow(x)),2),"%)")
-# # discounting these cases removes 172 respondents = 10.48%
-
-# does doing this for weekly income produce a different result?
-# yes it does, weekly removes 183 cases vs 172 for annual.
 x <- raw_data
 
 # calculate the mean and sd, and 3x sd
@@ -730,12 +632,12 @@ cat("Total removed: ", total_cases_removed, "(", round(100*(total_cases_removed/
 #####################################################
 #### Defining Low Income - regional medians ####
 #####################################################
-
+# get the ashe data
 # from https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup
 url <- 'https://www.ons.gov.uk/file?uri=/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup/2023provisional/ashetableregionbyage2023provisional.zip'
 
 filename <- basename(url) # this takes the filename from the url
-filepath <- paste0("./data/", filename)
+filepath <- paste0("../Data/", filename)
 output_dir <- substr(filepath,start = 1, stop=nchar(filepath) - 4)
 
 # check if the file exists. if it doesn't, download and unzip
@@ -752,36 +654,35 @@ if(!file.exists(filepath)){
 files <- list.files(path = output_dir, pattern = '* Weekly pay - Gross 2023.xls$', full.names = TRUE)
 
 ashe_data <- readxl::read_excel(files[1], sheet = 'All', skip = 4) %>%
+  filter(!is.na(Code)) %>%
+  #select(-c(last_col(offset=2):last_col(), contains('change'))) %>% # if we want some other variables
   janitor::clean_names() %>%
-  dplyr::rename(
-    region = description,             
-    region_median_income = median   
+  rename(
+    #jobs_thousands = thousand,
+    Region = description,
+    Region_median_income = median
   ) %>%
-  select(region, region_median_income) %>% 
+  select(Region, Region_median_income) %>% # if we just want the median
+  # rename problematic regions
   mutate(
-    # Rename problematic regions
-    region = case_when(
-      region == "East" ~ "East of England",
-      region == "Yorkshire and The Humber" ~ "Yorkshire and the Humber",
-      TRUE ~ region
-    ),
-    region_median_income = as.numeric(region_median_income)  # Ensure it's numeric
+    Region = case_when(Region == "East" ~ "East of England",
+                       Region == "Yorkshire and The Humber" ~ "Yorkshire and the Humber",
+                       TRUE ~ Region),
+    Region_median_income = as.numeric(Region_median_income)
   )
-
-raw_data <- raw_data %>%
-  mutate(region = tolower(Region))
 
 # join to data
 raw_data <- raw_data %>%
-  left_join(., ashe_data, by = c("Region" = "region"))
+  left_join(., ashe_data, by = "Region")
 
 # calcualte 4/5 thresholds
 raw_data <- raw_data %>%
   mutate(
-    Region_four_fifths =  region_median_income * .8,
-    Region_two_thirds = region_median_income * (2/3),
-    UK_median = ashe_data %>% filter(region == "United Kingdom") %>% pull(region_median_income),
-    UK_four_fifths = UK_median * 0.8
+    Region_four_fifths =  Region_median_income * .8,
+    Region_two_thirds = Region_median_income * (2/3),
+    UK_median = ashe_data %>% filter(Region == "United Kingdom") %>% pull(Region_median_income),
+    UK_four_fifths = UK_median * 0.8,
+    Region_four_thirds = Region_median_income * (4/3)
   )
 
 
@@ -790,29 +691,13 @@ income_statistics_regional <- raw_data %>%
   filter(income_drop == 0 & !is.na(Weekly_Income)) %>%
   group_by(Region) %>%
   summarise(
-    mean = weighted.mean(Weekly_Income, w = Outsourced, na.rm = TRUE),
-    median = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(.5), na.rm = TRUE),
-    min = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(0), na.rm = TRUE),
-    max = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(1), na.rm = TRUE),
-    stdev = sqrt(wtd.var(Weekly_Income, w = Outsourced, na.rm = TRUE)),
-    n = sum(!is.na(Weekly_Income))
+    mean = weighted.mean(Weekly_Income, w = Outsourced, na.rm = T),
+    median = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(.5), na.rm = T),
+    min = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(0), na.rm = T),
+    max = wtd.quantile(Weekly_Income, w = Outsourced, probs = c(1), na.rm = T),
+    stdev = sqrt(wtd.var(Weekly_Income, w = Outsourced, na.rm = T)),
+    n = n()
   )
-
-par(mar = c(2, 2, 2, 2))
-# plot the distribution of income 
-# blue lines are regional values, red lines are UK values
-# lighter lines are the actual medians, darker lines are 4/5 medians
-raw_data %>%
-  filter(income_drop == 0 & !is.na(Weekly_Income)) %>%
-  ggplot(., aes(x="",y=Weekly_Income)) + 
-  facet_wrap(~Region) + 
-  geom_violin() +
-  geom_boxplot(width = 0.3) +
-  geom_hline(aes(yintercept = UK_median), colour = "red", alpha=0.25) +
-  geom_hline(aes(yintercept = UK_four_fifths), colour = "red") +
-  geom_hline(aes(yintercept = region_median_income), colour = "blue", alpha = 0.25) +
-  geom_hline(aes(yintercept = Region_four_fifths), colour = "blue") +
-  theme_minimal()
 
 # let's take a look at two-thrids too 
 # here blue lines are 2/3, red lines are 4/5
@@ -826,49 +711,38 @@ raw_data %>%
   geom_hline(aes(yintercept = Region_two_thirds), colour = "blue") +
   theme_minimal()
 
-# use 2/3 becuase that's what OECD use and what JRF have used in past
+#use 2/3 becuase that's what OECD use and what JRF have used in past
 # https://data.oecd.org/earnwage/wage-levels.htm
 
 # create the grouping variable based on Region_two_thirds
 # low pay is less than or equal to 2/3 regional median earnigns
 raw_data <- raw_data %>%
   mutate(
-    Income_Group = case_when(Weekly_Income <= Region_two_thirds  ~ "Low",
-                             Weekly_Income > Region_two_thirds ~ "Not low",
-                             TRUE ~ NA),
-    Income_Group = factor(Income_Group, levels = c("Not low","Low"), exclude=NA)
+    income_group = case_when(Weekly_Income <= Region_two_thirds  ~ "Low",
+                             Weekly_Income <= Region_four_thirds ~ "Mid",
+                             Weekly_Income > Region_four_thirds ~ "High",
+                                 TRUE ~ NA),
+    income_group = factor(income_group, levels = c("Mid", "Low","High"), exclude=NA)
   ) %>%
   ungroup()
 
+
 # visualise it to check
-# the total difference is small but it means we've categorised people properly
-# using hte new method, 27.35% of people are low paid, compared to ~45% using 4/5
+# 26.35% of people are low paid
 raw_data %>%
   filter(income_drop == 0 & !is.na(Weekly_Income)) %>%
-  dplyr::group_by(Income_Group) %>%
+  dplyr::group_by(income_group) %>%
   dplyr::summarise(
     n = sum(Outsourced)
   ) %>%
   mutate(
     perc = 100 * (n / sum(n))
   ) %>%
-  ggplot(aes("", perc, fill=Income_Group)) +
+  ggplot(aes("", perc, fill=income_group)) +
   geom_col() +
   theme_minimal() +
-  theme(plot.margin = unit(c(0,4,0,4), "inches")) +
+  #theme(plot.margin = unit(c(0,4,0,4), "inches")) +
   geom_label(aes(label=paste0(round(perc,2),"%")))
-
-# one last check to see people have been categorised correctly
-# test <- raw_data %>%
-#   filter(income_drop==0) %>% # why do we still get nas for annual income?
-#   select(Annual_Income, Region_four_fifths, Income_Group) %>%
-#   mutate(
-#     test = case_when(Annual_Income < Region_four_fifths ~ "Low",
-#                      Annual_Income >= Region_four_fifths ~ "Not low",
-#                      TRUE ~ NA)
-#   )
-# # check that they're the same - value should be 0
-# sum(test$Income_Group != test$test, na.rm=T)
 
 #############
 #### END ####
@@ -887,15 +761,17 @@ raw_data <- raw_data %>%
     Job_Satisfaction == "Don't know" ~ NA
   ))
 
-##create a race var
+##create a Ethniicty collapsed var
 raw_data <- raw_data %>%
   dplyr::mutate(
     Ethnicity_Collapsed = case_when(
-      # Grouping White ethnicities
-      Ethnicity %in% c("English / Welsh / Scottish / Northern Irish / British", 
-                       "Irish", 
-                       "Gypsy or Irish Traveller",
-                       "Any other White background") ~ "White",
+      # White British
+      Ethnicity %in% c("English / Welsh / Scottish / Northern Irish / British") ~ "White British",
+      # White Other
+      Ethnicity %in% c("Irish", 
+                       "Gypsy or Irish Traveller", 
+                       "Any other White background",
+                       "Roma") ~ "White Other",
       # Grouping Asian ethnicities
       Ethnicity %in% c("Indian", 
                        "Pakistani", 
@@ -905,7 +781,7 @@ raw_data <- raw_data %>%
       # Grouping Black ethnicities
       Ethnicity %in% c("African", 
                        "Caribbean", 
-                       "Any other Black, Black British, or Caribbean background") ~ "Black/ African/Caribbean/Black British",
+                       "Any other Black, Black British, or Caribbean background") ~ "Black/African/Caribbean/Black British",
       # Grouping Mixed ethnicities
       Ethnicity %in% c("White and Black Caribbean", 
                        "White and Black African",
@@ -914,14 +790,57 @@ raw_data <- raw_data %>%
       # Grouping Other ethnicities
       Ethnicity %in% c("Arab") ~ "Arab",
       # Handling missing or ambiguous categories
-      Ethnicity %in% c("Roma", 
-                       "Any other ethnic group")  ~ "Other ethnic group",
+      Ethnicity %in% c("Any other ethnic group")  ~ "Other ethnic group",
       #prefer not to say
-      Ethnicity %in% c("Prefer not to say",
-                       "Don’t think of myself as any of these") ~ "Prefer not to say",
+      Ethnicity %in% c("Prefer not to say") ~ "Prefer not to say",
+      # Dont think of myself as...
+      Ethnicity %in% c("Don't think of myself as any of these") ~ "Don't think of myself as any of these",
       # Default case for any unmatched entries
-      TRUE ~ "Prefer not to say"
+      TRUE ~ NA
     )
+  )
+
+#make white the reference category
+raw_data$Ethnicity_Collapsed <- relevel(factor(raw_data$Ethnicity_Collapsed), ref = "White British")
+
+raw_data <- raw_data %>%
+  mutate(
+    Has_Degree = factor(Has_Degree, levels = c("Yes", "No", "Don't know"))
+  )
+
+# make binary born uk var
+categories <- as.vector(unique(raw_data$BORNUK))
+non_categories <- categories[!(categories %in% c("I was born in the UK","Prefer not to say"))]
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+raw_data <- raw_data %>%
+  mutate(
+    BORNUK_binary = forcats::fct_collapse(BORNUK,
+                                          "Born in UK" = "I was born in the UK",
+                                          "Not born in UK" = non_categories,
+                                          "Prefer not to say" = "Prefer not to say")
+  ) 
+
+# make binary ethnicity var
+# but keep don't think of myself and prefer not to say as separate
+ethnicities <- as.vector(unique(raw_data$Ethnicity_Collapsed))
+white_ethnicities <- ethnicities[ethnicities %in% c("White British", "White other")]
+non_categories <- c("Don't think of myself as any of these","Prefer not to say")
+non_white_ethnicities <- ethnicities[!(ethnicities %in% white_ethnicities) & !(ethnicities %in% non_categories)]
+
+# Will throw NA warning. I think this OK but investigate how to avoid the problem
+raw_data <- raw_data %>%
+  mutate(
+    Ethnicity_binary = forcats::fct_collapse(Ethnicity_Collapsed,
+                                             "White" = c("White British","White other"),
+                                             "Non-White" = non_white_ethnicities,
+                                             "Don't think of myself as any of these" =  "Don't think of myself as any of these",
+                                             "Prefer not to say" = "Prefer not to say")
+  )
+
+raw_data <- raw_data %>%
+  mutate(
+    Gender = factor(Sex, levels = c("Male","Female","Other","Prefer not to say"))
   )
 
 ## change complaints to completely numeric 1-5, change don't know to NA
@@ -1008,7 +927,7 @@ raw_data <- raw_data %>%
     Treatment_At_Work_Overall_numeric = as.numeric(Treatment_At_Work_Overall_numeric),
     Complaints_numeric = as.numeric(Complaints_numeric),
     Clarity_Overall_Mean = as.numeric(Clarity_Overall_Mean),
-    race = as_factor(Ethnicity_Collapsed))
+    Ethnicity_Collapsed = as_factor(Ethnicity_Collapsed))
 
 ##drop final unneeded vars
 raw_data <- raw_data %>%
@@ -1033,11 +952,11 @@ skim(raw_data)
 
 #create subset of data
 raw_data<- raw_data %>%
-  select(Sex, Age, Ethnicity, Ethnicity_Collapsed, 
+  select(Sex, Age, Ethnicity, Ethnicity_Collapsed, Ethnicity_binary,
          Region, Type_Of_Org, Specific_Type_Of_Org,
-         Education_Band, BORNUK, Annual_Income, 
+         Education_Band, BORNUK, BORNUK_binary, Annual_Income, 
          Weekly_Income,
-         income_drop, Income_Group,OutsourcedNonOL,
+         income_drop, income_group,OutsourcedNonOL,
          TradeUnion, 
          TUCOV, 
          Occupation_Catergory,
