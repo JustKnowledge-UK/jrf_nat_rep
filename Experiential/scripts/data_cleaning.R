@@ -1055,8 +1055,8 @@ save_check <- readline("Do you want to save the data? (y/n): ")
 if(save_check == "y"){
   
   # create a check so we don't overwrite if we don't want to
-  out_file <- paste0("./data/", Sys.Date() ," - clean_data_jrf_experiential.csv")
-  rds_out <- paste0("./data/", Sys.Date() ," - clean_data_jrf_experiential.rds")
+  out_file <- paste0("./Experiential/data/", Sys.Date() ," - clean_data_jrf_experiential.csv")
+  rds_out <- paste0("./Experiential/data/", Sys.Date() ," - clean_data_jrf_experiential.rds")
     
   if(!file.exists(out_file)){ 
     cat(paste0("Saving data as: ", out_file, "\n"))
