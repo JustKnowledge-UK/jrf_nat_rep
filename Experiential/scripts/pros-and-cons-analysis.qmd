@@ -547,12 +547,12 @@ regression_data$Sex<-relevel(regression_data$Sex, ref = "Male")
 regression_data$Ethnicity_Collapsed<- relevel(regression_data$Ethnicity_Collapsed, ref = "White British")
 
 # Run regression models for each theme
-model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, regression_data)
+model_secure <- lm(theme_secure ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ income_group+ OutsourcedNonOL, regression_data)
 
-model_terms <- lm(theme_terms ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
-model_progression <- lm(theme_progression ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
-model_enforcement <- lm(theme_enforcement ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
-model_connections <- lm(theme_connections ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ Income_Group+ OutsourcedNonOL, data = regression_data)
+model_terms <- lm(theme_terms ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ income_group+ OutsourcedNonOL, data = regression_data)
+model_progression <- lm(theme_progression ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ income_group+ OutsourcedNonOL, data = regression_data)
+model_enforcement <- lm(theme_enforcement ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ income_group+ OutsourcedNonOL, data = regression_data)
+model_connections <- lm(theme_connections ~ Sex + Ethnicity_Collapsed+ Age+ Region+ Education_Band+ income_group+ OutsourcedNonOL, data = regression_data)
 
 # Display summary of one model
 summary(model_secure)
