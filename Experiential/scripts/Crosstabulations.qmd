@@ -20,14 +20,14 @@ execute:
 ```{r}
 
 #| echo: false
-
+setwd("~/repos/JRF Nat Rep/Experiential")
 #Load Data
 ##load libraries and data, create text vars to remove
 library(tidyverse)
 library(GWalkR)
 
 #first run chisqared script and use the data output from that
-data <- read_csv("../data/postx2_data.csv")
+data <- read_csv("data/2025-06-30 - clean_data_jrf_experiential.csv")
 
 library(crosstable)
 library(flextable)
@@ -98,7 +98,7 @@ The crosstabulations are very long. It would be useful to further reduce the num
 # Create the crosstable and convert it to flextable
 Income_Crosstab<- crosstable(data %>% 
                 select(-any_of(text_vars)), 
-                by = Income_Group,
+                by = income_group,
                 total = "both",
                 showNA = "no", 
                 funs=c(median, mean, "std dev"=sd),
@@ -599,8 +599,8 @@ Organisational_Crosstab
 
 # my preference - using the weights for counts, ('Outsourced' is the weights variable) e.g.
 test <- data %>% 
-  filter(!is.na(Income_Group)) %>%
-  group_by(Sex, Income_Group) %>%
+  filter(!is.na(income_group)) %>%
+  group_by(Sex, income_group) %>%
   summarise(
     count = sum(Outsourced)
   ) %>%
@@ -617,10 +617,10 @@ library(srvyr)
 # Convert survey design object to srvyr design
 srvyr_design <- srvyr::as_survey_design(data, weights = "Outsourced")
 
-# Group by Income_Group and summarize multiple variables
+# Group by income_group and summarize multiple variables
 Income_Crosstab <- srvyr_design %>%
-  filter(!is.na(Income_Group)) %>%
-  group_by(Sex, Income_Group) %>%
+  filter(!is.na(income_group)) %>%
+  group_by(Sex, income_group) %>%
   summarize(
     prop = survey_prop()
   )
@@ -646,9 +646,9 @@ Income_Crosstab
 
 ```{r}
 library(jtools)
-data$Income_Group<- as.factor(data$Income_Group)
+data$income_group<- as.factor(data$income_group)
 
-model<-glm(Income_Group ~ Age + Sex + Region +
+model<-glm(income_group ~ Age + Sex + Region +
            Education_Band + TradeUnion + BORNUK*Ethnicity_Collapsed + Clarity_Overall_Mean, family = binomial, data)
 
 #summary(model)
