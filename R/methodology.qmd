@@ -2307,102 +2307,6 @@ As in preceding sections, we constructed three models; one for the binary ethnic
 ##### Ethnicity binary
 
 ```{r}
-#| output: false
-#| warning: false
-#| message: false
-
-mod_data <- income_data %>%
-  filter(!is.na(Ethnicity_binary))
-  
-design <- svydesign(
-  ids = ~1,                             
-  weights = ~NatRepemployees,             
-  data = mod_data
-)
-
-# Step 2: Fit the model with quasibinomial family
-mod_svy1 <- svyglm(
-  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled,
-  design = design,
-  family = quasibinomial()
-)
-
-
-# Step 2: Fit the model with quasibinomial family
-mod_svy2 <- svyglm(
-  income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_binary,
-  design = design,
-  family = quasibinomial()
-)
-
-coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
-
-wald <- anova(mod_svy1,mod_svy2, method = "Wald")
-
-# F and p
-f <- round(wald[["Ftest"]] %>% as.numeric(),2)
-p <- wald[["p"]] %>% as.numeric()
-
-if(p < .001){
-  p = "< .001"
-} else{
-  p = paste0("= ",round(p,3))
-}
-
-# Degrees of freedom
-dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
-```
-
-A model including the ethnicity:outsourcing interaction term was not a significant improvement on a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
-
-
-```{r}
-labels <- c(
-  'Intercept',
-  'Outsourcing: Outsourced',
-  'Ethnicity: Not White',
-  "Ethnicity: Don't think of myself as any of these",
-  'Ethnicity: Prefer not to say',
-  'Age',
-  'Gender: Female',
-  'Gender: Other',
-  'Gender: Prefer not to say',
-  "Education: Don't have degree",
-  "Education: Don't know",
-  'Region: East Midlands',
-  'Region: East of England',
-  'Region: North East',
-  'Region: North West',
-  'Region: Northern Ireland',
-  'Region: Scotland',
-  'Region: South East',
-  'Region: South West',
-  'Region: Wales',
-  'Region: West Midlands',
-  'Region: Yorkshire and the Humber',
-  'Migration: Arrived within the last year',
-  'Migration: Arrived within the last 3 years',
-  'Migration: Arrived within the last 5 years',
-  'Migration: Arrived within the last 10 years',
-  'Migration: Arrived within the last 15 years',
-  'Migration: Arrived within the last 20 years',
-  'Migration: Arrived within the last 30 years',
-  'Migration: Arrived more than 30 years ago',
-  'Migration: Prefer not to say',
-  'Interaction: Outsourced x Non-White',
-  "Interaction: Outsourced x Don't think of myself as any of these",
-  "Interaction: Outsourced x Prefer not to say"
-)
-
-tab_model(mod_svy2, 
-          pred.labels = labels,
-          dv.labels = "Low income group",
-          show.r2 = FALSE)
-```
-
-# 3-level
-
-```{r}
 #| message: false
 #| output: false
 
@@ -2484,8 +2388,7 @@ if(p < .001){
 
 
 ```
-
-A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
+A saturated model including the interaction term was not a significantly better fit to the data than an intercept-only model, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
