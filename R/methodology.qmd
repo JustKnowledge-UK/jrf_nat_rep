@@ -49,6 +49,7 @@ library(apaTables)
 library(survey)
 library(svyVGAM)
 library(aod)
+library(stringr)
 ```
 
 ```{r palette}
@@ -126,7 +127,7 @@ tidy.svyVGAM <- function(
 ```
 
 ```{r data, output=FALSE}
-data <- readRDS("../Data/2025-06-20 - Cleaned_data.rds")
+data <- readRDS("../Data/2025-06-23 - Cleaned_data.rds")
 
 # Specify data to be used in income analysis
 income_data <- filter(data, income_drop_all==0)
@@ -1345,6 +1346,8 @@ $$
 ```
 
 ```{r}
+#| output: false
+#| message: false
 # Alternative for 3-level variable
 
 mod_data <- income_data %>%
@@ -2402,7 +2405,8 @@ tab_model(mod_svy2,
 ```{r}
 #| message: false
 #| output: false
-#| # Alternative for 3-level variable
+
+# Alternative for 3-level variable
 
 mod_data <- income_data %>%
   filter(!is.na(Ethnicity_binary)) %>%
@@ -2711,156 +2715,830 @@ tidy_mod %>%
   pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
 
+
+
 ## Bootstrapped
 
 ```{r}
-reps <- 500
-# STEP 1: Create bootstrap replicate weights
-boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = reps)
+# reps <- 500
+# # STEP 1: Create bootstrap replicate weights
+# boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = reps)
+# 
+# # Model 1: without interaction
+# mod_svy_boot_no_inter <- svy_vglm(
+#   income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+#   design = boot_design,
+#   family = multinomial(refLevel = "Low")
+# )
+# 
+# # Model 2: with interaction
+# mod_svy_boot_inter <- svy_vglm(
+#   income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+#   design = boot_design,
+#   family = multinomial(refLevel = "Low")
+# )
+# 
+# # Extract coefficients and vcov from model with interaction
+# coefs <- coef(mod_svy_boot_inter)
+# vcovs <- vcov(mod_svy_boot_inter)
+# 
+# # Get names of interaction terms
+# interaction_names <- grep("outsourcing_status.*:Ethnicity_collapsed", names(coefs), value = TRUE)
+# 
+# # Subset coefficients and vcov for interaction terms
+# L <- coefs[interaction_names]
+# V <- vcovs[interaction_names, interaction_names]
+# 
+# # Wald statistic
+# W <- t(L) %*% solve(V) %*% L
+# df <- length(L)
+# p_value <- pchisq(W, df, lower.tail = FALSE)
+# 
+# # Print results
+# cat("Wald test statistic:", W, "\n")
+# cat("Degrees of freedom:", df, "\n")
+# cat("p-value:", p_value, "\n")
 
-# Model 1: without interaction
-mod_svy_boot_no_inter <- svy_vglm(
-  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
-  design = boot_design,
-  family = multinomial(refLevel = "Low")
-)
-
-# Model 2: with interaction
-mod_svy_boot_inter <- svy_vglm(
-  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
-  design = boot_design,
-  family = multinomial(refLevel = "Low")
-)
-
-# Extract coefficients and vcov from model with interaction
-coefs <- coef(mod_svy_boot_inter)
-vcovs <- vcov(mod_svy_boot_inter)
-
-# Get names of interaction terms
-interaction_names <- grep("outsourcing_status.*:Ethnicity_collapsed", names(coefs), value = TRUE)
-
-# Subset coefficients and vcov for interaction terms
-L <- coefs[interaction_names]
-V <- vcovs[interaction_names, interaction_names]
-
-# Wald statistic
-W <- t(L) %*% solve(V) %*% L
-df <- length(L)
-p_value <- pchisq(W, df, lower.tail = FALSE)
-
-# Print results
-cat("Wald test statistic:", W, "\n")
-cat("Degrees of freedom:", df, "\n")
-cat("p-value:", p_value, "\n")
-
-
+# tidy_mod <- tidy.svyVGAM(mod_svy_boot_inter, exponentiate = TRUE, conf.int = TRUE)
+# 
+# tidy_mod %>% 
+#   dplyr::select(-y.level) %>% 
+#   rename(income_group = term) %>% 
+#   mutate(sig = case_when(
+#     p.value < 0.001 ~ "***",
+#     p.value < 0.01 ~ "**",
+#     p.value < 0.05 ~ "*",
+#     T ~ ""
+#   )) %>% 
+#   kable(digits = 3) %>% 
+#   kable_styling() %>%
+#   pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+#   pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
-```{r}
-
-tidy_mod <- tidy.svyVGAM(mod_svy_boot_inter, exponentiate = TRUE, conf.int = TRUE)
-
-tidy_mod %>% 
-  dplyr::select(-y.level) %>% 
-  rename(income_group = term) %>% 
-  mutate(sig = case_when(
-    p.value < 0.001 ~ "***",
-    p.value < 0.01 ~ "**",
-    p.value < 0.05 ~ "*",
-    T ~ ""
-  )) %>% 
-  kable(digits = 3) %>% 
-  kable_styling() %>%
-  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
-  pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
-```
-
 
 # Attempt at posthoc
+
+### start testing 
+
+```{r}
+# Create prediction data 
+pred_data <- expand.grid(
+  outsourcing_status = levels(mod_data$outsourcing_status),
+  Ethnicity_collapsed = levels(mod_data$Ethnicity_collapsed),
+  Age = mean(mod_data$Age, na.rm = TRUE),
+  Gender = levels(mod_data$Gender)[1],
+  Has_Degree = levels(mod_data$Has_Degree)[1],
+  Region = levels(mod_data$Region)[1],
+  BORNUK_labelled = levels(mod_data$BORNUK_labelled)[1]
+)
+
+# Get predictions
+predictions <- predict(mod_svy2$fit, newdata = pred_data, type = "response")
+
+# Create results dataframe - much simpler!
+pred_results <- data.frame(
+  pred_data[, 1:2],
+  predictions
+)
+
+# Add prob_ prefix to column names for clarity
+income_levels <- levels(mod_svy2)
+prob_cols <- paste0("prob_", colnames(predictions))
+names(pred_results)[3:ncol(pred_results)] <- prob_cols
+
+print(pred_results)
+```
+
+```{r}
+# Bootstrap function for getting confidence intervals
+bootstrap_predictions <- function(n_boot = 500) {
+  
+  boot_results <- replicate(n_boot, {
+    # Resample with replacement, respecting weights
+    n_obs <- nrow(mod_data)
+    boot_indices <- sample(1:n_obs, size = n_obs, replace = TRUE, 
+                          prob = mod_data$NatRepemployees/sum(mod_data$NatRepemployees))
+    boot_data <- mod_data[boot_indices, ]
+    
+    # Create new survey design
+    boot_design <- svydesign(
+      ids = ~1,
+      weights = ~NatRepemployees,
+      data = boot_data
+    ) 
+    
+    # Refit model
+    tryCatch({
+      boot_model <- svyVGAM::svy_vglm(
+        income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + 
+                       Has_Degree + Region + BORNUK_labelled + 
+                       outsourcing_status:Ethnicity_collapsed,
+        design = boot_design,
+        family = multinomial(refLevel = "Mid")  # Mid is reference
+      )
+      
+      # Get predictions
+      boot_pred <- predict(boot_model$fit, newdata = pred_data, type = "response")
+      
+      boot_results_df <- data.frame(
+        pred_data[, 1:2],
+        boot_pred
+      )
+
+      prob_cols <- paste0("prob_", colnames(boot_pred))
+      names(boot_results_df)[3:ncol(boot_results_df)] <- prob_cols
+
+      return(boot_results_df)
+    }, error = function(e) {
+      return(NULL)
+    })
+  }, simplify = FALSE)
+  
+  # Remove failed bootstrap samples
+  boot_results <- boot_results[!sapply(boot_results, is.null)]
+  
+  return(boot_results)
+}
+
+t1 <- Sys.time()
+boot_samples <- bootstrap_predictions(n_boot = 2)
+t2 <- Sys.time()
+cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
+
+filepath <- here("Data","bootstrap1.rds")
+if(!file.exists(filepath)){
+# Run bootstrap (this will take some time)
+  cat("Running bootstrap... this may take a few minutes\n")
+  boot_samples <- bootstrap_predictions(n_boot = 500)  # Start with fewer for testing
+  saveRDS(boot_samples, filepath)
+} else{
+  cat("Loading previous bootstrap")
+  loadRDS(filepath)
+}
+
+
+
+# Calculate confidence intervals
+calculate_boot_ci <- function(boot_samples, prob_cols) {
+  ci_results <- pred_results[, 1:2]  # Keep grouping variables
+  
+  for(col in prob_cols) {
+    # Extract this probability across all bootstrap samples
+    boot_probs <- sapply(boot_samples, function(x) {
+      if(is.null(x) || !col %in% names(x)) return(NA)
+      x[[col]]
+    })
+    
+    # Calculate percentile confidence intervals
+    ci_lower <- apply(boot_probs, 1, quantile, probs = 0.025, na.rm = TRUE)
+    ci_upper <- apply(boot_probs, 1, quantile, probs = 0.975, na.rm = TRUE)
+    
+    ci_results[[paste0(col, "_ci_lower")]] <- ci_lower
+    ci_results[[paste0(col, "_ci_upper")]] <- ci_upper
+  }
+  
+  return(ci_results)
+}
+
+# Get confidence intervals
+prob_cols <- names(pred_results)[grepl("^prob_", names(pred_results))]
+ci_results <- calculate_boot_ci(boot_samples, prob_cols)
+```
+
+```{r}
+# TEST with parallel processing
+
+library(future)
+library(future.apply)
+
+library(here)
+
+# Set up parallel backend (choose number of workers if needed)
+plan(multisession, workers = 14)  # Or plan(multisession, workers = 4)
+
+bootstrap_predictions <- function(n_boot = 500) {
+  library(survey)
+  library(svyVGAM)
+
+  set.seed(1234)
+  boot_results <- future_lapply(1:n_boot, function(i) {
+    # Resample with replacement, respecting weights
+    n_obs <- nrow(mod_data)
+    boot_indices <- sample(
+      1:n_obs,
+      size = n_obs,
+      replace = TRUE,
+      prob = mod_data$NatRepemployees / sum(mod_data$NatRepemployees)
+    )
+    boot_data <- mod_data[boot_indices, ]
+    
+    # Create new survey design
+    boot_design <- svydesign(
+      ids = ~1,
+      weights = ~NatRepemployees,
+      data = boot_data
+    )
+    
+    # Refit model and predict
+    tryCatch({
+      boot_model <- svyVGAM::svy_vglm(
+        income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + 
+                       Has_Degree + Region + BORNUK_labelled + 
+                       outsourcing_status:Ethnicity_collapsed,
+        design = boot_design,
+        family = multinomial(refLevel = "Mid")
+      )
+      
+      boot_pred <- predict(boot_model$fit, newdata = pred_data, type = "response")
+      
+      boot_results_df <- data.frame(
+        pred_data[, 1:2],
+        boot_pred
+      )
+      
+      prob_cols <- paste0("prob_", colnames(boot_pred))
+      names(boot_results_df)[3:ncol(boot_results_df)] <- prob_cols
+      
+      return(boot_results_df)
+    }, error = function(e) {
+      return(NULL)
+    })
+  }, future.seed = TRUE)
+
+  # Remove failed bootstrap samples
+  boot_results <- boot_results[!sapply(boot_results, is.null)]
+  return(boot_results)
+}
+t1 <- Sys.time()
+boot_samples <- bootstrap_predictions(n_boot = 500)
+t2 <- Sys.time()
+cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
+# Run or load
+# filepath <- here("data", "bootstrap2_test.rds")
+# if (!file.exists(filepath)) {
+#   cat("Running bootstrap... this may take a few minutes\n")
+#   boot_samples <- bootstrap_predictions(n_boot = 10)
+#   saveRDS(boot_samples, filepath)
+# } else {
+#   cat("Loading previous bootstrap\n")
+#   boot_samples <- readRDS(filepath)
+# }
+
+```
+
+
+```{r}
+# Function to calculate differences and their bootstrap CIs
+calculate_differences_with_ci <- function(pred_data, boot_samples, income_level) {
+  prob_col <- paste0("prob_", income_level)
+  # Get point estimates
+  ethnicity_groups <- split(pred_data, pred_data$Ethnicity_collapsed)
+  
+  results <- list()
+  
+  for(eth in names(ethnicity_groups)) {
+    group_data <- ethnicity_groups[[eth]]
+    
+    if(nrow(group_data) >= 2) {
+      outsourcing_levels <- levels(group_data$outsourcing_status)
+      
+      if(length(outsourcing_levels) == 2) {
+        # Point estimate of difference (level 2 - level 1)
+        prob_diff <- group_data[group_data$outsourcing_status == outsourcing_levels[2], prob_col] - 
+                     group_data[group_data$outsourcing_status == outsourcing_levels[1], prob_col]
+        
+        # Bootstrap differences
+        boot_diffs <- sapply(boot_samples, function(boot_data) {
+          if(is.null(boot_data) || !prob_col %in% names(boot_data)) return(NA)
+          boot_group <- boot_data[boot_data$Ethnicity_collapsed == eth, ]
+          if(nrow(boot_group) >= 2) {
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[2], prob_col] - 
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[1], prob_col]
+          } else {
+            NA
+          }
+        })
+        
+        # Remove NAs
+        boot_diffs <- boot_diffs[!is.na(boot_diffs)]
+        
+        if(length(boot_diffs) > 2) {  # Need sufficient bootstrap samples
+          ci_lower <- quantile(boot_diffs, 0.025, na.rm = TRUE)
+          ci_upper <- quantile(boot_diffs, 0.975, na.rm = TRUE)
+          
+          # Approximate p-value (proportion of bootstrap samples crossing zero)
+          p_value <- 2 * min(mean(boot_diffs > 0, na.rm = TRUE), 
+                            mean(boot_diffs < 0, na.rm = TRUE))
+          
+          results[[eth]] <- data.frame(
+            ethnicity = eth,
+            income_level = income_level,
+            prob_difference = prob_diff,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper,
+            p_value = p_value,
+            comparison = paste(outsourcing_levels[2], "vs", outsourcing_levels[1])
+          )
+        }
+      }
+    }
+  }
+  
+  do.call(rbind, results)
+}
+
+income_levels <- levels(mod_data$income_group)
+# Calculate differences for each income level
+all_differences <- list()
+for(level in income_levels) {
+  all_differences[[level]] <- calculate_differences_with_ci(pred_results, boot_samples, level)
+}
+
+difference_results <- do.call(rbind, all_differences)
+rownames(difference_results) <- NULL
+
+# Apply multiple comparison correction
+if(nrow(difference_results) > 0) {
+  difference_results$p_value_bonferroni <- p.adjust(difference_results$p_value, method = "bonferroni")
+  difference_results$p_value_fdr <- p.adjust(difference_results$p_value, method = "fdr")
+  difference_results$significant_bonferroni <- difference_results$p_value_bonferroni < 0.05
+  difference_results$significant_fdr <- difference_results$p_value_fdr < 0.05
+}
+
+print(difference_results)
+```
+
+```{r}
+library(ggplot2)
+
+# Reshape data for plotting
+plot_data <- pred_results %>%
+  pivot_longer(cols = starts_with("prob_"), 
+               names_to = "income_level", 
+               values_to = "probability") %>%
+  mutate(income_level = gsub("prob_", "", income_level)) %>%
+  mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
+
+# Plot predicted probabilities
+ggplot(plot_data, aes(x = Ethnicity_collapsed, y = probability, 
+                      fill = outsourcing_status)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~income_level) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+       x = "Ethnicity", y = "Predicted Probability",
+       fill = "Outsourcing Status")
+
+# Plot differences with confidence intervals
+if(nrow(difference_results) > 0) {
+  ggplot(difference_results, aes(x = ethnicity, y = prob_difference)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    facet_wrap(~income_level) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(title = "Differences in Predicted Probabilities",
+         subtitle = "Error bars show 95% bootstrap confidence intervals",
+         x = "Ethnicity", y = "Probability Difference")
+}
+```
+
+### Ethnicity within outsourcing
+
+```{r}
+calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_samples, income_level) {
+  prob_col <- paste0("prob_", income_level)
+
+  # Get point estimates
+  outsourcing_groups <- split(pred_data, pred_data$outsourcing_status)
+  
+  results <- list()
+  
+  for(out_group in names(outsourcing_groups)) {
+    group_data <- outsourcing_groups[[out_group]]
+    
+    # Reference group
+    ref_data <- group_data[group_data$Ethnicity_collapsed == "White British", ]
+    if(nrow(ref_data) == 0) next
+    
+    # Loop through other ethnicities
+    other_ethnicities <- setdiff(unique(group_data$Ethnicity_collapsed), "White British")
+    
+    for(eth in other_ethnicities) {
+      comp_data <- group_data[group_data$Ethnicity_collapsed == eth, ]
+      
+      if(nrow(comp_data) > 0) {
+        # Point estimate of difference (ethnicity - White British)
+        prob_diff <- comp_data[[prob_col]] - ref_data[[prob_col]]
+        
+        # Bootstrap differences
+        boot_diffs <- sapply(boot_samples, function(boot_data) {
+          if(is.null(boot_data) || !prob_col %in% names(boot_data)) return(NA)
+          
+          boot_group <- boot_data[boot_data$outsourcing_status == out_group, ]
+          boot_ref <- boot_group[boot_group$Ethnicity_collapsed == "White British", ]
+          boot_eth <- boot_group[boot_group$Ethnicity_collapsed == eth, ]
+          
+          if(nrow(boot_ref) > 0 && nrow(boot_eth) > 0) {
+            boot_eth[[prob_col]] - boot_ref[[prob_col]]
+          } else {
+            NA
+          }
+        })
+
+        boot_diffs <- boot_diffs[!is.na(boot_diffs)]
+        
+        if(length(boot_diffs) > 2) {
+          ci_lower <- quantile(boot_diffs, 0.025, na.rm = TRUE)
+          ci_upper <- quantile(boot_diffs, 0.975, na.rm = TRUE)
+          
+          p_value <- 2 * min(mean(boot_diffs > 0, na.rm = TRUE), 
+                             mean(boot_diffs < 0, na.rm = TRUE))
+          
+          results[[paste(out_group, eth, sep = "_")]] <- data.frame(
+            outsourcing_status = out_group,
+            ethnicity = eth,
+            income_level = income_level,
+            prob_difference = prob_diff,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper,
+            p_value = p_value,
+            comparison = paste(eth, "vs White British")
+          )
+        }
+      }
+    }
+  }
+
+  do.call(rbind, results)
+}
+
+all_ethnicity_differences <- list()
+for(level in income_levels) {
+  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(pred_results, boot_samples, level)
+}
+
+ethnicity_diff_results <- do.call(rbind, all_ethnicity_differences)
+rownames(ethnicity_diff_results) <- NULL
+
+# Apply multiple comparison correction
+if(nrow(ethnicity_diff_results) > 0) {
+  ethnicity_diff_results$p_value_bonferroni <- p.adjust(ethnicity_diff_results$p_value, method = "bonferroni")
+  ethnicity_diff_results$p_value_fdr <- p.adjust(ethnicity_diff_results$p_value, method = "fdr")
+  ethnicity_diff_results$significant_bonferroni <- ethnicity_diff_results$p_value_bonferroni < 0.05
+  ethnicity_diff_results$significant_fdr <- ethnicity_diff_results$p_value_fdr < 0.05
+}
+
+print(ethnicity_diff_results)
+
+```
+
+```{r}
+if(nrow(ethnicity_diff_results) > 0) {
+  ggplot(ethnicity_diff_results, aes(x = ethnicity, y = prob_difference)) +
+    geom_point(size = 2) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+    facet_grid(outsourcing_status ~ income_level) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          strip.text = element_text(face = "bold")) +
+    labs(
+      title = "Ethnic Group Differences in Predicted Probability (vs White British)",
+      subtitle = "Shown within each outsourcing status and income level",
+      x = "Ethnic Group (vs White British)",
+      y = "Difference in Predicted Probability"
+    )
+}
+
+```
+
+```{r}
+# Test just for Mid
+mid_results <- calculate_differences_with_ci(pred_results, boot_samples, "Mid")
+print("Mid results:")
+print(mid_results)
+```
+
+```{r}
+# Create a summary table
+summary_table <- pred_results %>%
+  pivot_longer(cols = starts_with("prob_"), 
+               names_to = "income_level", 
+               values_to = "probability") %>%
+  mutate(income_level = gsub("prob_", "", income_level)) %>%
+  pivot_wider(names_from = outsourcing_status, 
+              values_from = probability) %>%
+  arrange(Ethnicity_collapsed, income_level)
+
+print(summary_table)
+```
+
+```{r}
+test <- income_data %>% 
+  group_by(income_group, outsourcing_status, Ethnicity_collapsed) %>% 
+  summarise(
+    n = n()
+  )
+```
+
+
+### end testing
+```{r}
+head(predict(mod_svy2$fit,type="response"))
+```
+
+```{r}
+library(emmeans)
+
+# Get estimated marginal means for the interaction
+emm <- emmeans(mod_svy2, ~ outsourcing_status | Ethnicity_collapsed, 
+               mode = "prob")  # for probabilities
+
+# Pairwise comparisons within each ethnicity group
+pairs_within_ethnicity <- pairs(emm, by = "Ethnicity_collapsed")
+
+# Pairwise comparisons within each outsourcing status
+pairs_within_outsourcing <- pairs(emm, by = "outsourcing_status")
+
+# View results
+summary(pairs_within_ethnicity, adjust = "bonferroni")
+summary(pairs_within_outsourcing, adjust = "bonferroni")
+```
+
 
 ```{r}
 # Create new data for prediction
 # Get levels of interaction factors
-outsourcing_levels <- levels(design$variables$outsourcing_status)
-ethnicity_levels <- levels(design$variables$Ethnicity_collapsed)
+# outsourcing_levels <- levels(design$variables$outsourcing_status)
+# ethnicity_levels <- levels(design$variables$Ethnicity_collapsed)
+# 
+# # Fix covariates at their means or reference levels:
+# mean_age <- mean(design$variables$Age, na.rm = TRUE)
+# mode_gender <- names(sort(table(design$variables$Gender), decreasing = TRUE))[1]
+# mode_degree <- names(sort(table(design$variables$Has_Degree), decreasing = TRUE))[1]
+# mode_region <- names(sort(table(design$variables$Region), decreasing = TRUE))[1]
+# mode_BORNUK <- names(sort(table(design$variables$BORNUK_labelled), decreasing = TRUE))[1]
+# 
+# newdata <- expand.grid(
+#   outsourcing_status = outsourcing_levels,
+#   Ethnicity_collapsed = ethnicity_levels,
+#   Age = mean_age,
+#   Gender = mode_gender,
+#   Has_Degree = mode_degree,
+#   Region = mode_region,
+#   BORNUK_labelled = mode_BORNUK
+# )
+# 
+# # Define bootstrap function
+# 
+# set.seed(123)
+# 
+# B <- 500  # Number of bootstrap replicates
+# pred_array <- array(NA, dim = c(nrow(newdata), length(levels(design$variables$income_group)), B),
+#                     dimnames = list(NULL, levels(design$variables$income_group), NULL))
+# 
+# for (b in 1:B) {
+#   # Bootstrap replicate survey design (example for bootstrap replicates)
+#   boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = 1)
+# 
+#   # Fit model to bootstrap design
+#   mod_boot <- svyVGAM::svy_vglm(
+#     income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+#     design = boot_design,
+#     family = multinomial(refLevel = "Low")
+#   )
+#   
+#   # Extract the underlying vglm object
+#   mod_boot_vglm <- mod_boot$fit
+#   
+#   # Predict using the underlying vglm model
+#   preds <- predict(mod_boot_vglm, newdata = newdata, type = "response")
+#   
+#   pred_array[, , b] <- preds
+# }
+# 
+# # Summarise predictions
+# 
+# # Mean predicted probabilities
+# pred_mean <- apply(pred_array, c(1, 2), mean)
+# 
+# # 95% percentile CIs
+# pred_lower <- apply(pred_array, c(1, 2), quantile, probs = 0.025)
+# pred_upper <- apply(pred_array, c(1, 2), quantile, probs = 0.975)
+# 
+# # Combine into a data frame for easier viewing
+# 
+# results <- as_tibble(pred_mean) %>%
+#   mutate(row = 1:nrow(pred_mean)) %>%
+#   pivot_longer(cols = -row, names_to = "income_group", values_to = "mean_prob") %>%
+#   mutate(
+#     lower = as.vector(pred_lower),
+#     upper = as.vector(pred_upper),
+#     outsourcing_status = rep(newdata$outsourcing_status, each = ncol(pred_mean)),
+#     Ethnicity_collapsed = rep(newdata$Ethnicity_collapsed, each = ncol(pred_mean))
+#   )
+# 
+# 
+# 
+# ggplot(results, aes(x = outsourcing_status, y = mean_prob, fill = income_group)) +
+#   geom_col(position = "dodge") +
+#   geom_errorbar(aes(ymin = lower, ymax = upper), position = position_dodge(width = 0.9), width = 0.2) +
+#   facet_wrap(~ Ethnicity_collapsed) +
+#   labs(title = "Bootstrap Predicted Probabilities with 95% CI",
+#        y = "Predicted Probability", x = "Outsourcing Status") +
+#   theme_minimal()
+# 
 
-# Fix covariates at their means or reference levels:
-mean_age <- mean(design$variables$Age, na.rm = TRUE)
-mode_gender <- names(sort(table(design$variables$Gender), decreasing = TRUE))[1]
-mode_degree <- names(sort(table(design$variables$Has_Degree), decreasing = TRUE))[1]
-mode_region <- names(sort(table(design$variables$Region), decreasing = TRUE))[1]
-mode_BORNUK <- names(sort(table(design$variables$BORNUK_labelled), decreasing = TRUE))[1]
+```
+```{r}
+# Create new data for prediction
+# Get levels of interaction factors
+# outsourcing_levels <- levels(design$variables$outsourcing_status)
+# ethnicity_levels <- levels(design$variables$Ethnicity_collapsed)
+# 
+# # Fix covariates at their means or reference levels:
+# mean_age <- mean(design$variables$Age, na.rm = TRUE)
+# mode_gender <- names(sort(table(design$variables$Gender), decreasing = TRUE))[1]
+# mode_degree <- names(sort(table(design$variables$Has_Degree), decreasing = TRUE))[1]
+# mode_region <- names(sort(table(design$variables$Region), decreasing = TRUE))[1]
+# mode_BORNUK <- names(sort(table(design$variables$BORNUK_labelled), decreasing = TRUE))[1]
+# 
+# newdata <- expand.grid(
+#   outsourcing_status = outsourcing_levels,
+#   Ethnicity_collapsed = ethnicity_levels,
+#   Age = mean_age,
+#   Gender = mode_gender,
+#   Has_Degree = mode_degree,
+#   Region = mode_region,
+#   BORNUK_labelled = mode_BORNUK
+# )
+# 
+# B <- 500  # Number of bootstrap replicates
+# 
+# # Extract the underlying vglm object
+# mod_vglm <- mod_svy2$fit
+# 
+# # Predict using the underlying vglm model
+# preds <- predict(mod_vglm, newdata = newdata, type = "response")
+# 
+# pred_array[, , b] <- preds
+# 
+# 
+# # Summarise predictions
+# 
+# # Mean predicted probabilities
+# pred_mean <- apply(pred_array, c(1, 2), mean)
+# 
+# # 95% percentile CIs
+# pred_lower <- apply(pred_array, c(1, 2), quantile, probs = 0.025)
+# pred_upper <- apply(pred_array, c(1, 2), quantile, probs = 0.975)
+# 
+# # Combine into a data frame for easier viewing
+# 
+# results <- as_tibble(pred_mean) %>%
+#   mutate(row = 1:nrow(pred_mean)) %>%
+#   pivot_longer(cols = -row, names_to = "income_group", values_to = "mean_prob") %>%
+#   mutate(
+#     lower = as.vector(pred_lower),
+#     upper = as.vector(pred_upper),
+#     outsourcing_status = rep(newdata$outsourcing_status, each = ncol(pred_mean)),
+#     Ethnicity_collapsed = rep(newdata$Ethnicity_collapsed, each = ncol(pred_mean))
+#   )
+# 
+# 
+# 
+# ggplot(results, aes(x = outsourcing_status, y = mean_prob, fill = income_group)) +
+#   geom_col(position = "dodge") +
+#   geom_errorbar(aes(ymin = lower, ymax = upper), position = position_dodge(width = 0.9), width = 0.2) +
+#   facet_wrap(~ Ethnicity_collapsed) +
+#   labs(title = "Bootstrap Predicted Probabilities with 95% CI",
+#        y = "Predicted Probability", x = "Outsourcing Status") +
+#   theme_minimal()
+# 
+# 
 
-newdata <- expand.grid(
-  outsourcing_status = outsourcing_levels,
-  Ethnicity_collapsed = ethnicity_levels,
-  Age = mean_age,
-  Gender = mode_gender,
-  Has_Degree = mode_degree,
-  Region = mode_region,
-  BORNUK_labelled = mode_BORNUK
-)
+```
 
-# Define bootstrap function
-
-set.seed(123)
-
-B <- 500  # Number of bootstrap replicates
-pred_array <- array(NA, dim = c(nrow(newdata), length(levels(design$variables$income_group)), B),
-                    dimnames = list(NULL, levels(design$variables$income_group), NULL))
-
-for (b in 1:B) {
-  # Bootstrap replicate survey design (example for bootstrap replicates)
-  boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = 1)
-
-  # Fit model to bootstrap design
-  mod_boot <- svyVGAM::svy_vglm(
-    income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
-    design = boot_design,
-    family = multinomial(refLevel = "Low")
-  )
-  
-  # Extract the underlying vglm object
-  mod_boot_vglm <- mod_boot$fit
-  
-  # Predict using the underlying vglm model
-  preds <- predict(mod_boot_vglm, newdata = newdata, type = "response")
-  
-  pred_array[, , b] <- preds
-}
-
-# Summarise predictions
-
-# Mean predicted probabilities
-pred_mean <- apply(pred_array, c(1, 2), mean)
-
-# 95% percentile CIs
-pred_lower <- apply(pred_array, c(1, 2), quantile, probs = 0.025)
-pred_upper <- apply(pred_array, c(1, 2), quantile, probs = 0.975)
-
-# Combine into a data frame for easier viewing
-
-results <- as_tibble(pred_mean) %>%
-  mutate(row = 1:nrow(pred_mean)) %>%
-  pivot_longer(cols = -row, names_to = "income_group", values_to = "mean_prob") %>%
-  mutate(
-    lower = as.vector(pred_lower),
-    upper = as.vector(pred_upper),
-    outsourcing_status = rep(newdata$outsourcing_status, each = ncol(pred_mean)),
-    Ethnicity_collapsed = rep(newdata$Ethnicity_collapsed, each = ncol(pred_mean))
-  )
-
-
-
-ggplot(results, aes(x = outsourcing_status, y = mean_prob, fill = income_group)) +
-  geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = lower, ymax = upper), position = position_dodge(width = 0.9), width = 0.2) +
-  facet_wrap(~ Ethnicity_collapsed) +
-  labs(title = "Bootstrap Predicted Probabilities with 95% CI",
-       y = "Predicted Probability", x = "Outsourcing Status") +
-  theme_minimal()
+```{r}
+# # attempt 2
+# B <- 500
+# boot_design <- as.svrepdesign(design, type = "bootstrap", replicates = B)
+# 
+# mod_boot <- svyVGAM::svy_vglm(
+#   income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+#   design = boot_design,
+#   family = multinomial(refLevel = "Low")
+# )
+# 
+# outsourcing_levels <- levels(mod_data$outsourcing_status)
+# ethnicity_levels <- levels(mod_data$Ethnicity_collapsed)
+# 
+# mean_age <- mean(mod_data$Age, na.rm = TRUE)
+# mode_gender <- names(sort(table(mod_data$Gender), decreasing = TRUE))[1]
+# mode_degree <- names(sort(table(mod_data$Has_Degree), decreasing = TRUE))[1]
+# mode_region <- names(sort(table(mod_data$Region), decreasing = TRUE))[1]
+# mode_BORNUK <- names(sort(table(mod_data$BORNUK_labelled), decreasing = TRUE))[1]
+# 
+# newdata <- expand.grid(
+#   outsourcing_status = outsourcing_levels,
+#   Ethnicity_collapsed = ethnicity_levels,
+#   Age = mean_age,
+#   Gender = mode_gender,
+#   Has_Degree = mode_degree,
+#   Region = mode_region,
+#   BORNUK_labelled = mode_BORNUK
+# )
+# 
+# # Predict probabilities across replicates
+# predictions <- predict(mod_boot, newdata = newdata, type = "response", se = TRUE)
+# 
+# # Extract point estimates and standard errors
+# predicted_probs <- predictions$fit  # matrix: rows = newdata rows, columns = income_group levels
+# predicted_se <- predictions$se.fit
+# 
+# # Compute 95% CIs
+# lower <- predicted_probs - 1.96 * predicted_se
+# upper <- predicted_probs + 1.96 * predicted_se
+# 
+# # Put into a tidy data frame
+# results <- as.data.frame(predicted_probs)
+# colnames(results) <- colnames(predicted_probs)
+# 
+# results <- results %>%
+#   mutate(
+#     outsourcing_status = newdata$outsourcing_status,
+#     Ethnicity_collapsed = newdata$Ethnicity_collapsed
+#   ) %>%
+#   pivot_longer(cols = starts_with("Low"):last_col(),
+#                names_to = "income_group",
+#                values_to = "mean_prob")
+# 
+# # Add SEs and CIs
+# results <- results %>%
+#   mutate(
+#     se = as.vector(predicted_se),
+#     lower = mean_prob - 1.96 * se,
+#     upper = mean_prob + 1.96 * se
+#   )
+# 
+# # Filter rows for Ethnicity == "White" and two outsourcing statuses
+# contrast_data <- results %>%
+#   filter(Ethnicity_collapsed == "White" & income_group == "High")
+# 
+# # Extract values
+# p_outsourced <- contrast_data %>% filter(outsourcing_status == "Outsourced") %>% pull(mean_prob)
+# p_not_outsourced <- contrast_data %>% filter(outsourcing_status == "Not_Outsourced") %>% pull(mean_prob)
+# 
+# se_outsourced <- contrast_data %>% filter(outsourcing_status == "Outsourced") %>% pull(se)
+# se_not_outsourced <- contrast_data %>% filter(outsourcing_status == "Not_Outsourced") %>% pull(se)
+# 
+# # Compute difference and CI
+# diff <- p_outsourced - p_not_outsourced
+# se_diff <- sqrt(se_outsourced^2 + se_not_outsourced^2)
+# 
+# lower_diff <- diff - 1.96 * se_diff
+# upper_diff <- diff + 1.96 * se_diff
+# 
+# # Show result
+# data.frame(
+#   contrast = "Outsourced - Not Outsourced",
+#   income_group = "High",
+#   diff = diff,
+#   se = se_diff,
+#   lower = lower_diff,
+#   upper = upper_diff
+# )
 
 
 ```
+
+```{r}
+# Extract all coefficients and vcov
+# coefs <- coef(mod_svy2)
+# vcovs <- vcov(mod_svy2)
+# 
+# # Create contrast matrix for specific comparisons
+# # Example: Compare outsourcing effects within each ethnicity
+# contrast_matrix <- matrix(0, nrow = 1, ncol = length(coefs))
+# 
+# # You'll need to identify which coefficients correspond to your contrasts
+# # This depends on your factor levels and model parameterization
+# colnames(contrast_matrix) <- names(coefs)
+# 
+# # Set up your specific contrast (example)
+# # contrast_matrix[1, "outsourcing_statusYes"] <- 1
+# # contrast_matrix[1, "outsourcing_statusYes:Ethnicity_collapsedAsian"] <- 1
+# 
+# # Compute Wald test for this contrast
+# contrast_est <- contrast_matrix %*% coefs
+# contrast_var <- contrast_matrix %*% vcovs %*% t(contrast_matrix)
+# wald_stat <- contrast_est^2 / contrast_var
+# p_value <- pchisq(wald_stat, df = 1, lower.tail = FALSE)
+```
+
 ```{r}
 # Pairwise - outsorucig within ethnictiy
 
@@ -2868,141 +3546,141 @@ ggplot(results, aes(x = outsourcing_status, y = mean_prob, fill = income_group))
 # dim(pred_array) = [nrow(newdata), n_outcome, B]
 
 # Helper to get index rows for each group combo
-get_rows <- function(outsource_val, eth_val) {
-  which(newdata$outsourcing_status == outsource_val & newdata$Ethnicity_collapsed == eth_val)
-}
-
-outsourcing_levels <- levels(newdata$outsourcing_status)
-ethnicity_levels <- levels(newdata$Ethnicity_collapsed)
-income_levels <- dimnames(pred_array)[[2]]
-B <- dim(pred_array)[3]
-
-results_diff <- list()
-
-for (eth in ethnicity_levels) {
-  for (income_cat in income_levels) {
-    # Get rows for each outsourcing level within this ethnicity
-    rows <- sapply(outsourcing_levels, get_rows, eth_val = eth)
-    
-    # Extract predicted probs for these groups from pred_array
-    # rows is a vector with one row per outsourcing_status
-    # For each bootstrap replicate:
-    diffs <- matrix(NA, nrow = B, ncol = length(outsourcing_levels)*(length(outsourcing_levels)-1)/2)
-    colnames(diffs) <- c()
-    
-    # Calculate pairwise differences between outsourcing statuses
-    # We'll do all pairs, but often just Yes vs No is enough
-    comp_idx <- 1
-    for (i in 1:(length(outsourcing_levels)-1)) {
-      for (j in (i+1):length(outsourcing_levels)) {
-        diffs[, comp_idx] <- pred_array[rows[i], income_cat, ] - pred_array[rows[j], income_cat, ]
-        colnames(diffs)[comp_idx] <- paste0(outsourcing_levels[i], " - ", outsourcing_levels[j])
-        comp_idx <- comp_idx + 1
-      }
-    }
-    
-    # Summarize differences
-    for (k in 1:ncol(diffs)) {
-      diff_mean <- mean(diffs[, k])
-      diff_lower <- quantile(diffs[, k], 0.025)
-      diff_upper <- quantile(diffs[, k], 0.975)
-      # Two-sided p-value from bootstrap: proportion of samples crossing zero
-      p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
-      
-      results_diff[[length(results_diff) + 1]] <- data.frame(
-        Ethnicity_collapsed = eth,
-        income_group = income_cat,
-        comparison = colnames(diffs)[k],
-        mean_diff = diff_mean,
-        lower_CI = diff_lower,
-        upper_CI = diff_upper,
-        p_value = p_val
-      )
-    }
-  }
-}
-
-results_diff_df <- bind_rows(results_diff)
-
-# View results
-print(results_diff_df)
-
-
-
-ggplot(results_diff_df, aes(x = comparison, y = mean_diff, ymin = lower_CI, ymax = upper_CI, color = income_group)) +
-  geom_pointrange(position = position_dodge(width = 0.5)) +
-  facet_wrap(~ Ethnicity_collapsed) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  labs(title = "Differences in Predicted Probability by Outsourcing Status (within Ethnicity)",
-       y = "Difference in Predicted Probability",
-       x = "Comparison") +
-  theme_minimal()
+# get_rows <- function(outsource_val, eth_val) {
+#   which(newdata$outsourcing_status == outsource_val & newdata$Ethnicity_collapsed == eth_val)
+# }
+# 
+# outsourcing_levels <- levels(newdata$outsourcing_status)
+# ethnicity_levels <- levels(newdata$Ethnicity_collapsed)
+# income_levels <- dimnames(pred_array)[[2]]
+# B <- dim(pred_array)[3]
+# 
+# results_diff <- list()
+# 
+# for (eth in ethnicity_levels) {
+#   for (income_cat in income_levels) {
+#     # Get rows for each outsourcing level within this ethnicity
+#     rows <- sapply(outsourcing_levels, get_rows, eth_val = eth)
+#     
+#     # Extract predicted probs for these groups from pred_array
+#     # rows is a vector with one row per outsourcing_status
+#     # For each bootstrap replicate:
+#     diffs <- matrix(NA, nrow = B, ncol = length(outsourcing_levels)*(length(outsourcing_levels)-1)/2)
+#     colnames(diffs) <- c()
+#     
+#     # Calculate pairwise differences between outsourcing statuses
+#     # We'll do all pairs, but often just Yes vs No is enough
+#     comp_idx <- 1
+#     for (i in 1:(length(outsourcing_levels)-1)) {
+#       for (j in (i+1):length(outsourcing_levels)) {
+#         diffs[, comp_idx] <- pred_array[rows[i], income_cat, ] - pred_array[rows[j], income_cat, ]
+#         colnames(diffs)[comp_idx] <- paste0(outsourcing_levels[i], " - ", outsourcing_levels[j])
+#         comp_idx <- comp_idx + 1
+#       }
+#     }
+#     
+#     # Summarize differences
+#     for (k in 1:ncol(diffs)) {
+#       diff_mean <- mean(diffs[, k])
+#       diff_lower <- quantile(diffs[, k], 0.025)
+#       diff_upper <- quantile(diffs[, k], 0.975)
+#       # Two-sided p-value from bootstrap: proportion of samples crossing zero
+#       p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
+#       
+#       results_diff[[length(results_diff) + 1]] <- data.frame(
+#         Ethnicity_collapsed = eth,
+#         income_group = income_cat,
+#         comparison = colnames(diffs)[k],
+#         mean_diff = diff_mean,
+#         lower_CI = diff_lower,
+#         upper_CI = diff_upper,
+#         p_value = p_val
+#       )
+#     }
+#   }
+# }
+# 
+# results_diff_df <- bind_rows(results_diff)
+# 
+# # View results
+# print(results_diff_df)
+# 
+# 
+# 
+# ggplot(results_diff_df, aes(x = comparison, y = mean_diff, ymin = lower_CI, ymax = upper_CI, color = income_group)) +
+#   geom_pointrange(position = position_dodge(width = 0.5)) +
+#   facet_wrap(~ Ethnicity_collapsed) +
+#   geom_hline(yintercept = 0, linetype = "dashed") +
+#   labs(title = "Differences in Predicted Probability by Outsourcing Status (within Ethnicity)",
+#        y = "Difference in Predicted Probability",
+#        x = "Comparison") +
+#   theme_minimal()
 
 ```
 
 ```{r}
 # ethnicity within outsroucign status
-results_diff2 <- list()
-
-reference_ethnicity <- "White British"
-
-for (outsource in outsourcing_levels) {
-  for (income_cat in income_levels) {
-    # Find the row index for the reference ethnicity within this outsourcing_status
-    ref_row <- which(newdata$Ethnicity_collapsed == reference_ethnicity & newdata$outsourcing_status == outsource)
-    
-    # Skip if reference row not found
-    if (length(ref_row) == 0) next
-    
-    # Get indices for all other ethnicities (excluding reference)
-    other_ethnicities <- setdiff(ethnicity_levels, reference_ethnicity)
-    other_rows <- sapply(other_ethnicities, function(eth) {
-      which(newdata$Ethnicity_collapsed == eth & newdata$outsourcing_status == outsource)
-    })
-    
-    # Initialize matrix for differences (B rows, one column per ethnicity compared to reference)
-    diffs <- matrix(NA, nrow = B, ncol = length(other_ethnicities))
-    colnames_vec <- character(length(other_ethnicities))
-    
-    for (i in seq_along(other_ethnicities)) {
-      diffs[, i] <- pred_array[other_rows[i], income_cat, ] - pred_array[ref_row, income_cat, ]
-      colnames_vec[i] <- paste0(other_ethnicities[i], " - ", reference_ethnicity)
-    }
-    colnames(diffs) <- colnames_vec
-    
-    # Summarize differences
-    for (k in seq_len(ncol(diffs))) {
-      diff_mean <- mean(diffs[, k])
-      diff_lower <- quantile(diffs[, k], 0.025)
-      diff_upper <- quantile(diffs[, k], 0.975)
-      p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
-      
-      results_diff2[[length(results_diff2) + 1]] <- data.frame(
-        outsourcing_status = outsource,
-        income_group = income_cat,
-        comparison = colnames(diffs)[k],
-        mean_diff = diff_mean,
-        lower_CI = diff_lower,
-        upper_CI = diff_upper,
-        p_value = p_val
-      )
-    }
-  }
-}
-
-results_diff2_df <- dplyr::bind_rows(results_diff2)
-
-
-results_diff2_df$income_group <- factor(results_diff2_df$income_group, levels = c("Low", "Mid", "High"))
-
-ggplot(results_diff2_df, aes(y = comparison, x = mean_diff, xmin = lower_CI, xmax = upper_CI, color = income_group)) +
-  geom_pointrange(position = position_dodge(width = 0.5)) +
-  facet_wrap(~ outsourcing_status) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  labs(title = "Differences in Predicted Probability by Ethnicity (within Outsourcing Status)",
-       x = "Difference in Predicted Probability",
-       y = "Ethnicity Comparison") +
-  theme_minimal()
+# results_diff2 <- list()
+# 
+# reference_ethnicity <- "White British"
+# 
+# for (outsource in outsourcing_levels) {
+#   for (income_cat in income_levels) {
+#     # Find the row index for the reference ethnicity within this outsourcing_status
+#     ref_row <- which(newdata$Ethnicity_collapsed == reference_ethnicity & newdata$outsourcing_status == outsource)
+#     
+#     # Skip if reference row not found
+#     if (length(ref_row) == 0) next
+#     
+#     # Get indices for all other ethnicities (excluding reference)
+#     other_ethnicities <- setdiff(ethnicity_levels, reference_ethnicity)
+#     other_rows <- sapply(other_ethnicities, function(eth) {
+#       which(newdata$Ethnicity_collapsed == eth & newdata$outsourcing_status == outsource)
+#     })
+#     
+#     # Initialize matrix for differences (B rows, one column per ethnicity compared to reference)
+#     diffs <- matrix(NA, nrow = B, ncol = length(other_ethnicities))
+#     colnames_vec <- character(length(other_ethnicities))
+#     
+#     for (i in seq_along(other_ethnicities)) {
+#       diffs[, i] <- pred_array[other_rows[i], income_cat, ] - pred_array[ref_row, income_cat, ]
+#       colnames_vec[i] <- paste0(other_ethnicities[i], " - ", reference_ethnicity)
+#     }
+#     colnames(diffs) <- colnames_vec
+#     
+#     # Summarize differences
+#     for (k in seq_len(ncol(diffs))) {
+#       diff_mean <- mean(diffs[, k])
+#       diff_lower <- quantile(diffs[, k], 0.025)
+#       diff_upper <- quantile(diffs[, k], 0.975)
+#       p_val <- 2 * min(mean(diffs[, k] > 0), mean(diffs[, k] < 0))
+#       
+#       results_diff2[[length(results_diff2) + 1]] <- data.frame(
+#         outsourcing_status = outsource,
+#         income_group = income_cat,
+#         comparison = colnames(diffs)[k],
+#         mean_diff = diff_mean,
+#         lower_CI = diff_lower,
+#         upper_CI = diff_upper,
+#         p_value = p_val
+#       )
+#     }
+#   }
+# }
+# 
+# results_diff2_df <- dplyr::bind_rows(results_diff2)
+# 
+# 
+# results_diff2_df$income_group <- factor(results_diff2_df$income_group, levels = c("Low", "Mid", "High"))
+# 
+# ggplot(results_diff2_df, aes(y = comparison, x = mean_diff, xmin = lower_CI, xmax = upper_CI, color = income_group)) +
+#   geom_pointrange(position = position_dodge(width = 0.5)) +
+#   facet_wrap(~ outsourcing_status) +
+#   geom_vline(xintercept = 0, linetype = "dashed") +
+#   labs(title = "Differences in Predicted Probability by Ethnicity (within Outsourcing Status)",
+#        x = "Difference in Predicted Probability",
+#        y = "Ethnicity Comparison") +
+#   theme_minimal()
 
 
 ```
