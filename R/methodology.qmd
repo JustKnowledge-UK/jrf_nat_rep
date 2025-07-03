@@ -1899,7 +1899,6 @@ ems_df %>%
 
 ##### Ethnicity 21
 
-
 ```{r}
 #| output: false
 #| warning: false
@@ -2519,6 +2518,12 @@ We explored the interaction effect using targeted contrasts comparing
 1. The effect of outsourcing within each level of ethnicity
 2. The effect of each ethnicity versus "White British" within each level of outsourcing
 
+```{r}
+cell_count_thresh <- 10
+```
+
+We do not consider contrasts for which any cell count is less than `r cell_count_thresh`.
+
 ###### Post-hoc: Outsourcing within ethnicity
 
 ```{r}
@@ -2607,12 +2612,12 @@ bootstrap_predictions <- function(n_boot = 500) {
 # t2 <- Sys.time()
 # cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
 
-filepath <- here("Data","bootstrap1.rds")
+filepath <- here("Data","bootstrap1_1000.rds")
 if(!file.exists(filepath)){
 # Run bootstrap (this will take some time)
   cat("Running bootstrap... this may take a few minutes\n")
   t1 <- Sys.time()
-  boot_samples <- bootstrap_predictions(n_boot = 500)  
+  boot_samples <- bootstrap_predictions(n_boot = 1000)  
   t2 <- Sys.time()
   cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
   saveRDS(boot_samples, filepath)
@@ -2735,9 +2740,6 @@ if(nrow(difference_results) > 0) {
 
 # print(difference_results)
 
-difference_results_sig <- difference_results %>% 
-  filter(significant_bonferroni == TRUE)
-
 counts <- mod_data %>% 
   group_by(income_group, outsourcing_status, Ethnicity_collapsed) %>%
   summarise(
@@ -2751,31 +2753,36 @@ counts <- mod_data %>%
 difference_results2 <- difference_results %>% 
   left_join(counts, by = c("ethnicity", "income_level"))
 
-drop <- unique(difference_results2[which(difference_results2$n < 20),1])
+drop <- difference_results2[which(difference_results2$n < cell_count_thresh | is.na(difference_results2$n)),c("ethnicity","income_level")]
 
 difference_results3 <- difference_results %>%
-  filter(!(ethnicity %in% drop))
+  anti_join(drop, by = c("ethnicity", "income_level")) %>%
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))
+  ) 
 
+difference_results_sig <- difference_results3 %>%
+  filter(significant_bonferroni == TRUE) %>%
+  arrange(desc(ethnicity))
 
 ```
 
-Post-hoc analysis indicates that:
-
-- White British people are more likely to be in the low or mid income group, and less likely to be in the high income group, if they are outsourced compared to if they are not outsourced.
-- People of mixed ethnicity are more likely to be in low income group if they are outsourced compared to if they are not outsourced
-- People of 'other' ethnicity are more likely to be in low income group if they are outsourced compared to if they are not outsourced
+- `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced (note large confidence interval for this effect - see plot)
 
 ```{r}
 # Reshape data for plotting
-plot_data <- pred_results %>%
-  pivot_longer(cols = starts_with("prob_"), 
-               names_to = "income_level", 
-               values_to = "probability") %>%
-  mutate(income_level = gsub("prob_", "", income_level)) %>%
-  mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
-
-# Plot predicted probabilities
-# ggplot(plot_data, aes(x = Ethnicity_collapsed, y = probability, 
+# plot_data <- pred_results %>%
+#   pivot_longer(cols = starts_with("prob_"), 
+#                names_to = "income_level", 
+#                values_to = "probability") %>%
+#   mutate(income_level = gsub("prob_", "", income_level)) %>%
+#   mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
+# 
+# # Plot predicted probabilities
+# ggplot(plot_data, aes(x = Ethnicity_collapsed, y = probability,
 #                       fill = outsourcing_status)) +
 #   geom_bar(stat = "identity", position = "dodge") +
 #   facet_wrap(~income_level) +
@@ -2787,20 +2794,22 @@ plot_data <- pred_results %>%
 
 # Plot differences with confidence intervals
 
-ggplot(difference_results3, aes(x = ethnicity, y = prob_ratio)) +
+ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = significant_bonferroni)) +
   geom_point() +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+  geom_errorbar(aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
   facet_wrap(~income_level) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.x = element_text(hjust = 1),
+        legend.position = "none") +
   labs(
-    title = "Ethnic Group Differences in Predicted Probability (vs White British)",
+    title = "Ethnic Group Differences in Predicted Probability",
     subtitle = "Shown within each income level",
-    x = "Ethnic Group",
-    y = "Ratio of Predicted Probabilities",
-    caption = "Red line indicates no difference from not outsourced"
-)
+    x = "Ratio of Predicted Probabilities",
+    y = "",
+    caption = "Red line indicates no difference from not outsourced\nRed dots indicate significant effects"
+) +
+  scale_colour_manual(values = c("black","red"))
 
 ```
 
@@ -2851,6 +2860,7 @@ calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_s
 
         boot_diffs <- boot_diffs[!is.na(boot_diffs)]
         
+        
         if(length(boot_diffs) > 2) {
           # Log-transform for symmetric CI on ratio scale
           log_ratios <- log(boot_diffs)
@@ -2879,6 +2889,7 @@ calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_s
   do.call(rbind, results)
 }
 
+income_levels <- levels(mod_data$income_group)
 all_ethnicity_differences <- list()
 for(level in income_levels) {
   all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(pred_results, boot_samples, level)
@@ -2896,172 +2907,70 @@ if(nrow(ethnicity_diff_results) > 0) {
 }
 
 # print(ethnicity_diff_results)
-ethnicity_diff_results_sig <- ethnicity_diff_results %>% 
-  filter(significant_bonferroni == TRUE)
+
+counts <- mod_data %>% 
+  group_by(income_group, outsourcing_status, Ethnicity_collapsed) %>%
+  summarise(
+    n = n()
+  ) %>%
+  rename(
+    ethnicity = Ethnicity_collapsed,
+    income_level = income_group
+  )
+
+difference_results2 <- ethnicity_diff_results %>%
+  left_join(counts, by = c("ethnicity", "income_level","outsourcing_status"))
+
+drop <- difference_results2[which(difference_results2$n < cell_count_thresh | is.na(difference_results2$n)),c("outsourcing_status","ethnicity","income_level")]
+
+difference_results3 <- ethnicity_diff_results %>%
+  anti_join(drop, by = c("outsourcing_status", "ethnicity", "income_level")) %>%
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))
+  ) 
 
 
+difference_results_sig <- difference_results3 %>%
+  filter(significant_bonferroni == TRUE) %>%
+  arrange(desc(ethnicity))
 ```
 
 Comparing ethnicities within outsourcing status,
 
-- Non-outsourced Asian workers are more likely to be in the mid income group, and less likely to be in the high income group, than non-outsourced White British workers.
-- Non-outsourced people of 'other' ethnicity are less likely to be in the low income group than non-outsourced White British workers.
-- Outsourced workers of mixed ethnicity are more likely to be in the low income group than White British outsourced workers.
+- Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to White British people.
+- Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to White British people.
+- Among `r difference_results_sig$outsourcing_status[3]` workers, people of `r difference_results_sig$ethnicity[3]` ethnicity are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group compared to White British people.
+
 
 ```{r}
-if(nrow(ethnicity_diff_results) > 0) {
-  ggplot(ethnicity_diff_results, aes(x = ethnicity, y = prob_ratio)) +
-    geom_point(size = 2) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
-    geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
-    facet_grid(outsourcing_status ~ income_level) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          strip.text = element_text(face = "bold")) +
-    labs(
-      title = "Ethnic Group Differences in Predicted Probability (vs White British)",
-      subtitle = "Shown within each outsourcing status and income level",
-      x = "Ethnic Group",
-      y = "Ratio of Predicted Probabilities",
-      caption = "Red line indicates no difference from White British"
 
-    )
-}
+ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = significant_bonferroni)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  facet_grid(outsourcing_status ~ income_level) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1),
+        strip.text = element_text(face = "bold"),
+        legend.position = "none") +
+  labs(
+    title = "Ethnic Group Differences in Predicted Probability (vs White British)",
+    subtitle = "Shown within each outsourcing status and income level",
+    x = "Ratio of Predicted Probabilities",
+    y = "",
+    caption = "Red line indicates no difference from White British\nRed dots indicate significant effects"
+
+  ) +
+  scale_colour_manual(values = c("black","red")) 
+
 
 ```
 
 ##### Ethnicity 21
 
 ```{r}
-#| output: false
-#| warning: false
 #| message: false
-
-mod_data <- income_data %>%
-  filter(!is.na(Ethnicity_collapsed_disaggregated))
-  
-design <- svydesign(
-  ids = ~1,                             
-  weights = ~NatRepemployees,             
-  data = mod_data
-)
-
-# Step 2: Fit the model with quasibinomial family
-mod_svy1 <- svyglm(
-  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled,
-  design = design,
-  family = quasibinomial()
-)
-
-# Step 2: Fit the model with quasibinomial family
-mod_svy2 <- svyglm(
-  income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed_disaggregated,
-  design = design,
-  family = quasibinomial()
-)
-
-coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
-
-wald <- anova(mod_svy1,mod_svy2, method = "Wald")
-
-# F and p
-f <- round(wald[["Ftest"]] %>% as.numeric(),2)
-p <- wald[["p"]] %>% as.numeric()
-
-if(p < .001){
-  p = "< .001"
-} else{
-  p = paste0("= ",round(p,3))
-}
-
-# Degrees of freedom
-dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
-```
-
-A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
-
-```{r}
-labels <- c(
-  'Intercept',
-  'Outsourcing: Outsourced',
-  "Ethnicity: Irish",
-  "Ethnicity: Gypsy or Irish Traveller",
-  "Ethnicity: Roma",
-  "Ethnicity: Any other White background",
-  "Ethnicity: White and Black Caribbean",
-  "Ethnicity: White and Black African",
-  "Ethnicity: White and Asian",
-  "Ethnicity: Any other Mixed/Multiple ethnic background",
-  "Ethnicity: Indian",
-  "Ethnicity: Pakistani",
-  "Ethnicity: Bangladeshi",
-  "Ethnicity: Chinese",
-  "Ethnicity: Any other Asian background",
-  "Ethnicity: African",
-  "Ethnicity: Caribbean",
-  "Ethnicity: Any other Black, Black British, or Caribbean background",
-  "Ethnicity: Arab",
-  "Ethnicity: Any other ethnic group",
-  "Ethnicity: Don't think of myself as any of these",
-  "Ethnicity: Prefer not to say",
-  'Age',
-  'Gender: Female',
-  'Gender: Other',
-  'Gender: Prefer not to say',
-  "Education: Don't have degree",
-  "Education: Don't know",
-  'Region: East Midlands',
-  'Region: East of England',
-  'Region: North East',
-  'Region: North West',
-  'Region: Northern Ireland',
-  'Region: Scotland',
-  'Region: South East',
-  'Region: South West',
-  'Region: Wales',
-  'Region: West Midlands',
-  'Region: Yorkshire and the Humber',
-  'Migration: Arrived within the last year',
-  'Migration: Arrived within the last 3 years',
-  'Migration: Arrived within the last 5 years',
-  'Migration: Arrived within the last 10 years',
-  'Migration: Arrived within the last 15 years',
-  'Migration: Arrived within the last 20 years',
-  'Migration: Arrived within the last 30 years',
-  'Migration: Arrived more than 30 years ago',
-  'Migration: Prefer not to say',
-  "Interaction: Outsourced x Irish",
-  "Interaction: Outsourced x Gypsy or Irish Traveller",
-  "Interaction: Outsourced x Roma",
-  "Interaction: Outsourced x Any other White background",
-  "Interaction: Outsourced x White and Black Caribbean",
-  "Interaction: Outsourced x White and Black African",
-  "Interaction: Outsourced x White and Asian",
-  "Interaction: Outsourced x Any other Mixed/Multiple ethnic background",
-  "Interaction: Outsourced x Indian",
-  "Interaction: Outsourced x Pakistani",
-  "Interaction: Outsourced x Bangladeshi",
-  "Interaction: Outsourced x Chinese",
-  "Interaction: Outsourced x Any other Asian background",
-  "Interaction: Outsourced x African",
-  "Interaction: Outsourced x Caribbean",
-  "Interaction: Outsourced x Any other Black, Black British, or Caribbean background",
-  "Interaction: Outsourced x Arab",
-  "Interaction: Outsourced x Any other ethnic group",
-  "Interaction: Outsourced x Don't think of myself as any of these",
-  "Interaction: Outsourced x Prefer not to say"
-  )
-
-tab_model(mod_svy2, 
-          pred.labels = labels,
-          dv.labels = "Outsourcing",
-          show.r2 = FALSE,
-          show.ci = FALSE)
-```
-
-# 3-level
-
-```{r}
+#| output: false
 # Alternative for 3-level variable
 
 ethns_to_drop <- c("Don't think of myself as any of these", "Prefer not to say")
@@ -3143,7 +3052,8 @@ if(p < .001){
 
 ```
 
-A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
+
 
 ```{r}
 tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
@@ -3163,8 +3073,445 @@ tidy_mod %>%
   pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
 
-###### Post-hoc
+###### Post-hoc: Outsourcing within ethnicity
 
+```{r}
+#| message: false
+#| output: false
+#| 
+# Create prediction data 
+pred_data <- expand.grid(
+  outsourcing_status = levels(mod_data$outsourcing_status),
+  Ethnicity_collapsed_disaggregated = levels(mod_data$Ethnicity_collapsed_disaggregated),
+  Age = mean(mod_data$Age, na.rm = TRUE),
+  Gender = levels(mod_data$Gender)[1],
+  Has_Degree = levels(mod_data$Has_Degree)[1],
+  Region = levels(mod_data$Region)[1],
+  BORNUK_labelled = levels(mod_data$BORNUK_labelled)[1]
+)
+
+# Get predictions
+predictions <- predict(mod_svy2$fit, newdata = pred_data, type = "response")
+
+# Create results dataframe - much simpler!
+pred_results <- data.frame(
+  pred_data[, 1:2],
+  predictions
+)
+
+# Add prob_ prefix to column names for clarity
+income_levels <- levels(mod_svy2)
+prob_cols <- paste0("prob_", colnames(predictions))
+names(pred_results)[3:ncol(pred_results)] <- prob_cols
+  
+# Set up parallel backend (choose number of workers if needed)
+plan(multisession)  # Or plan(multisession, workers = 4)
+
+bootstrap_predictions <- function(n_boot = 500) {
+  library(survey)
+  library(svyVGAM)
+  
+  set.seed(1234)
+  boot_results <- future_lapply(1:n_boot, function(i) {
+    # Resample with replacement, respecting weights
+    n_obs <- nrow(mod_data)
+    boot_indices <- sample(
+      1:n_obs,
+      size = n_obs,
+      replace = TRUE,
+      prob = mod_data$NatRepemployees / sum(mod_data$NatRepemployees)
+    )
+    boot_data <- mod_data[boot_indices, ]
+    
+    # Create new survey design
+    boot_design <- svydesign(
+      ids = ~1,
+      weights = ~NatRepemployees,
+      data = boot_data
+    )
+    
+    # Refit model and predict
+    tryCatch({
+      boot_model <- svyVGAM::svy_vglm(
+        income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + 
+          Has_Degree + Region + BORNUK_labelled + 
+          outsourcing_status:Ethnicity_collapsed_disaggregated,
+        design = boot_design,
+        family = multinomial(refLevel = "Mid")
+      )
+      
+      boot_pred <- predict(boot_model$fit, newdata = pred_data, type = "response")
+      
+      boot_results_df <- data.frame(
+        pred_data[, 1:2],
+        boot_pred
+      )
+      
+      prob_cols <- paste0("prob_", colnames(boot_pred))
+      names(boot_results_df)[3:ncol(boot_results_df)] <- prob_cols
+      
+      return(boot_results_df)
+    }, error = function(e) {
+      return(NULL)
+    })
+  }, future.seed = TRUE)
+  
+  # Remove failed bootstrap samples
+  boot_results <- boot_results[!sapply(boot_results, is.null)]
+  return(boot_results)
+}
+
+# Run or load
+filepath <- here("Data", "bootstrap2.rds")
+if (!file.exists(filepath)) {
+  cat("Running bootstrap... this may take a few minutes\n")
+  boot_samples <- bootstrap_predictions(n_boot = 500)
+  saveRDS(boot_samples, filepath)
+} else {
+  cat("Loading previous bootstrap\n")
+  boot_samples <- readRDS(filepath)
+}
+
+  
+# Calculate confidence intervals
+calculate_boot_ci <- function(boot_samples, prob_cols) {
+  ci_results <- pred_results[, 1:2]  # Keep grouping variables
+  
+  for(col in prob_cols) {
+    # Extract this probability across all bootstrap samples
+    boot_probs <- sapply(boot_samples, function(x) {
+      if(is.null(x) || !col %in% names(x)) return(NA)
+      x[[col]]
+    })
+    
+    # Calculate percentile confidence intervals
+    ci_lower <- apply(boot_probs, 1, quantile, probs = 0.025, na.rm = TRUE)
+    ci_upper <- apply(boot_probs, 1, quantile, probs = 0.975, na.rm = TRUE)
+    
+    ci_results[[paste0(col, "_ci_lower")]] <- ci_lower
+    ci_results[[paste0(col, "_ci_upper")]] <- ci_upper
+  }
+  
+  return(ci_results)
+}
+
+# Get confidence intervals
+prob_cols <- names(pred_results)[grepl("^prob_", names(pred_results))]
+ci_results <- calculate_boot_ci(boot_samples, prob_cols)
+```
+
+```{r}
+#| message: false
+#| output: false
+
+# Function to calculate differences and their bootstrap CIs
+calculate_differences_with_ci <- function(pred_data, boot_samples, income_level) {
+  prob_col <- paste0("prob_", income_level)
+  # Get point estimates
+  ethnicity_groups <- split(pred_data, pred_data$Ethnicity_collapsed_disaggregated)
+  
+  results <- list()
+  
+  for(eth in names(ethnicity_groups)) {
+    group_data <- ethnicity_groups[[eth]]
+    
+    if(nrow(group_data) >= 2) {
+      outsourcing_levels <- levels(group_data$outsourcing_status)
+      
+      if(length(outsourcing_levels) == 2) {
+        # Point estimate of difference (level 2 - level 1)
+        prob_ratio <- group_data[group_data$outsourcing_status == outsourcing_levels[2], prob_col] / 
+              group_data[group_data$outsourcing_status == outsourcing_levels[1], prob_col]
+
+        
+        # Bootstrap differences
+        boot_ratios <- sapply(boot_samples, function(boot_data) {
+          if(is.null(boot_data) || !prob_col %in% names(boot_data)) return(NA)
+          boot_group <- boot_data[boot_data$Ethnicity_collapsed_disaggregated == eth, ]
+          if(nrow(boot_group) >= 2) {
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[2], prob_col] / 
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[1], prob_col]
+          } else {
+            NA
+          }
+        })
+        
+        # Remove NAs
+        boot_ratios <- boot_ratios[!is.na(boot_ratios)]
+        
+        if(length(boot_ratios) > 2) {  # Need sufficient bootstrap samples
+          # Log-transform for symmetric CI on ratio scale
+          log_ratios <- log(boot_ratios)
+          ci_lower <- exp(quantile(log_ratios, 0.025, na.rm = TRUE))
+          ci_upper <- exp(quantile(log_ratios, 0.975, na.rm = TRUE))
+          
+          p_value <- 2 * min(mean(log_ratios > 0, na.rm = TRUE), 
+                             mean(log_ratios < 0, na.rm = TRUE))
+
+          
+          results[[eth]] <- data.frame(
+            ethnicity = eth,
+            income_level = income_level,
+            prob_ratio = prob_ratio,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper,
+            p_value = p_value,
+            comparison = paste(outsourcing_levels[2], "vs", outsourcing_levels[1])
+          )
+        }
+      }
+    }
+  }
+  
+  do.call(rbind, results)
+}
+
+income_levels <- levels(mod_data$income_group)
+# Calculate differences for each income level
+all_differences <- list()
+for(level in income_levels) {
+  all_differences[[level]] <- calculate_differences_with_ci(pred_results, boot_samples, level)
+}
+
+difference_results <- do.call(rbind, all_differences)
+rownames(difference_results) <- NULL
+
+# Apply multiple comparison correction
+if(nrow(difference_results) > 0) {
+  difference_results$p_value_bonferroni <- p.adjust(difference_results$p_value, method = "bonferroni")
+  difference_results$p_value_fdr <- p.adjust(difference_results$p_value, method = "fdr")
+  difference_results$significant_bonferroni <- difference_results$p_value_bonferroni < 0.05
+  difference_results$significant_fdr <- difference_results$p_value_fdr < 0.05
+}
+
+# print(difference_results)
+
+counts <- mod_data %>% 
+  group_by(income_group, outsourcing_status, Ethnicity_collapsed_disaggregated) %>%
+  summarise(
+    n = n()
+  ) %>%
+  rename(
+    ethnicity = Ethnicity_collapsed_disaggregated,
+    income_level = income_group
+  )
+
+difference_results2 <- difference_results %>% 
+  left_join(counts, by = c("ethnicity", "income_level"))
+
+drop <- difference_results2[which(difference_results2$n < cell_count_thresh | is.na(difference_results2$n)),c("ethnicity","income_level")]
+
+difference_results3 <- difference_results %>%
+  anti_join(drop, by = c("ethnicity", "income_level")) %>%
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))
+  ) 
+
+
+difference_results_sig <- difference_results3 %>%
+  filter(significant_bonferroni == TRUE) %>%
+  arrange(desc(ethnicity))
+
+```
+
+- `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced
+- `r difference_results_sig$ethnicity[5]` workers are `r difference_results_sig$prob_ratio[5]` times as likely to be in the `r difference_results_sig$income_level[5]` group if they are outsourced compared to not-outsourced
+
+```{r}
+# Reshape data for plotting
+# plot_data <- pred_results %>%
+#   pivot_longer(cols = starts_with("prob_"), 
+#                names_to = "income_level", 
+#                values_to = "probability") %>%
+#   mutate(income_level = gsub("prob_", "", income_level)) %>%
+#   mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
+# 
+# # Plot predicted probabilities
+# ggplot(plot_data, aes(x = Ethnicity_collapsed_disaggregated, y = probability,
+#                       fill = outsourcing_status)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   facet_wrap(~income_level) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+#        x = "Ethnicity", y = "Predicted Probability",
+#        fill = "Outsourcing Status")
+
+# Plot differences with confidence intervals
+
+ggplot(difference_results3, aes(x = prob_ratio , y = ethnicity, colour = significant_bonferroni)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  facet_wrap(~income_level) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1),
+        legend.position = "none") +
+  labs(
+    title = "Ethnic Group Differences in Predicted Probability",
+    subtitle = "Shown within each income level",
+    x = "Ratio of Predicted Probabilities",
+    y = "",
+    caption = "Red line indicates no difference from not outsourced\nRed dots show significant effects"
+) +
+  scale_colour_manual(values = c("black","red"))
+
+```
+
+###### Post-hoc: Ethnicity within outsourcing
+
+```{r}
+calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_samples, income_level) {
+  prob_col <- paste0("prob_", income_level)
+
+  # Get point estimates
+  outsourcing_groups <- split(pred_data, pred_data$outsourcing_status)
+  
+  results <- list()
+  
+  for(out_group in names(outsourcing_groups)) {
+    group_data <- outsourcing_groups[[out_group]]
+    
+    # Reference group
+    ref_data <- group_data[group_data$Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British", ]
+    if(nrow(ref_data) == 0) next
+    
+    # Loop through other ethnicities
+    other_ethnicities <- setdiff(unique(group_data$Ethnicity_collapsed_disaggregated), "English / Welsh / Scottish / Northern Irish / British")
+    
+    for(eth in other_ethnicities) {
+      comp_data <- group_data[group_data$Ethnicity_collapsed_disaggregated == eth, ]
+      
+      if(nrow(comp_data) > 0) {
+        # Point estimate of difference (ethnicity - White British)
+        prob_ratio <- comp_data[[prob_col]] / ref_data[[prob_col]]
+
+        
+        # Bootstrap differences
+        boot_diffs <- sapply(boot_samples, function(boot_data) {
+          if(is.null(boot_data) || !prob_col %in% names(boot_data)) return(NA)
+          
+          boot_group <- boot_data[boot_data$outsourcing_status == out_group, ]
+          boot_ref <- boot_group[boot_group$Ethnicity_collapsed_disaggregated == "English / Welsh / Scottish / Northern Irish / British", ]
+          boot_eth <- boot_group[boot_group$Ethnicity_collapsed_disaggregated == eth, ]
+          
+          if(nrow(boot_ref) > 0 && nrow(boot_eth) > 0) {
+            boot_eth[[prob_col]] / boot_ref[[prob_col]]
+
+          } else {
+            NA
+          }
+        })
+
+        boot_diffs <- boot_diffs[!is.na(boot_diffs)]
+        
+        if(length(boot_diffs) > 2) {
+          # Log-transform for symmetric CI on ratio scale
+          log_ratios <- log(boot_diffs)
+          ci_lower <- exp(quantile(log_ratios, 0.025, na.rm = TRUE))
+          ci_upper <- exp(quantile(log_ratios, 0.975, na.rm = TRUE))
+          
+          p_value <- 2 * min(mean(log_ratios > 0, na.rm = TRUE), 
+                             mean(log_ratios < 0, na.rm = TRUE))
+
+          
+          results[[paste(out_group, eth, sep = "_")]] <- data.frame(
+            outsourcing_status = out_group,
+            ethnicity = eth,
+            income_level = income_level,
+            prob_ratio = prob_ratio,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper,
+            p_value = p_value,
+            comparison = paste(eth, "vs English / Welsh / Scottish / Northern Irish / British")
+          )
+        }
+      }
+    }
+  }
+
+  do.call(rbind, results)
+}
+
+all_ethnicity_differences <- list()
+for(level in income_levels) {
+  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(pred_results, boot_samples, level)
+}
+
+ethnicity_diff_results <- do.call(rbind, all_ethnicity_differences)
+rownames(ethnicity_diff_results) <- NULL
+
+# Apply multiple comparison correction
+if(nrow(ethnicity_diff_results) > 0) {
+  ethnicity_diff_results$p_value_bonferroni <- p.adjust(ethnicity_diff_results$p_value, method = "bonferroni")
+  ethnicity_diff_results$p_value_fdr <- p.adjust(ethnicity_diff_results$p_value, method = "fdr")
+  ethnicity_diff_results$significant_bonferroni <- ethnicity_diff_results$p_value_bonferroni < 0.05
+  ethnicity_diff_results$significant_fdr <- ethnicity_diff_results$p_value_fdr < 0.05
+}
+
+# print(ethnicity_diff_results)
+
+counts <- mod_data %>% 
+  group_by(income_group, outsourcing_status, Ethnicity_collapsed_disaggregated) %>%
+  summarise(
+    n = n()
+  ) %>%
+  rename(
+    ethnicity = Ethnicity_collapsed_disaggregated,
+    income_level = income_group
+  )
+
+
+difference_results2 <- ethnicity_diff_results %>%
+  left_join(counts, by = c("ethnicity", "income_level","outsourcing_status"))
+
+drop <- difference_results2[which(difference_results2$n < cell_count_thresh | is.na(difference_results2$n)),c("outsourcing_status","ethnicity","income_level")]
+
+difference_results3 <- ethnicity_diff_results %>%
+  anti_join(drop, by = c("outsourcing_status", "ethnicity", "income_level")) %>%
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))
+  ) 
+
+difference_results_sig <- difference_results3 %>%
+  filter(significant_bonferroni == TRUE) %>%
+  arrange(desc(ethnicity))
+
+```
+
+Comparing ethnicities within outsourcing status,
+
+- Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+- Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+- Among `r difference_results_sig$outsourcing_status[3]` workers, people of `r difference_results_sig$ethnicity[3]` ethnicity are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+- Among `r difference_results_sig$outsourcing_status[4]` workers, people of `r difference_results_sig$ethnicity[4]` ethnicity are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+- Among `r difference_results_sig$outsourcing_status[5]` workers, people of `r difference_results_sig$ethnicity[5]` ethnicity are `r difference_results_sig$prob_ratio[5]` times as likely to be in the `r difference_results_sig$income_level[5]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+
+```{r}
+#| height: 10
+ggplot(difference_results3, aes(x = prob_ratio , y = ethnicity, colour = significant_bonferroni)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  facet_grid(outsourcing_status ~ income_level) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1),
+        strip.text = element_text(face = "bold"),
+        legend.position = "none") +
+  labs(
+    title = "Ethnic Group Differences in Predicted Probability",
+    subtitle = "Shown within each outsourcing status and income level",
+    y = "",
+    x = "Ratio of Predicted Probabilities",
+    caption = "Red line indicates no difference from White British\nRed dots indicate significant effects"
+  ) +
+  scale_colour_manual(values = c("black","red"))
+
+
+```
 We explored the interaction effect using targeted contrasts comparing
 
 1. The effect of each ethnicity versus "White British" within each level of outsourcing
