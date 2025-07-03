@@ -2849,7 +2849,7 @@ Comparing ethnicities within outsourcing status,
 
 - Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to White British people.
 - Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to White British people.
-- Among `r difference_results_sig$outsourcing_status[3]` workers, people of `r difference_results_sig$ethnicity[3]` ethnicity are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group compared to White British people.
+
 
 
 ```{r}
@@ -3228,7 +3228,6 @@ difference_results_sig <- difference_results3 %>%
 - `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
 - `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
 - `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[5]` workers are `r difference_results_sig$prob_ratio[5]` times as likely to be in the `r difference_results_sig$income_level[5]` group if they are outsourced compared to not-outsourced
 
 ```{r}
 # Reshape data for plotting
@@ -3395,10 +3394,7 @@ difference_results_sig <- difference_results3 %>%
 Comparing ethnicities within outsourcing status,
 
 - Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to English / Welsh / Scottish / Northern Irish / British people.
-- Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to English / Welsh / Scottish / Northern Irish / British people.
-- Among `r difference_results_sig$outsourcing_status[3]` workers, people of `r difference_results_sig$ethnicity[3]` ethnicity are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group compared to English / Welsh / Scottish / Northern Irish / British people.
-- Among `r difference_results_sig$outsourcing_status[4]` workers, people of `r difference_results_sig$ethnicity[4]` ethnicity are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group compared to English / Welsh / Scottish / Northern Irish / British people.
-- Among `r difference_results_sig$outsourcing_status[5]` workers, people of `r difference_results_sig$ethnicity[5]` ethnicity are `r difference_results_sig$prob_ratio[5]` times as likely to be in the `r difference_results_sig$income_level[5]` group compared to English / Welsh / Scottish / Northern Irish / British people.
+
 
 ```{r}
 #| height: 10
