@@ -2459,13 +2459,24 @@ names(pred_results)[3:ncol(pred_results)] <- prob_cols
 # print(pred_results)
 
 # Bootstrap function for getting confidence intervals
+# Set up parallel backend (choose number of workers if needed)
+plan(multisession, workers = 12)  # Or plan(multisession, workers = 4)
+
 bootstrap_predictions <- function(n_boot = 500) {
+  library(survey)
+  library(svyVGAM)
   
-  boot_results <- replicate(n_boot, {
+  set.seed(1234)
+  boot_results <- future_lapply(1:n_boot, function(i) {
+    print(i)
     # Resample with replacement, respecting weights
     n_obs <- nrow(mod_data)
-    boot_indices <- sample(1:n_obs, size = n_obs, replace = TRUE, 
-                          prob = mod_data$NatRepemployees/sum(mod_data$NatRepemployees))
+    boot_indices <- sample(
+      1:n_obs,
+      size = n_obs,
+      replace = TRUE,
+      prob = mod_data$NatRepemployees / sum(mod_data$NatRepemployees)
+    )
     boot_data <- mod_data[boot_indices, ]
     
     # Create new survey design
@@ -2473,38 +2484,36 @@ bootstrap_predictions <- function(n_boot = 500) {
       ids = ~1,
       weights = ~NatRepemployees,
       data = boot_data
-    ) 
+    )
     
-    # Refit model
+    # Refit model and predict
     tryCatch({
       boot_model <- svyVGAM::svy_vglm(
         income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + 
-                       Has_Degree + Region + BORNUK_labelled + 
-                       outsourcing_status:Ethnicity_collapsed,
+          Has_Degree + Region + BORNUK_labelled + 
+          outsourcing_status:Ethnicity_collapsed,
         design = boot_design,
-        family = multinomial(refLevel = "Mid")  # Mid is reference
+        family = multinomial(refLevel = "Mid")
       )
       
-      # Get predictions
       boot_pred <- predict(boot_model$fit, newdata = pred_data, type = "response")
       
       boot_results_df <- data.frame(
         pred_data[, 1:2],
         boot_pred
       )
-
+      
       prob_cols <- paste0("prob_", colnames(boot_pred))
       names(boot_results_df)[3:ncol(boot_results_df)] <- prob_cols
-
+      
       return(boot_results_df)
     }, error = function(e) {
       return(NULL)
     })
-  }, simplify = FALSE)
+  }, future.seed = TRUE)
   
   # Remove failed bootstrap samples
   boot_results <- boot_results[!sapply(boot_results, is.null)]
-  
   return(boot_results)
 }
 
@@ -3006,7 +3015,7 @@ prob_cols <- paste0("prob_", colnames(predictions))
 names(pred_results)[3:ncol(pred_results)] <- prob_cols
   
 # Set up parallel backend (choose number of workers if needed)
-plan(multisession)  # Or plan(multisession, workers = 4)
+plan(multisession, workers = 12)  # Or plan(multisession, workers = 4)
 
 bootstrap_predictions <- function(n_boot = 500) {
   library(survey)
@@ -3063,10 +3072,10 @@ bootstrap_predictions <- function(n_boot = 500) {
 }
 
 # Run or load
-filepath <- here("Data", "bootstrap2.rds")
+filepath <- here("Data", "bootstrap2_1000.rds")
 if (!file.exists(filepath)) {
   cat("Running bootstrap... this may take a few minutes\n")
-  boot_samples <- bootstrap_predictions(n_boot = 500)
+  boot_samples <- bootstrap_predictions(n_boot = 1000)
   saveRDS(boot_samples, filepath)
 } else {
   cat("Loading previous bootstrap\n")
