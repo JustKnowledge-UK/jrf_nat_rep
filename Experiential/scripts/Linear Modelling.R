@@ -1,8 +1,10 @@
 library(readr)
 library(weights)
 library(dplyr)
+
+setwd("~/repos/JRF Nat Rep/Experiential")
 ## to reduce dataset further perform chi squared test on all variables by income_group
-data<-read_csv("../data/postx2_data.csv")
+data<-read_csv("data/2025-06-30 - clean_data_jrf_experiential.csv")
 #turn off scientific notation
 options(scipen=99)
 
@@ -14,7 +16,7 @@ data<-data %>%
 
 #perform chi squared tests on all variables by income_group
 
-# List of columns to loop through (excluding the 'Income_Group' column)
+# List of columns to loop through (excluding the 'income_group' column)
 columns_to_test <- c("Type_Of_Org", 
                      "Specific_Type_Of_Org",
                      "OutsourcedNonOL",
@@ -103,10 +105,10 @@ for (col in columns_to_test) {
     print(paste("Running Chi-square test for:", col))
     
     # Remove rows with missing values before running the test
-    clean_data <- na.omit(data[, c("Income_Group", col, "Outsourced")])
+    clean_data <- na.omit(data[, c("income_group", col, "Outsourced")])
     
     # Run the weighted chi-square test
-    chi_sq_result <- wtd.chi.sq(clean_data$Income_Group, clean_data[[col]], 
+    chi_sq_result <- wtd.chi.sq(clean_data$income_group, clean_data[[col]], 
                                 weight = clean_data$Outsourced, 
                                 na.rm = TRUE, 
                                 drop.missing.levels = TRUE, 
@@ -143,8 +145,8 @@ data<-data %>%
   select(-all_of(non_sig_vars$Variable))
 
 ##relevling for regressions
-data$Income_Group<-relevel(factor(data$Income_Group), ref = "Not low")
-data$Ethnicity_Collapsed<-relevel(factor(data$Ethnicity_Collapsed), ref = "White")
+data$income_group<-relevel(factor(data$income_group), ref = "Mid")
+data$Ethnicity_Collapsed<-relevel(factor(data$Ethnicity_Collapsed), ref = "White British")
 data$Sex<-relevel(factor(data$Sex), ref = "Male")
 
 #drop sex categories with low counts
@@ -216,10 +218,10 @@ head(data[rights_violations_vars])
 
 ##simple regressions
 
-summary(lm(data$Rights_Violations_Score ~ data$Income_Group)) #not significant
-summary(lm(data$Rights_Violations_Score ~ data$Ethnicity_Collapsed*data$Income_Group)) # Black people more likely to experience rights violations
-summary(lm(data$Rights_Violations_Score ~ data$Sex*data$Income_Group)) #no effect of low income
-summary(lm(data$Rights_Violations_Score ~ data$Sex*data$Ethnicity_Collapsed*data$Income_Group)) #no effect of low income
+summary(lm(data$Rights_Violations_Score ~ data$income_group)) #not significant
+summary(lm(data$Rights_Violations_Score ~ data$Ethnicity_Collapsed*data$income_group)) # Black people more likely to experience rights violations
+summary(lm(data$Rights_Violations_Score ~ data$Sex*data$income_group)) #no effect of low income
+summary(lm(data$Rights_Violations_Score ~ data$Sex*data$Ethnicity_Collapsed*data$income_group)) #no effect of low income
 
 
 ##### WHat Improvements ####
@@ -294,7 +296,7 @@ What_Improvements_Score.fit1<- (lm(What_Improvements_Score ~
                                     Sex +
                                     Ethnicity_Collapsed +
                                     BORNUK +
-                                    Income_Group, weights= Outsourced, data)) 
+                                    income_group, weights= Outsourced, data)) 
 
 summary(What_Improvements_Score.fit1) #significant
 export_summs(What_Improvements_Score.fit1, scale=TRUE, robust=TRUE)
@@ -307,7 +309,7 @@ What_Improvements_Score.fit2<- (lm(What_Improvements_Score ~
                                     Sex *
                                     Ethnicity_Collapsed +
                                     BORNUK +
-                                    Income_Group, weights= Outsourced,data)) 
+                                    income_group, weights= Outsourced,data)) 
 
 summary(What_Improvements_Score.fit2) #significant
 export_summs(What_Improvements_Score.fit2, scale=TRUE, robust=TRUE)
@@ -318,7 +320,7 @@ What_Improvements_Score.fit3<- (lm(What_Improvements_Score ~
                                      Age +
                                      Sex *
                                      Ethnicity_Collapsed *
-                                     Income_Group +
+                                     income_group +
                                      BORNUK, weights= Outsourced, data)) 
 
 summary(What_Improvements_Score.fit3) #significant
@@ -363,7 +365,7 @@ What_Improvements_Score.fitM <- lm(cbind(What_Improvements_Pay,
                                      Sex +
                                      Ethnicity_Collapsed +
                                      BORNUK +
-                                     Income_Group, weights = Outsourced,family = "binomial", data) 
+                                     income_group, weights = Outsourced,family = "binomial", data) 
 
 
 
@@ -376,7 +378,7 @@ What_Improvements_Score.fitPay <- glm(What_Improvements_Pay ~
                                         Sex +
                                         Ethnicity_Collapsed +
                                         BORNUK +
-                                        Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                        income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitPay) # Black people more likely to suggest pay improvements
 
@@ -386,7 +388,7 @@ What_Improvements_Score.fitMoreHours <- glm(What_Improvements_MoreHours ~
                                               Sex +
                                               Ethnicity_Collapsed +
                                               BORNUK +
-                                              Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                              income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitMoreHours) # Age and Sex(female) associated with lower likelihood of suggesting more hours. People who aaroved in the last year are much more likely
 
@@ -396,7 +398,7 @@ What_Improvements_Score.fitLessHours <- glm(What_Improvements_LessHours ~
                                               Sex +
                                               Ethnicity_Collapsed +
                                               BORNUK +
-                                              Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                              income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitLessHours) # Low pay associated with lower likelihood of suggesting less hours
 
@@ -406,7 +408,7 @@ What_Improvements_Score.fitMoreConsistency <- glm(What_Improvements_MoreConsiste
                                                     Sex +
                                                     Ethnicity_Collapsed +
                                                     BORNUK +
-                                                    Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                    income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitMoreConsistency) # Age associated with lower likelihood of suggesting more consistency. Being Black associated with higher likelihood (no other ethnic groups)
 
@@ -416,7 +418,7 @@ What_Improvements_Score.fitMoreFlexibility <- glm(What_Improvements_MoreFlexibil
                                                     Sex +
                                                     Ethnicity_Collapsed +
                                                     BORNUK +
-                                                    Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                    income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitMoreFlexibility) # Age associated with lower likelihood of suggesting more flexibility. Being Asian associated with higher likelihood
 
@@ -426,7 +428,7 @@ What_Improvements_Score.fitPartofInhouse <- glm(What_Improvements_PartofInhouse 
                                                   Sex +
                                                   Ethnicity_Collapsed +
                                                   BORNUK +
-                                                  Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                  income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitPartofInhouse) # Sex (female) associated with lower likelihood of wanting to be part of InHouse
 
@@ -436,7 +438,7 @@ What_Improvements_Score.fitPartofOutsourced <- glm(What_Improvements_PartofOutso
                                                      Sex +
                                                      Ethnicity_Collapsed +
                                                      BORNUK +
-                                                     Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                     income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitPartofOutsourced) #NA - although within last 20 years is sig
 
@@ -446,7 +448,7 @@ What_Improvements_Score.fitTreatment <- glm(What_Improvements_Treatment ~
                                               Sex +
                                               Ethnicity_Collapsed +
                                               BORNUK +
-                                              Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                              income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitTreatment) # NA
 
@@ -456,7 +458,7 @@ What_Improvements_Score.fitBetterTerms <- glm(What_Improvements_BetterTerms ~
                                                 Sex +
                                                 Ethnicity_Collapsed +
                                                 BORNUK +
-                                                Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitBetterTerms) # NA
 
@@ -466,7 +468,7 @@ What_Improvements_Score.fitEnforceRights <- glm(What_Improvements_EnforceRights 
                                                   Sex +
                                                   Ethnicity_Collapsed +
                                                   BORNUK +
-                                                  Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                                  income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitEnforceRights) # Age associated with lower likelihood of suggesting enforcing rights.
 
@@ -476,7 +478,7 @@ What_Improvements_Score.fitManagement <- glm(What_Improvements_Management ~
                                                Sex +
                                                Ethnicity_Collapsed +
                                                BORNUK +
-                                               Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                               income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitManagement) # Age and Low pay associated with lower likelihood of suggesting management improvements
 
@@ -486,7 +488,7 @@ What_Improvements_Score.fitAutonomy <- glm(What_Improvements_Autonomy ~
                                              Sex +
                                              Ethnicity_Collapsed +
                                              BORNUK +
-                                             Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                             income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitAutonomy) # Age and Sex associated with lower likelihood of suggesting autonomy improvements
 
@@ -496,7 +498,7 @@ What_Improvements_Score.fitUnion <- glm(What_Improvements_Union ~
                                           Sex +
                                           Ethnicity_Collapsed +
                                           BORNUK +
-                                          Income_Group, weights = Outsourced, family = "binomial", data = data) 
+                                          income_group, weights = Outsourced, family = "binomial", data = data) 
 
 summary(What_Improvements_Score.fitUnion) # Sex associated with lower likelihood of suggesting union improvements
 
@@ -507,7 +509,7 @@ Rights_Violations_Score.fit1<- (lm(Rights_Violations_Score ~
                                      Sex +
                                      Ethnicity_Collapsed +
                                      BORNUK +
-                                     Income_Group, weights = Outsourced, data)) 
+                                     income_group, weights = Outsourced, data)) 
 
 summary(Rights_Violations_Score.fit1) # some significant
 export_summs(Rights_Violations_Score.fit1, scale=TRUE, robust=TRUE)
@@ -520,7 +522,7 @@ Rights_Violations_Score.fit2<- (lm(Rights_Violations_Score ~
                                      Sex *
                                      Ethnicity_Collapsed +
                                      BORNUK +
-                                     Income_Group, weights = Outsourced, data)) 
+                                     income_group, weights = Outsourced, data)) 
 
 summary(Rights_Violations_Score.fit2) #some 
 
@@ -529,7 +531,7 @@ Rights_Violations_Score.fit3<- (lm(Rights_Violations_Score ~
                                      Age +
                                      Sex *
                                      Ethnicity_Collapsed *
-                                     Income_Group +
+                                     income_group +
                                      BORNUK, weights = Outsourced, data)) 
 
 summary(Rights_Violations_Score.fit3) #significant
@@ -555,7 +557,7 @@ Rights_Violations_Score.fitPaidOnTime <- glm(RightsViolations_Paid_On_Time ~
                                                Sex +
                                                Ethnicity_Collapsed +
                                                BORNUK +
-                                               Income_Group, 
+                                               income_group, 
                                              family = binomial, 
                                              weights = Outsourced,
                                              data = data)
@@ -568,7 +570,7 @@ Rights_Violations_Score.fitPaidCorrectAmount <- glm(RightsViolations_Paid_Correc
                                                       Sex +
                                                       Ethnicity_Collapsed +
                                                       BORNUK +
-                                                      Income_Group, 
+                                                      income_group, 
                                                     family = binomial, 
                                                     weights = Outsourced,
                                                     data = data)
@@ -581,7 +583,7 @@ Rights_Violations_Score.fitLeaveEntitlement <- glm(RightsViolations_Leave_Entitl
                                                      Sex +
                                                      Ethnicity_Collapsed +
                                                      BORNUK +
-                                                     Income_Group, 
+                                                     income_group, 
                                                    family = binomial, 
                                                    weights = Outsourced,
                                                    data = data)
@@ -594,7 +596,7 @@ Rights_Violations_Score.fitHolidayPay <- glm(RightsViolations_Holiday_Pay ~
                                                Sex +
                                                Ethnicity_Collapsed +
                                                BORNUK +
-                                               Income_Group, 
+                                               income_group, 
                                              family = binomial, 
                                              weights = Outsourced,
                                              data = data)
@@ -607,7 +609,7 @@ Rights_Violations_Score.fitSickPay <- glm(RightsViolations_Sick_Pay ~
                                             Sex +
                                             Ethnicity_Collapsed +
                                             BORNUK +
-                                            Income_Group, 
+                                            income_group, 
                                           family = binomial, 
                                           weights = Outsourced,
                                           data = data)
@@ -620,7 +622,7 @@ Rights_Violations_Score.fitPaySlip <- glm(RightsViolations_Pay_Slip ~
                                             Sex +
                                             Ethnicity_Collapsed +
                                             BORNUK +
-                                            Income_Group, 
+                                            income_group, 
                                           family = binomial, 
                                           weights = Outsourced,
                                           data = data)
@@ -633,7 +635,7 @@ Rights_Violations_Score.fitHealthSafety <- glm(RightsViolations_Health_Safety ~
                                                  Sex +
                                                  Ethnicity_Collapsed +
                                                  BORNUK +
-                                                 Income_Group, 
+                                                 income_group, 
                                                family = binomial, 
                                                weights = Outsourced,
                                                data = data)
@@ -647,7 +649,7 @@ Clarity.fit1<- (lm(Clarity_Overall_Mean ~
                                      Sex +
                                      Ethnicity_Collapsed +
                                      BORNUK +
-                                     Income_Group, weights = Outsourced, data)) 
+                                     income_group, weights = Outsourced, data)) 
 
 summary(Clarity.fit1) # some significant
 #summ(What_Improvements_Score.fit)
@@ -658,7 +660,7 @@ Clarity.fit2<- (lm(Clarity_Overall_Mean ~
                                      Sex *
                                      Ethnicity_Collapsed +
                                      BORNUK +
-                                     Income_Group, weights = Outsourced, data)) 
+                                     income_group, weights = Outsourced, data)) 
 
 summary(Clarity.fit2) #some 
 
@@ -671,7 +673,7 @@ Clarity.fit3<- (lm(Clarity_Overall_Mean ~
                                      Age +
                                      Sex *
                                      Ethnicity_Collapsed *
-                                     Income_Group +
+                                     income_group +
                                      BORNUK, weights = Outsourced, data)) 
 
 summary(Clarity.fit3) #significant
@@ -752,7 +754,7 @@ client_discrimination_age.fit<- (lm(Client_Discrimination_Age ~
                      Age +
                      Sex +
                      Ethnicity_Collapsed +
-                     Income_Group +
+                     income_group +
                      BORNUK, weights = Outsourced,data))
 
 summary(client_discrimination_age.fit) 
@@ -766,7 +768,7 @@ Client_Discrimination_Disability.fit<- (lm(Client_Discrimination_Disability ~
                                       Age +
                                       Sex +
                                       Ethnicity_Collapsed +
-                                      Income_Group +
+                                      income_group +
                                       BORNUK,weights = Outsourced, data)) 
 
 summary(Client_Discrimination_Disability.fit) 
@@ -778,7 +780,7 @@ Client_Discrimination_Nationality.fit<- (lm(Client_Discrimination_Nationality ~
                                              Age +
                                              Sex +
                                              Ethnicity_Collapsed +
-                                             Income_Group +
+                                             income_group +
                                              BORNUK, weights = Outsourced,data)) 
 
 summary(Client_Discrimination_Nationality.fit) 
@@ -790,7 +792,7 @@ Client_Discrimination_Ethnicity.fit<- (lm(Client_Discrimination_Ethnicity ~
                                               Age +
                                               Sex +
                                               Ethnicity_Collapsed +
-                                              Income_Group +
+                                              income_group +
                                               BORNUK, weights = Outsourced,data)) 
 
 summary(Client_Discrimination_Ethnicity.fit) 
@@ -802,7 +804,7 @@ Client_Discrimination_Sex.fit<- (lm(Client_Discrimination_Sex ~
                                             Age +
                                             Sex +
                                             Ethnicity_Collapsed +
-                                            Income_Group +
+                                            income_group +
                                             BORNUK, weights = Outsourced,data)) 
 
 summary(Client_Discrimination_Sex.fit) #not sig!?
@@ -869,7 +871,7 @@ Guaranteed_Hours.fit<- (polr(Guaranteed_Hours ~
                                       Age +
                                       Sex +
                                       Ethnicity_Collapsed +
-                                      Income_Group +
+                                      income_group +
                                       BORNUK, data, Hess=TRUE)) 
 
 summary(Guaranteed_Hours.fit) 
