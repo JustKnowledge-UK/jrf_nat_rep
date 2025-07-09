@@ -1691,9 +1691,7 @@ discrimination_vars <- list(
 )
 ```
 
-## Sex-based Discrimination Analysis
-
-This analysis examines reported experiences of sex-based discrimination among outsourced workers, comparing prevalence rates across demographic groups and employment characteristics. The analysis employs descriptive statistics to document discrimination frequencies and conducts cross-tabulations with key variables to identify patterns of differential treatment. Statistical tests assess the significance of observed associations, with particular attention to intersectional effects where sex-based discrimination may compound with other forms of disadvantage.
+## Sex-based Discrimination 
 
 ```{r discrimination-sex-analysis}
 #| fig-width: 12
@@ -1710,11 +1708,10 @@ sex_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-\[Interpretation placeholder\]
+The sex-based discrimination analysis reveals significant variation in discrimination experiences across demographic groups, with **Black workers** reporting the highest rates of sex-based discrimination (42.9% experienced discrimination), followed by **workers born outside the UK** (41.9%). **Asian workers** also face elevated rates (38.2%), while **female workers** report discrimination at 31.3%. The overall rate among all outsourced workers is 30.8%. Notably, **Black workers** show the lowest percentage reporting "Never" experiencing discrimination (57%), compared to the overall average of 69%, suggesting more pervasive experiences of sex-based discrimination within this group. The pattern indicates that **ethnicity and migration status intersect with gender** to create heightened vulnerability to discriminatory treatment.
 
-## Ethnicity-based Discrimination Analysis
+## Ethnicity-based Discrimination 
 
-This analysis examines reported experiences of ethnicity-based discrimination among outsourced workers, comparing prevalence rates across different ethnic groups and employment characteristics. The analysis employs descriptive statistics to document discrimination frequencies and conducts cross-tabulations with key demographic variables to identify patterns of differential treatment. Statistical tests assess the significance of observed associations, with particular attention to how ethnicity-based discrimination may intersect with other forms of disadvantage in outsourced work environments.
 
 ```{r discrimination-ethnicity-analysis}
 #| fig-width: 12
@@ -1731,11 +1728,10 @@ ethnicity_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-\[Interpretation placeholder\]
+The ethnicity-based discrimination analysis reveals **the highest discrimination rates** among all forms examined, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.3% respectively. **Asian workers** also face substantial discrimination (45.6%), while the overall rate among all outsourced workers is 30.0%. The data shows particularly concerning patterns for **Black workers**, with only 48% reporting "Never" experiencing ethnicity-based discrimination, compared to 70% overall. Similarly, **workers born outside the UK** show only 48% reporting "Never" experiencing discrimination. Notably, **Black workers** report the highest rates of frequent discrimination, with 24% experiencing it "Sometimes" and 10% "Often". This pattern suggests that **ethnicity-based discrimination is the most pervasive form of discrimination** faced by outsourced workers, with **Black workers and migrants** bearing the heaviest burden.
 
-## Age-based Discrimination Analysis
+## Age-based Discrimination 
 
-\[Analysis explanation placeholder\]
 
 ```{r discrimination-age-analysis}
 #| fig-width: 12
@@ -1752,11 +1748,10 @@ age_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-\[Interpretation placeholder\]
+The age-based discrimination analysis shows **moderate but significant discrimination rates** across demographic groups, with **Black workers** experiencing the highest rates (44.9%), followed by **workers born outside the UK** (44.1%). **Asian workers** report discrimination at 35.8%, while the overall rate among all outsourced workers is 35.2%. **Female workers** experience age-based discrimination at 34.6%. The data reveals that **Black workers** have the lowest percentage reporting "Never" experiencing discrimination (55%), compared to 65% overall. **Workers born outside the UK** also show elevated vulnerability with 56% reporting "Never" experiencing discrimination. Age-based discrimination appears to be **the second most common form of discrimination** after ethnicity-based discrimination, with **Black workers and migrants** again showing heightened exposure to discriminatory treatment.
 
-## Disability-based Discrimination Analysis
+## Disability-based Discrimination 
 
-\[Analysis explanation placeholder\]
 
 ```{r discrimination-disability-analysis}
 #| fig-width: 12
@@ -1773,11 +1768,11 @@ disability_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-\[Interpretation placeholder\]
+The disability-based discrimination analysis shows **lower but still significant discrimination rates** compared to other forms, with **workers born outside the UK** experiencing the highest rates (31.9%), followed by **Asian workers** (27.5%) and **Black workers** (25.1%). The overall rate among all outsourced workers is 22.5%, while **female workers** report the lowest rate at 20.0%. The data shows that **workers born outside the UK** have the lowest percentage reporting "Never" experiencing discrimination (68%), compared to 77% overall. Notably, **Asian workers** show relatively high rates of frequent discrimination, with 14% experiencing it "Sometimes" and 6% "Often". While disability-based discrimination is **the least prevalent form** among those examined, it still affects **nearly one in four outsourced workers overall**, with **migrant workers** showing particular vulnerability.
 
-## Nationality-based Discrimination Analysis
+## Nationality-based Discrimination 
 
-\[Analysis explanation placeholder\]
+
 
 ```{r discrimination-nationality-analysis}
 #| fig-width: 12
@@ -1794,7 +1789,7 @@ nationality_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-\[Interpretation placeholder\]
+The nationality-based discrimination analysis reveals **high discrimination rates** that mirror the ethnicity-based patterns, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.4% respectively. **Asian workers** face substantial discrimination at 43.1%, while the overall rate among all outsourced workers is 31.0%. **Female workers** report discrimination at 28.7%. The data shows that **Black workers** and **workers born outside the UK** both have only 48% reporting "Never" experiencing discrimination, compared to 69% overall. **Black workers** and **workers born outside the UK** also show the highest rates of frequent discrimination, with **Black workers** experiencing it "Sometimes" (24%) and "Often" (7%), while **workers born outside the UK** report similar patterns (21% "Sometimes", 8% "Often"). The pattern confirms that **nationality-based discrimination closely parallels ethnicity-based discrimination**, suggesting these forms of discrimination are **interconnected and particularly target migrant workers and ethnic minorities**.
 
 # Clarity Questions Analysis
 
