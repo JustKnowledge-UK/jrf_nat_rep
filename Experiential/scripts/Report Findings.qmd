@@ -25,13 +25,17 @@ execute:
 number-sections: true
 ---
 
-# Overview
+# Study 2 Overview
 
-[Analysis explanation placeholder]
+Analysis from Study 2 appearing in \[NAME OF REPORT\] primarily employs a descriptive approach to understand the data. We conducted several cross-tabulations focusing on key demographic variables including Migration Status, Low Pay, and Ethnicity.
+
+Due to the extensive number of variables examined, these cross-tabulations are not reproduced in this document. However, researchers can easily recreate these analyses by running the “Crosstabulations.qmd” script available in the GitHub repository associated with this project (see \@reproducibility). The repository contains all necessary data files and code to replicate our findings.
+
+For brevity this document only focuses on the findings which are reported (and/or closely related)
 
 # Data Setup
 
-[Data processing explanation placeholder]
+Data used for these analysis can be reproduced by runing the data cleaning file in the repository \[link/name\]. The data was then split into two datasets, one containing income outliers and one with income outliers removed. The no outliers dataset is used in any analyses which include pay related variables. The outlier exclusion criteria are the same as those in Study 1. In this dataset 10.1% (183) cases are removed in the no outlier dataset.
 
 ```{r setup}
 library(tidyverse)
@@ -64,9 +68,9 @@ cat("Income outliers removed:", nrow(data) - nrow(data_no_income_outliers),
     "(", round((nrow(data) - nrow(data_no_income_outliers))/nrow(data)*100, 1), "%)\n\n")
 ```
 
-# Pay Comparison Analysis
+# Pay Comparison
 
-[Analysis explanation placeholder]
+First we explore subjective perceptions of Pay, where participants selected whether they believed they were paid more or less than inhouse workers. The analysis is conducted using simple crosstabulations across key demographic variables; Sex, Age, Eethnicity, Region, Income group (e.g. High, Low or Middle), Education Band (High, Low, Middle) and Place of Birth (UK, Not UK)
 
 ```{r pay-comparison-cross}
 
@@ -83,11 +87,11 @@ Paid_Less_Cross <- crosstable(data_no_income_outliers %>%
 Paid_Less_Cross
 ```
 
-[Interpretation placeholder]
+The pay comparison analysis reveals several notable demographic patterns in perceived pay inequality among outsourced workers. **Sex differences** are evident, with men more likely to report being paid more than in-house workers (31.77%) compared to women (21.35%), while women more frequently report no pay difference (52.25% vs 42.25%). **Age patterns** show that those reporting higher pay tend to be younger (mean age 35.7 years) compared to those reporting lower pay (mean age 38.5 years). **Education disparities** are striking, with highly educated workers much more likely to report being paid more (32.47%) compared to those with low education (16.15%). **Place of birth** differences emerge, with workers not born in the UK more likely to report being paid more (33.41%) than UK-born workers (24.98%), though they also report higher rates of being paid less (21.18% vs 16.06%). **Income group patterns** show that high-income workers are most likely to report being paid more (32.74%), while low-income workers show the highest rates of uncertainty about their pay situation (12.47% "don't know").
 
-# Work Preferences Analysis
+# Work Preferences
 
-[Analysis explanation placeholder]
+Next we explore simple counts/percentages of Outsourced workers preferences for in-house vs outsourced work.
 
 ```{r work-preferences}
 work_pref_table <- data %>%
@@ -108,11 +112,11 @@ work_pref_table <- data %>%
 work_pref_table
 ```
 
-[Interpretation placeholder]
+The work preferences data show that the largest group of outsourced workers (39.6%) express no preference between in-house and outsourced employment. However, among those with preferences, there is a clear preference for in-house work, with 32.1% preferring in-house positions (16.3% strongly + 15.8% prefer) compared to 17.9% preferring outsourced work (6.9% strongly + 11.0% prefer).
 
-# Job Motivation Analysis
+# Job Motivation
 
-[Analysis explanation placeholder]
+This analysis examines the motivational factors that influence outsourced workers' decisions to remain in their current roles. Using a descriptive approach, we present the frequency and percentage distribution of responses across eleven distinct motivational categories, ranging from intrinsic factors (job satisfaction, workplace culture) to extrinsic factors (pay, location convenience) and personal circumstances (health conditions, caregiving responsibilities).
 
 ```{r job-motivation-setup}
 
@@ -207,11 +211,11 @@ why_job_table
 why_job_plot
 ```
 
-[Interpretation placeholder]
+The job motivation analysis reveals the key factors driving outsourced workers' employment decisions. **Practical considerations dominate**, with job location convenience being the most frequently cited reason (41.2%), followed closely by pay satisfaction (40.7%) and intrinsic job satisfaction (40.1%). **Social factors** also play a significant role, with over one-third (35.9%) citing positive relationships with colleagues. **Flexibility**, often assumed to be a primary motivation for outsourced work, ranks fifth at 32.0%. **Workplace culture** is important to just over a quarter (27.7%) of workers. **Necessity-driven motivations** are less common but notable, with 24.1% stating this was the best job available and 23.6% viewing it as a stepping stone for skill development. **Personal circumstances** account for smaller proportions: 14.6% balance the job with caregiving responsibilities, 13.0% manage health conditions, and only 9.0% remain due to qualification constraints (although it is possible that social desirability is playing a role in participants willingness to respond to questions about their level of qualifications).
 
-# Pros and Cons Analysis
+# Pros and Cons of Outsourced Work
 
-[Analysis explanation placeholder]
+Here we explore outsourced workers' comparative assessments of their employment conditions relative to hypothetical in-house positions. Participants rated fourteen distinct workplace dimensions on a scale ranging from "less/worse" to "more/better" compared to in-house workers.
 
 ```{r pros-cons-setup}
 #| fig-width: 12
@@ -257,8 +261,9 @@ pros_cons_labels <- data.frame(
   Variable = c("Pros_And_Cons_Flexibility", "Pros_And_Cons_Pay", "Pros_And_Cons_Hours", 
                "Pros_And_Cons_Holiday", "Pros_And_Cons_Terms", "Pros_And_Cons_Promotion",
                "Pros_And_Cons_Training", "Pros_And_Cons_Security", "Pros_And_Cons_Treatment",
-               "Pros_And_Cons_Specialisation", "Pros_And_Cons_Connection", "Pros_And_Cons_FeelInvested",
-               "Pros_And_Cons_Rights", "Pros_And_Cons_HealthSafety"),
+               "Pros_And_Cons_Specialisation", "Pros_And_Cons_Connection",
+               "Pros_And_Cons_FeelInvested","Pros_And_Cons_Rights", 
+               "Pros_And_Cons_HealthSafety"),
   Label = c("Get to work flexibly", "Pay", "Access to secure working hours",
             "Holiday leave", "Terms and conditions", "Opportunity to progress / promotion",
             "Access to training / development", "Access to job security", "Treatment compared to in-house colleagues",
@@ -343,11 +348,15 @@ pros_cons_plot <- ggplot(pros_cons_data, aes(x = Percentage, y = Variable, fill 
 pros_cons_plot
 ```
 
-[Interpretation placeholder]
+The pros and cons analysis reveals significant areas of disadvantage for outsourced workers compared to hypothetical in-house positions. **Career development emerges as the most problematic area**, with 24% reporting worse opportunities for progression/promotion and 20% citing reduced access to training and development. **Job security concerns** are similarly prominent, with 20% reporting worse access to job security. **Workplace relationships and engagement** show notable deficits, with 19% feeling less connected to colleagues and 17% feeling less invested in their role. **Workers' rights and voice** present challenges, with 19% finding it harder to assert rights at work.
 
-# Negative Outcomes Analysis
+**Flexibility stands out as a key advantage**, with 41.8% reporting better flexibility compared to only 14.2% reporting worse flexibility - making it the strongest positive aspect of outsourced work. **Pay perceptions are mixed**, with 17% reporting worse pay, though this varies significantly by demographic group as shown in the earlier analysis.
 
-[Analysis explanation placeholder]
+**The overall pattern** shows that while outsourced workers may benefit from increased flexibility, they face systematic disadvantages in career development, job security, workplace relationships, and employee voice. Most concerning is that career progression and training opportunities - crucial for long-term economic mobility - rank as the most problematic areas for outsourced workers.
+
+# Cumnulative Burden
+
+This analysis quantifies the cumulative burden of negative work experiences among outsourced workers by transforming categorical responses from the pros and cons analysis into numerical scores (-1 for negative, 0 for neutral, +1 for positive). We calculate the total number of negative outcomes per respondent across all fourteen workplace dimensions and examine the distribution of these counts within the sample. The analysis includes a focused examination of workers who report being paid less than in-house colleagues, investigating whether pay disadvantage is associated with broader patterns of workplace disadvantage.
 
 ```{r negative-outcomes-processing}
 #| fig-width: 10
@@ -379,7 +388,8 @@ data <- data %>%
 data<- data %>%
   mutate(
     total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
-    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE)
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE),
+    num_neg_excl_pay = rowSums(dplyr::select(., contains("_numeric"), -Pros_And_Cons_Pay_numeric) == -1, na.rm = TRUE)
   ) %>%
   # Create meaningful categories (same as Quarto file)
   mutate(neg_category = case_when(
@@ -389,6 +399,15 @@ data<- data %>%
     num_neg == 3 ~ "3",
     num_neg == 4 ~ "4",
     num_neg >= 5 ~ "5+"
+  )) %>%
+  # Create categories excluding pay for the paid less analysis
+  mutate(neg_category_excl_pay = case_when(
+    num_neg_excl_pay == 0 ~ "0",
+    num_neg_excl_pay == 1 ~ "1",
+    num_neg_excl_pay == 2 ~ "2",
+    num_neg_excl_pay == 3 ~ "3",
+    num_neg_excl_pay == 4 ~ "4",
+    num_neg_excl_pay >= 5 ~ "5+"
   )) %>%
   # Create readable categories for display
   mutate(
@@ -483,6 +502,7 @@ negative_outcomes_plot <- ggplot(negative_outcomes_summary,
 
 negative_outcomes_plot
 ```
+The negative outcomes analysis reveals the cumulative burden of workplace disadvantages among outsourced workers. **The distribution shows significant polarization**: 38.5% of workers report no negative outcomes, while 23.6% experience five or more negative outcomes across the fourteen workplace dimensions (mean = 2.51, median = 1).
 
 ```{r negative-outcomes-paid-less}
 #| fig-width: 10
@@ -492,28 +512,32 @@ negative_outcomes_plot
 
 #Percentage of people reportring they are paid less and number of negative outcomes
 
-# Filter for people paid less and create negative categories
+# Filter for people paid less and create negative categories (excluding pay)
 paid_less_group <- data %>%
   filter(Pros_And_Cons_Pay == 'I get paid less') %>%
-  count(neg_category) %>%
+  count(neg_category_excl_pay) %>%
   mutate(percent = (n / sum(n)) * 100)
 
 # Create the bar plot for paid less group
-ggplot(paid_less_group, aes(x = neg_category, y = percent, fill = neg_category)) +
+ggplot(paid_less_group, aes(x = neg_category_excl_pay, y = percent, fill = neg_category_excl_pay)) +
   geom_bar(stat = "identity", alpha = 0.8) +
   geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
-  labs(title = "Percentage of People Who Say They Are Paid Less Reporting Negative Responses",
-       x = "Number of Negative Responses (-1s)",
+  labs(title = "Additional Negative Outcomes for People Who Say They Are Paid Less",
+       subtitle = "Excluding pay disadvantage (showing additional workplace problems)",
+       x = "Number of Additional Negative Responses (beyond pay)",
        y = "Percentage of People Paid Less") +
   scale_fill_brewer(palette = "Reds") +
   theme_minimal()
 ```
+**Most striking is the relationship between pay disadvantage and cumulative negative outcomes.** Among workers who report being paid less than in-house colleagues, **96.4% experience at least one additional negative outcome beyond pay** - only 3.6% report pay disadvantage as an isolated issue. The concentration of negative outcomes among this group is severe: **69.7% experience five or more total negative outcomes** compared to just 23.6% in the overall population - nearly a threefold difference.
 
-[Interpretation placeholder]
+**The pattern suggests that pay disadvantage rarely occurs in isolation** but is typically accompanied by broader workplace disadvantages. Workers reporting pay disadvantage show dramatically higher rates of multiple negative outcomes (10.1% have 4+ negatives vs 7.4% overall), indicating that pay inequity is a marker of comprehensive workplace disadvantage rather than an isolated issue.
 
 # Statistical Analysis
 
-[Analysis explanation placeholder]
+Continuing the analysis of pros and cons of outsourced working his section presents descriptive analysis of mean negative outcomes across demographic groups, followed by regression modeling to identify significant predictors. The analysis compares Poisson, linear, and negative binomial regression models using fit statistics (AIC, deviance, RMSE) to select the best-fitting model. Results are presented through a model comparison table, coefficients table with rate ratios and confidence intervals, forest plot visualization of rate ratios, and predicted values for different income groups. The analysis identifies which demographic characteristics are associated with higher rates of negative workplace outcomes among outsourced workers.
+
+The statistical analysis reveals significant demographic predictors of negative workplace outcomes among outsourced workers. **Model selection favoured negative binomial regression** due to overdispersion (ratio = 3.387), with this model showing the best fit (AIC = 6519.5) compared to Poisson (AIC = 8173.4) and linear models (AIC = 7700.3).
 
 ```{r statistical-analysis-setup}
 #| fig-width: 12
@@ -606,13 +630,11 @@ full_poisson <- glm(num_neg ~ income_group + Ethnicity_Collapsed + Sex +
                    Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
                    data = regression_data, 
                    family = poisson)
-summary(full_poisson)
 
 # Linear regression with all demographics  
 full_linear <- lm(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
                  Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
                  data = regression_data)
-summary(full_linear)
 
 # Check for overdispersion in Poisson model
 overdispersion_ratio <- full_poisson$deviance / full_poisson$df.residual
@@ -714,15 +736,21 @@ forest_plot <- coefficients_df %>%
   )
 
 forest_plot
+```
+**Education emerges as the strongest predictor**, with both mid-education (rate ratio = 0.738) and low-education workers (rate ratio = 0.649) experiencing significantly fewer negative outcomes than highly educated workers. This counterintuitive finding suggests that **higher education may increase expectations or awareness of workplace disadvantages** rather than protecting against them.
 
-# 1.6 Predicted Values by Group
+**Place of birth shows significant effects**, with workers not born in the UK experiencing 38% more negative outcomes (rate ratio = 1.38) compared to UK-born workers, while those preferring not to disclose birth status report 56% fewer negative outcomes (rate ratio = 0.436).  **Descriptive patterns show** that workers not born in the UK have the highest mean negative outcomes (3.2), while those born in the UK average 2.33 negative outcomes.
 
-# Check which variables are actually in the regression data
-cat("Variables in regression_data:\n")
-print(names(regression_data))
-cat("\nVariables in best_model:\n")
-print(names(best_model$model))
+**Ethnicity shows some variation**, with Black/African/Caribbean workers reporting 24% fewer negative outcomes than White British workers (rate ratio = 0.761).
 
+**Gender differences are evident**, with female workers experiencing 21% fewer negative outcomes than male workers (rate ratio = 0.789). **Age shows a protective effect**, with each additional year associated with slightly fewer negative outcomes (rate ratio = 0.994).
+
+**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). 
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
 # Create prediction data with proper error handling
 predicted_data <- expand_grid(
   income_group = levels(factor(regression_data$income_group)),
@@ -766,11 +794,12 @@ predicted_plot <- predicted_data %>%
 predicted_plot
 ```
 
-[Interpretation placeholder]
+**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). **The predicted values plot demonstrates this income effect more clearly** by holding all other demographic variables constant. Under these controlled conditions, the model predicts that high-income workers will experience approximately 2.14 negative outcomes compared to 2.75 for mid-income workers and 3.56 for low-income workers - a reduction of 0.61 and 1.42 (respoectively) negative outcomes purely attributable to income level.
 
-# Work Conditions Analysis
 
-[Analysis explanation placeholder]
+# Work Conditions
+
+This analysis examines specific employment conditions that characterize outsourced work arrangements, focusing on five key dimensions: guaranteed hours, notice periods for working schedules, advance warning of shift cancellations, compensation for cancelled shifts, and sick pay provision. The analysis presents descriptive statistics for each condition and conducts cross-tabulations with demographic variables to identify potential disparities in work conditions across different groups. Statistical tests (chi-square or Fisher's exact tests) are employed to assess the significance of observed associations, with effect sizes calculated using Cramér's V.
 
 ```{r work-conditions-setup}
 #| fig-width: 10
@@ -781,10 +810,6 @@ predicted_plot
 # Variables to analyze:
 work_variables <- c("Guaranteed_Hours", "Notice_Of_Working_Hours", "Notice_Of_Cancelled_Shifts", 
                    "Cancelled_Shift_Pay", "Sick_Pay")
-
-# Examine the response categories for each variable
-cat("Response categories for each work variable:\n")
-cat("==========================================\n")
 
 for (var in work_variables) {
   cat("\n", var, ":\n")
@@ -845,8 +870,7 @@ for (var in work_variables) {
   work_tables[[var]] <- work_table
   
   # Print table
-  cat("\n", variable_labels[var], "Distribution:\n")
-  print(work_table)
+  #print(work_table)
 }
 
 # Create visualizations for each variable
@@ -915,7 +939,6 @@ work_summary_table <- work_summary_stats %>%
   theme_vanilla() %>%
   autofit()
 
-cat("\nSummary of Work Conditions Variables:\n")
 work_summary_table
 
 ## Cross-tabulation: Notice of Working Hours by Income Group
@@ -1002,8 +1025,7 @@ if(min_expected >= 5) {
 contingency_table <- table(data$Notice_Of_Working_Hours_Simplified, 
                           data$Ethnicity_Collapsed)
 
-cat("\nContingency Table:\n")
-print(contingency_table)
+#print(contingency_table)
 
 # Fisher's exact test (appropriate when chi-square assumptions violated)
 fisher_results <- fisher.test(contingency_table, simulate.p.value = TRUE, B = 10000)
@@ -1029,7 +1051,6 @@ fisher_summary <- data.frame(
 )
 
 # Display results
-cat("\nFisher's Exact Test Results:\n")
 print(fisher_summary)
 
 # Post-hoc analysis assessment
@@ -1186,7 +1207,6 @@ if(min_expected_hours >= 5) {
 contingency_table_hours <- table(data$Guaranteed_Hours, 
                                 data$Ethnicity_Collapsed)
 
-cat("\nContingency Table:\n")
 print(contingency_table_hours)
 
 # Fisher's exact test (appropriate when chi-square assumptions violated)
@@ -1340,11 +1360,17 @@ if(fisher_results_hours$p.value < 0.05) {
 }
 ```
 
-[Interpretation placeholder]
+The work conditions analysis reveals varying degrees of job security and workplace protections among outsourced workers. **Hour guarantees show moderate security**, with 53.6% having 35+ hour contracts, though 6.0% work zero-hours contracts and 23.9% have part-time guarantees (1-24 hours). **Income disparities are stark in hour guarantees**: low-income workers face zero-hours contracts at triple the rate (12.0%) compared to high-income (3.7%) and mid-income workers (4.3%), while only 15.8% of low-income workers have 35+ hour guarantees versus 64.5% of high-income workers.
 
-# Rights Violations Analysis
+**Scheduling predictability presents challenges**, with 40.3% of workers receiving less than one week's notice of working hours, while 28.7% receive one week or more notice. **Shift cancellations affect a significant minority**, with 22.4% experiencing cancelled shifts. **Compensation for cancelled shifts shows concerning patterns**: among those experiencing cancellations, 22.6% receive no pay, 45.3% receive partial compensation (1-49%), and only 32.2% receive most or full pay (50-100%).
 
-[Analysis explanation placeholder]
+**Sick pay provision is mixed**, with half (50.6%) receiving full usual pay when sick, but 14.5% having no sick pay access and 13.8% limited to statutory minimum (£116.75/week). **Uncertainty about entitlements** affects 6.3% who don't know their sick pay rights.
+
+**The overall pattern suggests a two-tier system** where higher-income outsourced workers enjoy more stable conditions (guaranteed hours, better scheduling predictability) while lower-income workers face greater insecurity through zero-hours contracts and unpredictable scheduling. This stratification within outsourced work creates differential vulnerabilities across income groups.
+
+# Rights Violations
+
+This analysis examines reported workplace rights violations among outsourced workers, focusing on the prevalence and nature of violations across different categories. The analysis employs descriptive statistics to document the frequency of various rights violations and explores demographic correlates of violation experiences. Cross-tabulations with key variables (income group, ethnicity, employment type) are conducted to identify vulnerable populations, with statistical significance assessed through appropriate tests and effect sizes calculated where applicable.
 
 ```{r rights-violations-setup}
 #| fig-width: 10
@@ -1373,6 +1399,9 @@ rights_violations_mapping <- data.frame(
     "RightsViolations_Health_Safety"
   )
 )
+
+# Define rights variables for analysis
+rights_vars <- rights_violations_mapping$Variable
 
 # Count responses for each rights violation (excluding NAs)
 rights_violations_counts <- data.frame(
@@ -1441,7 +1470,6 @@ rights_violations_table <- rights_violations_counts %>%
 
 rights_violations_table
 
-
 # Create a custom function to recode experiences
 # Regular rights violations are coded as -1 (negative)
 # "None" responses are coded as +1 (positive)
@@ -1462,47 +1490,6 @@ recode_rights_experiences <- function(x, is_none_column = FALSE) {
   }
 }
 
-# DIAGNOSTIC: Check raw rights violation variables first
-cat("\n=== DIAGNOSTIC: Raw Rights Violations Data ===\n")
-rights_vars <- c("RightsViolations_Paid_On_Time", "RightsViolations_Paid_Correct_Amount", 
-                 "RightsViolations_Leave_Entitlement", "RightsViolations_Holiday_Pay",
-                 "RightsViolations_Sick_Pay", "RightsViolations_Pay_Slip", 
-                 "RightsViolations_Health_Safety", "RightsViolations_None")
-
-for(var in rights_vars) {
-  if(var %in% names(data)) {
-    non_na_count <- sum(!is.na(data[[var]]))
-    total_count <- nrow(data)
-    pct <- round(non_na_count / total_count * 100, 1)
-    cat(var, "- Non-NA responses:", non_na_count, "(", pct, "%)\n")
-    
-    # Show unique values for first few variables
-    if(var %in% rights_vars[1:3]) {
-      cat("  Unique values:", paste(unique(data[[var]]), collapse = ", "), "\n")
-    }
-  }
-}
-
-# Quick comparison with earlier method
-cat("\n=== COMPARISON: Simple Counting Method ===\n")
-simple_counts <- data.frame(
-  Variable = rights_vars[1:7],  # Exclude "None"
-  Count = numeric(7),
-  Percentage = numeric(7)
-)
-
-for(i in 1:7) {
-  var_name <- rights_vars[i]
-  if(var_name %in% names(data)) {
-    count <- sum(!is.na(data[[var_name]]))
-    percentage <- round(count / nrow(data) * 100, 1)
-    simple_counts[i, "Count"] <- count
-    simple_counts[i, "Percentage"] <- percentage
-  }
-}
-print(simple_counts)
-cat("\n")
-
 # Process the data - create numeric columns for rights variables
 rights_data <- data %>%
   # Recode regular rights violations
@@ -1520,49 +1507,6 @@ rights_data <- data %>%
     OutsourcedNonOL, BORNUK
   )
 
-# DIAGNOSTIC: Check the recoding results
-cat("=== DIAGNOSTIC: After Recoding ===\n")
-numeric_rights_vars <- paste0(rights_vars[1:7], "_numeric")
-for(var in numeric_rights_vars) {
-  if(var %in% names(rights_data)) {
-    neg_ones <- sum(rights_data[[var]] == -1, na.rm = TRUE)
-    zeros <- sum(rights_data[[var]] == 0, na.rm = TRUE)
-    ones <- sum(rights_data[[var]] == 1, na.rm = TRUE)
-    cat(var, "- (-1s):", neg_ones, ", (0s):", zeros, ", (1s):", ones, "\n")
-  }
-}
-
-# Show sample of original vs recoded for first variable
-cat("\nSample comparison (first 10 rows, first rights variable):\n")
-sample_comparison <- rights_data[1:10, c("RightsViolations_Paid_On_Time", "RightsViolations_Paid_On_Time_numeric")]
-print(sample_comparison)
-
-# COMPARISON: How do our results compare to the earlier bar chart analysis?
-cat("\n=== COMPARISON: Current Method vs Earlier Analysis ===\n")
-cat("Earlier horizontal bar chart percentages (from lines 1265-1268):\n")
-for(i in 1:7) {
-  var_name <- rights_vars[i]
-  if(var_name %in% names(data)) {
-    earlier_count <- sum(!is.na(data[[var_name]]))
-    earlier_pct <- round(earlier_count / nrow(data) * 100, 1)
-    
-    # Current method count (people with -1 in this variable)
-    numeric_var <- paste0(var_name, "_numeric")
-    if(numeric_var %in% names(rights_data)) {
-      current_count <- sum(rights_data[[numeric_var]] == -1, na.rm = TRUE)
-      current_pct <- round(current_count / nrow(rights_data) * 100, 1)
-      cat(var_name, "\n")
-      cat("  Earlier method:", earlier_count, "(", earlier_pct, "%)\n")
-      cat("  Current method:", current_count, "(", current_pct, "%)\n")
-    }
-  }
-}
-cat("\n")
-
-# Calculate negative experiences count and categorize
-cat("Rights violations analysis - Data quality check:\n")
-cat("Total respondents in dataset:", nrow(rights_data), "\n")
-
 rights_summary <- rights_data %>%
   # Select only the rights violation numeric columns (7 variables only)
   dplyr::select(RightsViolations_Paid_On_Time_numeric,
@@ -1574,15 +1518,10 @@ rights_summary <- rights_data %>%
                 RightsViolations_Health_Safety_numeric) %>% 
   # Remove rows where all rights variables are NA
   filter(rowSums(is.na(.)) < ncol(.)) %>%
-  {cat("Respondents with at least one rights violation response:", nrow(.), "\n"); .} %>%
-  {cat("Number of rights violation variables selected:", ncol(.), "(should be 7)\n"); .} %>%
   # Count negative responses per person
   mutate(
     num_neg = rowSums(. == -1, na.rm = TRUE)
   ) %>%
-  # DIAGNOSTIC: Show distribution of num_neg before categorizing
-  {cat("\nRaw distribution of num_neg:\n"); print(table(.$num_neg)); cat("\n"); .} %>%
-  {cat("Maximum num_neg:", max(.$num_neg, na.rm = TRUE), "(should be ≤ 7)\n\n"); .} %>%
   # Categorize by number of negative experiences
   mutate(neg_category = case_when(
     num_neg == 0 ~ "0",
@@ -1607,11 +1546,11 @@ ggplot(rights_summary, aes(x = neg_category, y = percent, fill = neg_category)) 
   theme_minimal()
 ```
 
-[Interpretation placeholder]
+The rights violations analysis reveals that **nearly half of outsourced workers experience at least one workplace rights violation**, with 56.3% reporting no violations. **Leave entitlement issues** are the most prevalent violation (11.2%), followed closely by **payment timing problems** (11.0%) and **sick pay violations** (10.9%). **Health and safety protections** are inadequate for 9.8% of workers, while **pay slip provision** (9.0%) and **correct payment amounts** (9.2%) also represent concerns. 
 
 # Discrimination Analysis
 
-[Analysis explanation placeholder]
+This analysis examines reported experiences of discrimination among outsourced workers across multiple dimensions including age, disability, ethnicity, nationality, religion, and sex. The analysis employs descriptive statistics to document the prevalence of different types of discrimination and conducts cross-tabulations with demographic variables to identify patterns and vulnerable populations. Statistical tests assess the significance of observed associations, with particular attention to intersectional effects where multiple forms of discrimination may compound disadvantage among specific groups.
 
 ```{r discrimination-function-setup}
 # Define the valid discrimination response categories
@@ -1754,7 +1693,7 @@ discrimination_vars <- list(
 
 ## Sex-based Discrimination Analysis
 
-[Analysis explanation placeholder]
+This analysis examines reported experiences of sex-based discrimination among outsourced workers, comparing prevalence rates across demographic groups and employment characteristics. The analysis employs descriptive statistics to document discrimination frequencies and conducts cross-tabulations with key variables to identify patterns of differential treatment. Statistical tests assess the significance of observed associations, with particular attention to intersectional effects where sex-based discrimination may compound with other forms of disadvantage.
 
 ```{r discrimination-sex-analysis}
 #| fig-width: 12
@@ -1771,11 +1710,11 @@ sex_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-[Interpretation placeholder]
+\[Interpretation placeholder\]
 
 ## Ethnicity-based Discrimination Analysis
 
-[Analysis explanation placeholder]
+This analysis examines reported experiences of ethnicity-based discrimination among outsourced workers, comparing prevalence rates across different ethnic groups and employment characteristics. The analysis employs descriptive statistics to document discrimination frequencies and conducts cross-tabulations with key demographic variables to identify patterns of differential treatment. Statistical tests assess the significance of observed associations, with particular attention to how ethnicity-based discrimination may intersect with other forms of disadvantage in outsourced work environments.
 
 ```{r discrimination-ethnicity-analysis}
 #| fig-width: 12
@@ -1792,11 +1731,11 @@ ethnicity_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-[Interpretation placeholder]
+\[Interpretation placeholder\]
 
 ## Age-based Discrimination Analysis
 
-[Analysis explanation placeholder]
+\[Analysis explanation placeholder\]
 
 ```{r discrimination-age-analysis}
 #| fig-width: 12
@@ -1813,11 +1752,11 @@ age_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-[Interpretation placeholder]
+\[Interpretation placeholder\]
 
 ## Disability-based Discrimination Analysis
 
-[Analysis explanation placeholder]
+\[Analysis explanation placeholder\]
 
 ```{r discrimination-disability-analysis}
 #| fig-width: 12
@@ -1834,11 +1773,11 @@ disability_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-[Interpretation placeholder]
+\[Interpretation placeholder\]
 
 ## Nationality-based Discrimination Analysis
 
-[Analysis explanation placeholder]
+\[Analysis explanation placeholder\]
 
 ```{r discrimination-nationality-analysis}
 #| fig-width: 12
@@ -1855,11 +1794,11 @@ nationality_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-[Interpretation placeholder]
+\[Interpretation placeholder\]
 
-## Clarity Questions Analysis
+# Clarity Questions Analysis
 
-[Analysis explanation placeholder]
+This analysis examines workplace clarity among outsourced workers across eleven key dimensions including clarity about reporting structures for pay problems, rights and entitlements, time-off approval processes, promotion pathways, and role responsibilities. The analysis also assesses communication effectiveness between organizations, workers' confidence in raising workplace improvements, and management responsiveness to discrimination, bullying, and racism complaints. Descriptive statistics and cross-tabulations with demographic variables identify patterns in workplace clarity and potential disparities in organizational transparency across different groups of outsourced workers.
 
 ```{r clarity-questions-analysis}
 #| fig-width: 12
@@ -2401,6 +2340,3 @@ for(income_grp in c("Low", "Mid", "High")) {
 }
 
 ```
-
-
-
