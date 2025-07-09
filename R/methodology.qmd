@@ -21,8 +21,6 @@ execute:
   echo: false
   warning: false
 number-sections: true
-
-
 ---
 
 ```{r packages}
@@ -450,7 +448,7 @@ To investigate the pay gap been outsourced and non-outsourced workers we constru
 
 $$
 Income = Age + Gender + Education + Ethnicity + Migration + Region + Outsourcing
-$$ 
+$$
 
 where
 
@@ -461,7 +459,7 @@ where
     -   Female
     -   Other
 -   Education is a categorical variable indicating whether the respondent has a degree, with three levels:
-    - Yes (reference category)
+    -   Yes (reference category)
     -   No
     -   Don't know
 -   Ethnicity is a categorical variable with eight levels:
@@ -473,7 +471,7 @@ where
     -   Other ethnic group
     -   Prefer not to say
     -   White other
-    - Don't think of myself as any of these
+    -   Don't think of myself as any of these
 -   Migration is a categorical variable indicating when the respondent arrived in the UK, with 10 levels:
     -   I was born in the UK (reference category)
     -   Within the last year
@@ -741,14 +739,12 @@ sig_cons2 <- cons %>% filter(p.value < .05)
 
 ```
 
-
 The interaction term is non-significant. Estimated marginal means show that:
 
-- Among not outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Not outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
-- Among outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
-- Among men, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Male") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
-- Among women, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Female") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
-
+-   Among not outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Not outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+-   Among outsourced workers, men are paid £`r sig_cons %>% filter(outsourcing_status == "Outsourced") %>% pull(estimate) %>% abs() %>% round(2)` more than women
+-   Among men, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Male") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
+-   Among women, not outsourced workers are paid £`r sig_cons2 %>% filter(Gender == "Female") %>% pull(estimate) %>% abs() %>% round(2)` more than outsourced workers.
 
 The plot below illustrates the main effects that men are paid more than women and that outsourced men and women are paid less than non-outsourced men and women. The lack of interaction indicates that the difference in pay between men and women does not significantly differ between outsourced and non-outsourced people.
 
@@ -815,10 +811,9 @@ For this exploration we modelled ethnicity in three ways.
 
 1.  As a categorical variable with four levels:
     -   White (reference category)
-    -   Not White 
-    - Don't think of myself as any of these
-    - Prefer not say
-    
+    -   Not White
+    -   Don't think of myself as any of these
+    -   Prefer not say
 2.  As a categorical variable with eight levels:
     -   White British (reference category)
     -   Arab/British Arab
@@ -855,7 +850,6 @@ For this exploration we modelled ethnicity in three ways.
 We used `svyglm()` from the `survey` package to construct survey-weighted generalised linear models. This approach allows us to take into account survey weights to produce design-based standard errors by assuming a 'quasibinomial' distribution to the data. Specifically, the survey-weighted data contains overdispersion; the variance is greater than expected by a binomial distribution (which assumes variance = mean(1 - mean)). The quasibinomial distribution estimates a dispersion parameter that allows the variance to be greater than expected by the true binomial distribution. For more information see Lumley, Thomas, and Alastair Scott. ‘Fitting Regression Models to Survey Data’. Statistical Science 32, no. 2 (2017): 265–780.
 
 We used Rao–Scott adjusted Wald tests to compare nested survey-weighted models fit using a quasibinomial family. This method accounts for the survey design and is appropriate given that quasi-likelihood models do not support likelihood-ratio testing. For more information see Rao, J. N. K., and A. J. Scott. ‘On Chi-Squared Tests for Multiway Contingency Tables with Cell Proportions Estimated from Survey Data’. The Annals of Statistics 12, no. 1 (March 1984): 46–60. https://doi.org/10.1214/aos/1176346391.
-
 
 ```{r}
 #| output: false
@@ -951,8 +945,6 @@ tab_model(mod_svy2,
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
 ```
-
-
 
 ```{r ethnicity-aggregated}
 #| output: false
@@ -1163,8 +1155,6 @@ tab_model(mod_svy2,
           show.r2 = FALSE)
 ```
 
-
-
 #### Migration
 
 We next focus on predicting whether a person was outsourced based on wehther the person was born in the UK. This binary variable was constructed by collapsing the 10-level migration variable down into two levels, so that "I was born in the UK" becomes "Born in UK", and all levels apart from "I was born in the UK" and "Prefer not to say" become "Not born in UK".
@@ -1364,10 +1354,10 @@ design <- svydesign(
 mod_svy2 <- svyVGAM::svy_vglm(
   income_group ~ Age + outsourcing_status + Ethnicity_collapsed_disaggregated + Gender + Has_Degree + Region + BORNUK_binary,
   design = design,
-  family = multinomial(refLevel = "Low")  # Replace "Low" with your reference category
+  family = multinomial(refLevel = "Mid")  # Replace "Low" with your reference category
 )
 
-summary(mod_svy2)
+# summary(mod_svy2)
 
 
 # Extract coefficients and vcov
@@ -1399,7 +1389,7 @@ if(p < .001){
 
 ```
 
-A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
+A saturated model including all variables was a significantly better fit to the data than an intercept-only model, *X\^2*(`r wald_stats[2]`) = `r wald_stats[1]`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
@@ -1418,7 +1408,6 @@ tidy_mod %>%
   pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
   pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
-
 
 #### Ethnicity-migration interaction
 
@@ -1483,7 +1472,6 @@ dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 
 A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
 
-
 ```{r}
 labels <- c(
   'Intercept',
@@ -1540,8 +1528,8 @@ tab_model(mod_svy2,
 
 We explored the interaction effect using targeted contrasts comparing
 
-1. The effect of each ethnicity versus "White British" within each level of migration.
-2. The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
+1.  The effect of each ethnicity versus "White British" within each level of migration.
+2.  The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
 
 Contrasts were calculated using `survey::svycontrast()` and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995). Results were only considered where the sample for the contrast was greater than 10.
 
@@ -1758,10 +1746,10 @@ sig_partB <- partB_df %>% filter(p_adj < 0.05)
 
 ```
 
-Examining the effect of "Not born in UK" versus "Born in UK" within each ethnicity, we found  
+Examining the effect of "Not born in UK" versus "Born in UK" within each ethnicity, we found
 
-- among "White British", workers not born in the UK are `r sig_partB[which(sig_partB$ethnicity == "White British" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
-- among people of Mixed/multiple ethnic groups, workers not born in UK are `r sig_partB[which(sig_partB$ethnicity == "Mixed/Multiple ethnic group" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
+-   among "White British", workers not born in the UK are `r sig_partB[which(sig_partB$ethnicity == "White British" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
+-   among people of Mixed/multiple ethnic groups, workers not born in UK are `r sig_partB[which(sig_partB$ethnicity == "Mixed/Multiple ethnic group" & sig_partB$test_born == "Not born in UK"), "OR"] %>% round(2)` times more likely to be outsourced than workers born in the UK.
 
 No significant differences between people born and not born in the UK were observed for any other ethnicities. The figure below shows these effects.
 
@@ -1847,7 +1835,6 @@ dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
 ```
 
 A model including the ethnicity:migration interaction term had significantly improved fit compared to a model without the interaction term, *F*(`r dfs[[1]]`, `r dfs[[2]]`) = `r f`, *p* `r p`. The table below shows the model coefficients.
-
 
 ```{r}
 labels <- c(
@@ -2027,18 +2014,17 @@ sig_partA <- partA_df %>% filter(p_adj < 0.05)
 
 We explored the interaction effect using targeted contrasts comparing
 
-1. The effect of each ethnicity versus "English / Welsh / Scottish / Northern Irish / British" within each level of migration.
-2. The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
+1.  The effect of each ethnicity versus "English / Welsh / Scottish / Northern Irish / British" within each level of migration.
+2.  The effect of "Not born in UK" versus "Born in UK" within each level of ethnicity
 
 Contrasts were calculated using survey::svycontrast() and p values were adjusted for multiple comparisons using the FDR method (Benjamini and Hochberg, 1995) and results were only considered where the sample for the contrast was greater than 10.
 
 Exploring the effect of each ethnicity versus "English / Welsh / Scottish / Northern Irish / British" within each level of migration, we found that, among people born in the UK
 
-- White and Black African people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "White and Black African"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
-- Pakistani people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "Pakistani"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
+-   White and Black African people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "White and Black African"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
+-   Pakistani people were `r sig_partA[which(sig_partA$BORNUK_binary == "Born in UK" & sig_partA$test_ethn == "Pakistani"), "OR"] %>% round(2)` times more likely to be outsourced than "English / Welsh / Scottish / Northern Irish / British" people.
 
 Among people not born in the UK, no significant differences between ethnicities were observed. The figure below shows the effects for "English / Welsh / Scottish / Northern Irish / British", "White and Black African", and Pakistani respondents.
-
 
 ```{r}
 # Get estimated marginal means on the response (probability) scale
@@ -2195,14 +2181,13 @@ ggplot(ems_df, aes(y = Ethnicity_collapsed_disaggregated, x = prob, colour = BOR
 
 ```
 
-
 #### Ethnicity-outsourced interaction
 
 A generalised linear model was constructed to test whether the interaction between ethnicity and outsourcing predicted whether a person had a low income.
 
 $$
 Income Group = Outsourcing + Ethnicity + Age + Gender + Education + Region + Migration + Outsourcing:Ethnicity
-$$ 
+$$
 
 As in preceding sections, we constructed three models; one for the binary ethnicity variable, one for the eight-level ethnicity variable, and one for the 21-level ethnicity variable.
 
@@ -2230,7 +2215,7 @@ design <- svydesign(
 mod_svy1 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 
@@ -2238,7 +2223,7 @@ mod_svy1 <- svyVGAM::svy_vglm(
 mod_svy2 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_binary + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_binary,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 summary(mod_svy2)
@@ -2290,10 +2275,11 @@ if(p < .001){
 
 
 ```
-A saturated model including the interaction term was not a significantly better fit to the data than an intercept-only model, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
+
+A saturated model including the interaction term was not a significantly better fit to the data than an intercept-only model, *X\^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients of the simpler model without the interaction term.
 
 ```{r}
-tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
+tidy_mod <- tidy.svyVGAM(mod_svy1, exponentiate = TRUE, conf.int = TRUE)
 
 tidy_mod %>% 
   dplyr::select(-y.level) %>% 
@@ -2306,13 +2292,15 @@ tidy_mod %>%
   )) %>% 
   kable(digits = 3) %>% 
   kable_styling() %>%
-  pack_rows("Mid", 1, nrow(tidy_mod)/2) %>% 
+  pack_rows("Low", 1, nrow(tidy_mod)/2) %>% 
   pack_rows("High", nrow(tidy_mod)/2 + 1, nrow(tidy_mod))
 ```
 
 ##### Ethnicity 9
 
 ```{r}
+#| message: false
+#| output: false
 # Alternative for 3-level variable
 
 ethns_to_drop <- c("Don't think of myself as any of these", "Prefer not to say")
@@ -2331,7 +2319,7 @@ design <- svydesign(
 mod_svy1 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 
@@ -2339,7 +2327,7 @@ mod_svy1 <- svyVGAM::svy_vglm(
 mod_svy2 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 
@@ -2393,8 +2381,8 @@ if(p < .001){
 
 
 ```
-A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
 
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
@@ -2416,8 +2404,8 @@ tidy_mod %>%
 
 We explored the interaction effect using targeted contrasts comparing
 
-1. The effect of outsourcing within each level of ethnicity
-2. The effect of each ethnicity versus "White British" within each level of outsourcing
+1.  The effect of outsourcing within each level of ethnicity
+2.  The effect of each ethnicity versus "White British" within each level of outsourcing
 
 ```{r}
 cell_count_thresh <- 10
@@ -2426,6 +2414,8 @@ cell_count_thresh <- 10
 We do not consider contrasts for which any cell count is less than `r cell_count_thresh`.
 
 ###### Post-hoc: Outsourcing within ethnicity
+
+
 
 ```{r}
 #| message: false
@@ -2468,7 +2458,6 @@ bootstrap_predictions <- function(n_boot = 500) {
   
   set.seed(1234)
   boot_results <- future_lapply(1:n_boot, function(i) {
-    print(i)
     # Resample with replacement, respecting weights
     n_obs <- nrow(mod_data)
     boot_indices <- sample(
@@ -2522,12 +2511,12 @@ bootstrap_predictions <- function(n_boot = 500) {
 # t2 <- Sys.time()
 # cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
 
-filepath <- here("Data","bootstrap1_1000.rds")
+filepath <- here("Data","bootstrap1_1000_3.rds")
 if(!file.exists(filepath)){
 # Run bootstrap (this will take some time)
   cat("Running bootstrap... this may take a few minutes\n")
   t1 <- Sys.time()
-  boot_samples <- bootstrap_predictions(n_boot = 1000)  
+  boot_samples <- bootstrap_predictions(n_boot = 2000)  
   t2 <- Sys.time()
   cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
   saveRDS(boot_samples, filepath)
@@ -2677,30 +2666,56 @@ difference_results_sig <- difference_results3 %>%
 
 ```
 
-- `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced (note large confidence interval for this effect - see plot)
+-   `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced (note large confidence interval for this effect - see plot)
+
+In essence, a White British person is more likely to be in the low or mid income group, and less likely to be in the high income group, if they are outsourced compared to not-outsourced.
 
 ```{r}
+
+# Reshape ci_results
+ci_results2 <- ci_results %>%
+  pivot_longer(
+    cols = starts_with("prob_"),
+    names_to = c("income_level", "ci_bound"),
+    names_pattern = "prob_(.*)_ci_(.*)",
+    values_to = "ci_value"
+  ) %>%
+  pivot_wider(
+    names_from = ci_bound,
+    values_from = ci_value,
+    names_prefix = "ci_"
+  )
+
 # Reshape data for plotting
-# plot_data <- pred_results %>%
-#   pivot_longer(cols = starts_with("prob_"), 
-#                names_to = "income_level", 
-#                values_to = "probability") %>%
-#   mutate(income_level = gsub("prob_", "", income_level)) %>%
-#   mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
-# 
-# # Plot predicted probabilities
-# ggplot(plot_data, aes(x = Ethnicity_collapsed, y = probability,
-#                       fill = outsourcing_status)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   facet_wrap(~income_level) +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-#   labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
-#        x = "Ethnicity", y = "Predicted Probability",
-#        fill = "Outsourcing Status")
+plot_data <- pred_results %>%
+  pivot_longer(cols = starts_with("prob_"),
+               names_to = "income_level",
+               values_to = "probability") %>%
+  mutate(income_level = gsub("prob_", "", income_level)) %>%
+  left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed","income_level")) %>% 
+
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))) %>%
+  mutate(
+    nudge = ifelse(outsourcing_status == "Outsourced", 0.1, -0.1)
+  )
+  # Preserve order
+
+# Plot predicted probabilities
+ggplot(plot_data, aes(y = Ethnicity_collapsed, x = probability,
+                      colour = outsourcing_status)) +
+  geom_point(position = position_nudge(y = plot_data$nudge)) +
+  geom_errorbar(position = position_nudge(y = plot_data$nudge), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  facet_grid(rows = vars(income_level)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1)) +
+  labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+       y = "", x = "Predicted Probability",
+       colour = "Outsourcing Status") +
+  scale_x_continuous(breaks = seq(0,1,0.2))
 
 # Plot differences with confidence intervals
 
@@ -2720,6 +2735,9 @@ ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = signific
     caption = "Red line indicates no difference from not outsourced\nRed dots indicate significant effects"
 ) +
   scale_colour_manual(values = c("black","red"))
+
+
+
 
 ```
 
@@ -2845,14 +2863,39 @@ difference_results_sig <- difference_results3 %>%
   arrange(desc(ethnicity))
 ```
 
-Comparing ethnicities within outsourcing status,
+Comparing ethnicities within outsourcing status does not add to the picture much,
 
-- Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to White British people.
-- Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to White British people.
+-   Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to White British people.
+-   Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to White British people.
 
 
 
 ```{r}
+# levs <- levels(plot_data$Ethnicity_collapsed)
+# levs_nudge <- as.list(seq(0,1, (1/(length(levs_nudge)-1))) - 0.5)
+# names(levs_nudge) <- levs
+# 
+# 
+# plot_data <- plot_data %>%
+#   mutate(
+#     nudge = purrr::map_dbl(Ethnicity_collapsed, ~ levs_nudge[[.x]])
+#   )
+
+dodge_val <- 0.8
+# Plot predicted probabilities
+# ggplot(plot_data, aes(y = outsourcing_status , x = probability,
+#                       colour = Ethnicity_collapsed )) +
+#   geom_point(position = position_dodge(dodge_val)) +
+#   geom_errorbar(position = position_dodge(dodge_val), aes(xmin = ci_lower, xmax = ci_upper), width = 0.1) +
+#   facet_grid(rows = vars(income_level)) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(hjust = 1)) +
+#   labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+#        y = "", x = "Predicted Probability",
+#        colour = "Outsourcing Status") +
+#   scale_x_continuous(breaks = seq(0,1,0.2))
+
+
 
 ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = significant_bonferroni)) +
   geom_point(size = 2) +
@@ -2874,6 +2917,23 @@ ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = signific
   scale_colour_manual(values = c("black","red")) 
 
 
+
+
+```
+The plot below of predicted probabilities suggests that non-White ethnicities are not more or less likely to be in the low income group regardless of the outsourcing status, compared to White British. That is, the lack of an effect of outsourcing status on low income group membership does not appear to be attributable to a higher likelihood generally of marginalised ethnicities being low paid.
+
+```{r}
+ggplot(plot_data, aes(y = Ethnicity_collapsed , x = probability,
+                    )) +
+  geom_point(position = position_dodge(dodge_val)) +
+  geom_errorbar(position = position_dodge(dodge_val), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  facet_grid(rows = vars(outsourcing_status), cols = vars(income_level)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1)) +
+  labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+       y = "", x = "Predicted Probability",
+       colour = "Outsourcing Status") +
+  scale_x_continuous(breaks = seq(0,1,0.2))
 ```
 
 ##### Ethnicity 21
@@ -2899,7 +2959,7 @@ design <- svydesign(
 mod_svy1 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 
@@ -2907,7 +2967,7 @@ mod_svy1 <- svyVGAM::svy_vglm(
 mod_svy2 <- svyVGAM::svy_vglm(
   income_group ~ outsourcing_status + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed_disaggregated,
   design = design,
-  family = multinomial(refLevel = "Low")
+  family = multinomial(refLevel = "Mid")
 )
 
 
@@ -2962,8 +3022,7 @@ if(p < .001){
 
 ```
 
-A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
-
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X\^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
 
 ```{r}
 tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
@@ -3072,10 +3131,10 @@ bootstrap_predictions <- function(n_boot = 500) {
 }
 
 # Run or load
-filepath <- here("Data", "bootstrap2_1000.rds")
+filepath <- here("Data", "bootstrap2_1000_3.rds")
 if (!file.exists(filepath)) {
   cat("Running bootstrap... this may take a few minutes\n")
-  boot_samples <- bootstrap_predictions(n_boot = 1000)
+  boot_samples <- bootstrap_predictions(n_boot = 2000)
   saveRDS(boot_samples, filepath)
 } else {
   cat("Loading previous bootstrap\n")
@@ -3224,30 +3283,53 @@ difference_results_sig <- difference_results3 %>%
 
 ```
 
-- `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
-- `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[1]` workers are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[2]` workers are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[3]` workers are `r difference_results_sig$prob_ratio[3]` times as likely to be in the `r difference_results_sig$income_level[3]` group if they are outsourced compared to not-outsourced
+-   `r difference_results_sig$ethnicity[4]` workers are `r difference_results_sig$prob_ratio[4]` times as likely to be in the `r difference_results_sig$income_level[4]` group if they are outsourced compared to not-outsourced
 
 ```{r}
+# Reshape ci_results
+ci_results2 <- ci_results %>%
+  pivot_longer(
+    cols = starts_with("prob_"),
+    names_to = c("income_level", "ci_bound"),
+    names_pattern = "prob_(.*)_ci_(.*)",
+    values_to = "ci_value"
+  ) %>%
+  pivot_wider(
+    names_from = ci_bound,
+    values_from = ci_value,
+    names_prefix = "ci_"
+  )
+
 # Reshape data for plotting
-# plot_data <- pred_results %>%
-#   pivot_longer(cols = starts_with("prob_"), 
-#                names_to = "income_level", 
-#                values_to = "probability") %>%
-#   mutate(income_level = gsub("prob_", "", income_level)) %>%
-#   mutate(income_level = factor(income_level, levels = income_levels))  # Preserve order
-# 
-# # Plot predicted probabilities
-# ggplot(plot_data, aes(x = Ethnicity_collapsed_disaggregated, y = probability,
-#                       fill = outsourcing_status)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   facet_wrap(~income_level) +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-#   labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
-#        x = "Ethnicity", y = "Predicted Probability",
-#        fill = "Outsourcing Status")
+plot_data <- pred_results %>%
+  pivot_longer(cols = starts_with("prob_"),
+               names_to = "income_level",
+               values_to = "probability") %>%
+  mutate(income_level = gsub("prob_", "", income_level)) %>%
+  left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed_disaggregated","income_level")) %>% 
+
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))) %>%
+  mutate(
+    nudge = ifelse(outsourcing_status == "Outsourced", 0.1, -0.1)
+  )
+
+# Plot predicted probabilities
+ggplot(plot_data, aes(y = Ethnicity_collapsed_disaggregated, x = probability,
+                      colour = outsourcing_status)) +
+  geom_point(position = position_nudge(y = plot_data$nudge)) +
+  geom_errorbar(position = position_nudge(y = plot_data$nudge), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  facet_grid(rows = vars(income_level)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1)) +
+  labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+       y = "", x = "Predicted Probability",
+       colour = "Outsourcing Status") +
+  scale_x_continuous(breaks = seq(0,1,0.2))
+
 
 # Plot differences with confidence intervals
 
@@ -3393,8 +3475,7 @@ difference_results_sig <- difference_results3 %>%
 
 Comparing ethnicities within outsourcing status,
 
-- Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to English / Welsh / Scottish / Northern Irish / British people.
-
+-   Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to English / Welsh / Scottish / Northern Irish / British people.
 
 ```{r}
 #| height: 10
