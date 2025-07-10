@@ -4017,10 +4017,10 @@ experiential_data <- experiential_data %>%
   # Create readable categories for display
   mutate(
     negative_outcomes_category = case_when(
-      num_neg == 0 ~ "No negative Impacts",
-      num_neg %in% 1:2 ~ "1-2 negative Impacts", 
-      num_neg %in% 3:4 ~ "3-4 negative Impacts",
-      num_neg >= 5 ~ "5+ negative Impacts",
+      num_neg == 0 ~ "No negative impacts",
+      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
+      num_neg %in% 3:4 ~ "3-4 negative outcomes",
+      num_neg >= 5 ~ "5+ negative outcomes",
       TRUE ~ NA_character_
     )
   )
@@ -4085,7 +4085,8 @@ negative_outcomes_table
 # Create visualisation
 negative_outcomes_plot <- ggplot(negative_outcomes_summary, 
                                 aes(x = Percentage, y = fct_rev(negative_outcomes_category))) +
-  geom_col(fill = c("#27ae60", "#f39c12", "#e67e22", "#e74c3c"), alpha = 0.8) +
+  geom_col(aes(fill = negative_outcomes_category), alpha = 0.8) +
+  scale_fill_manual(values = c("#27ae60", "#f39c12", "#e67e22", "#e74c3c"), guide = "none") +
   geom_text(aes(label = paste0(Percentage, "%")), 
             hjust = -0.05, size = 4, fontweight = "bold") +
   labs(
