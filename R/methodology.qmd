@@ -1,8 +1,20 @@
-
-    code-summary: "Code"
+---
+title: "Methodology"
+author: 
+  - Jolyon Miles-Wilson
+  - Celestin Okoroji
+date: "`r format(Sys.time(), '%e %B %Y')`"
+always_allow_html: true
+format: 
+  html:
+    page-layout: full
+    self-contained: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Code for Nerds"
     toc: true
     toc-depth: 5
-  docx:  # or use `word:` – both work
+  docx:
     toc: true
     toc-depth: 5
 execute: 
