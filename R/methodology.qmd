@@ -3640,7 +3640,7 @@ library(forcats)
 library(broom)
 
 # Load data
-experiential_data <- read_csv("../Experiential/data/2025-06-30 - clean_data_jrf_experiential.csv")
+experiential_data <- read_csv("../Data/2025-06-30 - clean_data_jrf_experiential.csv")
 
 # Set reference levels for factors
 experiential_data$Ethnicity_Collapsed <- relevel(factor(experiential_data$Ethnicity_Collapsed), ref = "White British")
@@ -6122,7 +6122,9 @@ ethnicity_statistics_collapsed <- data %>%
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
   )
-:
+
+write_csv(ethnicity_statistics_collapsed, file="../outputs/methodology/data/ethnicity_statistics_aggregated.csv")
+
 ethnicity_statistics_collapsed %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
   dplyr::select(-c(n, N, Sum, Ethnicity_short)) %>%
