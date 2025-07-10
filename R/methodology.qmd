@@ -2683,6 +2683,9 @@ ci_results2 <- ci_results %>%
     values_to = "value"
   ) %>%
   pivot_wider(
+    names_from = metric,
+    values_from = value
+  )
 	      
 plot_data <- ci_results2 %>%
   # pivot_longer(cols = starts_with("prob_"),
@@ -3789,7 +3792,7 @@ why_job_plot <- ggplot(why_job_counts, aes(x = Percentage, y = reorder(Reason, P
 
 ```
 
-
+```{r job-motivation-combined}
 #| layout-ncol: 2
 #| echo: false
 #| out-width: "100%"
