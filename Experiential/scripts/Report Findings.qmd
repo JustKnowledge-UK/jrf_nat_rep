@@ -31,7 +31,7 @@ Analysis from Study 2 appearing in \[NAME OF REPORT\] primarily employs a descri
 
 Due to the extensive number of variables examined, these cross-tabulations are not reproduced in this document. However, researchers can easily recreate these analyses by running the “Crosstabulations.qmd” script available in the GitHub repository associated with this project (see \@reproducibility). The repository contains all necessary data files and code to replicate our findings.
 
-For brevity this document only focuses on the findings which are reported (and/or closely related)
+For brevity this document only focuses on the findings which are included in the report (and/or closely related)
 
 # Data Setup
 
@@ -70,7 +70,7 @@ cat("Income outliers removed:", nrow(data) - nrow(data_no_income_outliers),
 
 # Pay Comparison
 
-First we explore subjective perceptions of Pay, where participants selected whether they believed they were paid more or less than inhouse workers. The analysis is conducted using simple crosstabulations across key demographic variables; Sex, Age, Eethnicity, Region, Income group (e.g. High, Low or Middle), Education Band (High, Low, Middle) and Place of Birth (UK, Not UK)
+First we explore subjective perceptions of Pay, where participants selected whether they believed they were paid more or less than in-house workers. The analysis is conducted using simple crosstabulations across key demographic variables; Sex, Age, Eethnicity, Region, Income group (e.g. High, Low or Middle), Education Band (High, Low, Middle) and Place of Birth (UK, Not UK)
 
 ```{r pay-comparison-cross}
 
@@ -87,7 +87,7 @@ Paid_Less_Cross <- crosstable(data_no_income_outliers %>%
 Paid_Less_Cross
 ```
 
-The pay comparison analysis reveals several notable demographic patterns in perceived pay inequality among outsourced workers. **Sex differences** are evident, with men more likely to report being paid more than in-house workers (31.77%) compared to women (21.35%), while women more frequently report no pay difference (52.25% vs 42.25%). **Age patterns** show that those reporting higher pay tend to be younger (mean age 35.7 years) compared to those reporting lower pay (mean age 38.5 years). **Education disparities** are striking, with highly educated workers much more likely to report being paid more (32.47%) compared to those with low education (16.15%). **Place of birth** differences emerge, with workers not born in the UK more likely to report being paid more (33.41%) than UK-born workers (24.98%), though they also report higher rates of being paid less (21.18% vs 16.06%). **Income group patterns** show that high-income workers are most likely to report being paid more (32.74%), while low-income workers show the highest rates of uncertainty about their pay situation (12.47% "don't know").
+The pay comparison analysis reveals several notable demographic patterns in perceived pay inequality among outsourced workers. **Sex differences** are evident, with men more likely to report being paid more than in-house workers (31.77%) compared to women (21.35%), while women more frequently report no pay difference (52.25% vs 42.25%). **Age patterns** show that those reporting higher pay tend to be younger (mean age 35.7 years) compared to those reporting lower pay (mean age 38.5 years). **Education disparities** are striking, with highly educated workers much more likely to report being paid more (32.47%) compared to those with low education (16.15%). **Place of birth** differences emerge, with workers not born in the UK more likely to report being paid more (33.41%) than UK-born workers (24.98%), though they also report higher rates of being paid less (21.18% vs 16.06%). **Income group patterns** show that high-income workers are most likely to report being paid more as expected (32.74%), while low-income workers show the highest rates of uncertainty about their pay situation (12.47% "don't know").
 
 # Work Preferences
 
@@ -116,7 +116,7 @@ The work preferences data show that the largest group of outsourced workers (39.
 
 # Job Motivation
 
-This analysis examines the motivational factors that influence outsourced workers' decisions to remain in their current roles. Using a descriptive approach, we present the frequency and percentage distribution of responses across eleven distinct motivational categories, ranging from intrinsic factors (job satisfaction, workplace culture) to extrinsic factors (pay, location convenience) and personal circumstances (health conditions, caregiving responsibilities).
+Here we examine the motivational factors that influence outsourced workers' decisions to remain in their current roles. Using a descriptive approach, we present the frequency and percentage distribution of responses across eleven distinct motivational categories, ranging from intrinsic factors (job satisfaction, workplace culture) to extrinsic factors (pay, location convenience) and personal circumstances (health conditions, caregiving responsibilities).
 
 ```{r job-motivation-setup}
 
@@ -211,9 +211,9 @@ why_job_table
 why_job_plot
 ```
 
-The job motivation analysis reveals the key factors driving outsourced workers' employment decisions. **Practical considerations dominate**, with job location convenience being the most frequently cited reason (41.2%), followed closely by pay satisfaction (40.7%) and intrinsic job satisfaction (40.1%). **Social factors** also play a significant role, with over one-third (35.9%) citing positive relationships with colleagues. **Flexibility**, often assumed to be a primary motivation for outsourced work, ranks fifth at 32.0%. **Workplace culture** is important to just over a quarter (27.7%) of workers. **Necessity-driven motivations** are less common but notable, with 24.1% stating this was the best job available and 23.6% viewing it as a stepping stone for skill development. **Personal circumstances** account for smaller proportions: 14.6% balance the job with caregiving responsibilities, 13.0% manage health conditions, and only 9.0% remain due to qualification constraints (although it is possible that social desirability is playing a role in participants willingness to respond to questions about their level of qualifications).
+The job motivation analysis shows the key factors driving outsourced workers' employment decisions. **Practical considerations dominate**, with job location convenience being the most frequently cited reason (41.2%), followed closely by pay satisfaction (40.7%) and intrinsic job satisfaction (40.1%). **Social factors** also play a significant role, with over one-third (35.9%) citing positive relationships with colleagues. **Flexibility**, often assumed to be a primary motivation for outsourced work, ranks fifth at 32.0%. **Workplace culture** is important to just over a quarter (27.7%) of workers. **Necessity-driven motivations** are less common but notable, with 24.1% stating this was the best job available and 23.6% viewing it as a stepping stone for skill development. **Personal circumstances** account for smaller proportions: 14.6% balance the job with caregiving responsibilities, 13.0% manage health conditions, and only 9.0% remain due to qualification constraints (although it is possible that social desirability is playing a role in participants willingness to respond to questions about their level of qualifications and its relation to their employment possibilities).
 
-# Pros and Cons of Outsourced Work
+# \`Pros and Cons of Outsourced Work
 
 Here we explore outsourced workers' comparative assessments of their employment conditions relative to hypothetical in-house positions. Participants rated fourteen distinct workplace dimensions on a scale ranging from "less/worse" to "more/better" compared to in-house workers.
 
@@ -223,8 +223,8 @@ Here we explore outsourced workers' comparative assessments of their employment 
 #| out-width: "100%"
 #| dpi: 300
 
-# Function to categorize pros and cons responses
-categorize_response <- function(response) {
+# Function to categorise pros and cons responses
+categorise_response <- function(response) {
   if (is.na(response)) {
     return(NA)
   }
@@ -279,11 +279,11 @@ for (i in 1:nrow(pros_cons_labels)) {
   var_name <- pros_cons_labels$Variable[i]
   label <- pros_cons_labels$Label[i]
   
-  # Categorize responses
-  categorized <- sapply(data[[var_name]], categorize_response)
+  # Categorise responses
+  categorised <- sapply(data[[var_name]], categorise_response)
   
   # Count categories
-  counts <- table(categorized, useNA = "no")
+  counts <- table(categorised, useNA = "no")
   total <- sum(counts)
   
   # Calculate percentages
@@ -348,15 +348,15 @@ pros_cons_plot <- ggplot(pros_cons_data, aes(x = Percentage, y = Variable, fill 
 pros_cons_plot
 ```
 
-The pros and cons analysis reveals significant areas of disadvantage for outsourced workers compared to hypothetical in-house positions. **Career development emerges as the most problematic area**, with 24% reporting worse opportunities for progression/promotion and 20% citing reduced access to training and development. **Job security concerns** are similarly prominent, with 20% reporting worse access to job security. **Workplace relationships and engagement** show notable deficits, with 19% feeling less connected to colleagues and 17% feeling less invested in their role. **Workers' rights and voice** present challenges, with 19% finding it harder to assert rights at work.
+The pros and cons suggests areas of disadvantage for outsourced workers compared to hypothetical in-house positions. **Career development emerges as the most problematic area**, with 24% reporting worse opportunities for progression/promotion and 20% citing reduced access to training and development. **Job security concerns** are similarly prominent, with 20% reporting worse access to job security. **Workplace relationships and engagement** show notable deficits, with 19% feeling less connected to colleagues and 17% feeling less invested in their role. **Workers' rights and voice** present challenges, with 19% finding it harder to assert rights at work.
 
 **Flexibility stands out as a key advantage**, with 41.8% reporting better flexibility compared to only 14.2% reporting worse flexibility - making it the strongest positive aspect of outsourced work. **Pay perceptions are mixed**, with 17% reporting worse pay, though this varies significantly by demographic group as shown in the earlier analysis.
 
 **The overall pattern** shows that while outsourced workers may benefit from increased flexibility, they face systematic disadvantages in career development, job security, workplace relationships, and employee voice. Most concerning is that career progression and training opportunities - crucial for long-term economic mobility - rank as the most problematic areas for outsourced workers.
 
-# Cumnulative Burden
+# Cumulative Burden
 
-This analysis quantifies the cumulative burden of negative work experiences among outsourced workers by transforming categorical responses from the pros and cons analysis into numerical scores (-1 for negative, 0 for neutral, +1 for positive). We calculate the total number of negative outcomes per respondent across all fourteen workplace dimensions and examine the distribution of these counts within the sample. The analysis includes a focused examination of workers who report being paid less than in-house colleagues, investigating whether pay disadvantage is associated with broader patterns of workplace disadvantage.
+Here we quantify the cumulative burden of negative work experiences among outsourced workers by transforming the categorical responses from the pros and cons analysis into numerical scores (-1 for negative, 0 for neutral, +1 for positive). We calculate the total number of negative outcomes per respondent across all 14 workplace dimensions and examine the distribution of these counts within the sample. The analysis includes a focused examination of workers who report being paid less than in-house colleagues, investigating whether pay disadvantage is associated with broader patterns of workplace disadvantage.
 
 ```{r negative-outcomes-processing}
 #| fig-width: 10
@@ -412,10 +412,10 @@ data<- data %>%
   # Create readable categories for display
   mutate(
     negative_outcomes_category = case_when(
-      num_neg == 0 ~ "No negative impacts",
-      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
-      num_neg %in% 3:4 ~ "3-4 negative outcomes",
-      num_neg >= 5 ~ "5+ negative outcomes",
+      num_neg == 0 ~ "No negative Impacts",
+      num_neg %in% 1:2 ~ "1-2 negative Impacts", 
+      num_neg %in% 3:4 ~ "3-4 negative Impacts",
+      num_neg >= 5 ~ "5+ negative Impacts",
       TRUE ~ NA_character_
     )
   )
@@ -477,7 +477,7 @@ negative_outcomes_table <- negative_outcomes_summary %>%
 
 negative_outcomes_table
 
-# Create visualization
+# Create visualisation
 negative_outcomes_plot <- ggplot(negative_outcomes_summary, 
                                 aes(x = Percentage, y = fct_rev(negative_outcomes_category))) +
   geom_col(fill = c("#27ae60", "#f39c12", "#e67e22", "#e74c3c"), alpha = 0.8) +
@@ -502,7 +502,8 @@ negative_outcomes_plot <- ggplot(negative_outcomes_summary,
 
 negative_outcomes_plot
 ```
-The negative outcomes analysis reveals the cumulative burden of workplace disadvantages among outsourced workers. **The distribution shows significant polarization**: 38.5% of workers report no negative outcomes, while 23.6% experience five or more negative outcomes across the fourteen workplace dimensions (mean = 2.51, median = 1).
+
+The negative Impacts analysis reveals the cumulative burden of workplace disadvantages among outsourced workers. **The distribution shows significant polarisation**: 38.5% of workers report no negative outcomes, while 23.6% experience five or more negative outcomes across the fourteen workplace dimensions (mean = 2.51, median = 1).
 
 ```{r negative-outcomes-paid-less}
 #| fig-width: 10
@@ -529,13 +530,14 @@ ggplot(paid_less_group, aes(x = neg_category_excl_pay, y = percent, fill = neg_c
   scale_fill_brewer(palette = "Reds") +
   theme_minimal()
 ```
-**Most striking is the relationship between pay disadvantage and cumulative negative outcomes.** Among workers who report being paid less than in-house colleagues, **96.4% experience at least one additional negative outcome beyond pay** - only 3.6% report pay disadvantage as an isolated issue. The concentration of negative outcomes among this group is severe: **69.7% experience five or more total negative outcomes** compared to just 23.6% in the overall population - nearly a threefold difference.
 
-**The pattern suggests that pay disadvantage rarely occurs in isolation** but is typically accompanied by broader workplace disadvantages. Workers reporting pay disadvantage show dramatically higher rates of multiple negative outcomes (10.1% have 4+ negatives vs 7.4% overall), indicating that pay inequity is a marker of comprehensive workplace disadvantage rather than an isolated issue.
+**Most striking is the relationship between pay disadvantage and cumulative negative outcomes.** Among workers who report being paid less than in-house colleagues, **96.4% experience at least one additional negative outcome beyond pay** - only 3.6% report pay disadvantage as an isolated issue. The concentration of negative outcomes among this group is severe: **69.7% experience five or more total negative outcomes** (including pay) compared to just 23.6% in the overall population - nearly a threefold difference.
+
+**The pattern suggests that pay disadvantage rarely occurs in isolation** but is typically accompanied by broader workplace disadvantages. Workers reporting pay disadvantage show dramatically higher rates of multiple negative outcomes (10.1% have 4+ negatives including pay vs 7.4% overall), indicating that pay inequity is a marker of comprehensive workplace disadvantage rather than an isolated issue.
 
 # Statistical Analysis
 
-Continuing the analysis of pros and cons of outsourced working his section presents descriptive analysis of mean negative outcomes across demographic groups, followed by regression modeling to identify significant predictors. The analysis compares Poisson, linear, and negative binomial regression models using fit statistics (AIC, deviance, RMSE) to select the best-fitting model. Results are presented through a model comparison table, coefficients table with rate ratios and confidence intervals, forest plot visualization of rate ratios, and predicted values for different income groups. The analysis identifies which demographic characteristics are associated with higher rates of negative workplace outcomes among outsourced workers.
+Continuing the analysis of pros and cons of outsourced working this section presents descriptive analysis of mean negative outcomes across demographic groups, followed by regression modeling to identify predictors. The analysis compares Poisson, linear, and negative binomial regression models using fit statistics (AIC, deviance, RMSE) to select the best-fitting model. Results are presented through a model comparison table, coefficients table with rate ratios and confidence intervals, forest plot visualisation of rate ratios, and predicted values for different income groups. The analysis identifies which demographic characteristics are associated with higher rates of negative workplace outcomes among outsourced workers.
 
 The statistical analysis reveals significant demographic predictors of negative workplace outcomes among outsourced workers. **Model selection favoured negative binomial regression** due to overdispersion (ratio = 3.387), with this model showing the best fit (AIC = 6519.5) compared to Poisson (AIC = 8173.4) and linear models (AIC = 7700.3).
 
@@ -558,7 +560,7 @@ means_by_group <- data_no_income_outliers %>%
     .groups = "drop"
   )
 
-# Create visualization of means
+# Create visualisation of means
 means_plot <- means_by_group %>%
   ggplot(aes(x = group, y = mean_negatives, fill = demographic)) +
   geom_col(alpha = 0.8) +
@@ -737,15 +739,15 @@ forest_plot <- coefficients_df %>%
 
 forest_plot
 ```
+
 **Education emerges as the strongest predictor**, with both mid-education (rate ratio = 0.738) and low-education workers (rate ratio = 0.649) experiencing significantly fewer negative outcomes than highly educated workers. This counterintuitive finding suggests that **higher education may increase expectations or awareness of workplace disadvantages** rather than protecting against them.
 
-**Place of birth shows significant effects**, with workers not born in the UK experiencing 38% more negative outcomes (rate ratio = 1.38) compared to UK-born workers, while those preferring not to disclose birth status report 56% fewer negative outcomes (rate ratio = 0.436).  **Descriptive patterns show** that workers not born in the UK have the highest mean negative outcomes (3.2), while those born in the UK average 2.33 negative outcomes.
+**Place of birth shows significant effects**, with workers not born in the UK experiencing 38% more negative outcomes (rate ratio = 1.38) compared to UK-born workers, while those preferring not to disclose birth status report 56% fewer negative outcomes (rate ratio = 0.436). **Descriptive patterns show** that workers not born in the UK have the highest mean negative outcomes (3.2), while those born in the UK average 2.33 negative outcomes.
 
 **Ethnicity shows some variation**, with Black/African/Caribbean workers reporting 24% fewer negative outcomes than White British workers (rate ratio = 0.761).
 
 **Gender differences are evident**, with female workers experiencing 21% fewer negative outcomes than male workers (rate ratio = 0.789). **Age shows a protective effect**, with each additional year associated with slightly fewer negative outcomes (rate ratio = 0.994).
 
-**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). 
 ```{r}
 #| fig-width: 12
 #| fig-height: 8
@@ -794,18 +796,18 @@ predicted_plot <- predicted_data %>%
 predicted_plot
 ```
 
-**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). **The predicted values plot demonstrates this income effect more clearly** by holding all other demographic variables constant. Under these controlled conditions, the model predicts that high-income workers will experience approximately 2.14 negative outcomes compared to 2.75 for mid-income workers and 3.56 for low-income workers - a reduction of 0.61 and 1.42 (respoectively) negative outcomes purely attributable to income level.
-
+**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). **The predicted values plot demonstrates this income effect more clearly** by holding all other demographic variables constant. Under these controlled conditions, the model predicts that high-income workers will experience approximately 2.14 negative outcomes compared to 2.75 for mid-income workers and 3.56 for low-income workers - a reduction of 0.61 and 1.42 (respectively) negative outcomes purely attributable to income level.
 
 # Work Conditions
 
-This analysis examines specific employment conditions that characterize outsourced work arrangements, focusing on five key dimensions: guaranteed hours, notice periods for working schedules, advance warning of shift cancellations, compensation for cancelled shifts, and sick pay provision. The analysis presents descriptive statistics for each condition and conducts cross-tabulations with demographic variables to identify potential disparities in work conditions across different groups. Statistical tests (chi-square or Fisher's exact tests) are employed to assess the significance of observed associations, with effect sizes calculated using Cramér's V.
+Next we examine specific employment conditions that characterise outsourced work arrangements, focusing on five key dimensions: guaranteed hours, notice periods for working schedules, advance warning of shift cancellations, compensation for cancelled shifts, and sick pay provision. The analysis presents descriptive statistics for each condition and conducts cross-tabulations with demographic variables to identify potential disparities in work conditions across different groups. Statistical tests (chi-square or Fisher's exact tests) are employed to assess the significance of observed associations, with effect sizes calculated using Cramér's V.
 
 ```{r work-conditions-setup}
 #| fig-width: 10
 #| fig-height: 6
 #| out-width: "100%"
 #| dpi: 300
+#| echo: false
 
 # Variables to analyze:
 work_variables <- c("Guaranteed_Hours", "Notice_Of_Working_Hours", "Notice_Of_Cancelled_Shifts", 
@@ -872,8 +874,15 @@ for (var in work_variables) {
   # Print table
   #print(work_table)
 }
+```
 
-# Create visualizations for each variable
+```{r work-conditions-visualisation}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+
+# Create visualisations for each variable
 work_plots <- list()
 
 for (var in work_variables) {
@@ -943,7 +952,7 @@ work_summary_table
 
 ## Cross-tabulation: Notice of Working Hours by Income Group
 
-# Create simplified categorization for Notice of Working Hours
+# Create simplified categorisation for Notice of Working Hours
 data <- data %>%
   mutate(Notice_Of_Working_Hours_Simplified = case_when(
     Notice_Of_Working_Hours %in% c("Less than 24 hours", "1-3 days", "4-6 days") ~ "Less than a week",
@@ -1386,7 +1395,7 @@ rights_violations_mapping <- data.frame(
     "Not being given time off that I am entitled to",
     "Not being paid for paid leave that I am entitled to",
     "Not being given pay that I am entitled to while being off sick",
-    "Not being provided with a pay slip that shows how much I am being paid over a certain period of time",
+    "Not being provided with a pay slip",
     "Not having adequate health and safety protections"
   ),
   Variable = c(
@@ -1522,7 +1531,7 @@ rights_summary <- rights_data %>%
   mutate(
     num_neg = rowSums(. == -1, na.rm = TRUE)
   ) %>%
-  # Categorize by number of negative experiences
+  # Categorise by number of negative experiences
   mutate(neg_category = case_when(
     num_neg == 0 ~ "0",
     num_neg == 1 ~ "1",
@@ -1535,7 +1544,7 @@ rights_summary <- rights_data %>%
   count(neg_category) %>%
   mutate(percent = (n / sum(n)) * 100)
 
-# Visualize the distribution of negative rights experiences
+# Visualise the distribution of negative rights experiences
 ggplot(rights_summary, aes(x = neg_category, y = percent, fill = neg_category)) +
   geom_bar(stat = "identity", alpha = 0.8) +
   geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
@@ -1546,7 +1555,7 @@ ggplot(rights_summary, aes(x = neg_category, y = percent, fill = neg_category)) 
   theme_minimal()
 ```
 
-The rights violations analysis reveals that **nearly half of outsourced workers experience at least one workplace rights violation**, with 56.3% reporting no violations. **Leave entitlement issues** are the most prevalent violation (11.2%), followed closely by **payment timing problems** (11.0%) and **sick pay violations** (10.9%). **Health and safety protections** are inadequate for 9.8% of workers, while **pay slip provision** (9.0%) and **correct payment amounts** (9.2%) also represent concerns. 
+The rights violations analysis reveals that **nearly half of outsourced workers experience at least one workplace rights violation**, with 56.3% reporting no violations. **Leave entitlement issues** are the most prevalent violation (11.2%), followed closely by **payment timing problems** (11.0%) and **sick pay violations** (10.9%). **Health and safety protections** are inadequate for 9.8% of workers, while **pay slip provision** (9.0%) and **correct payment amounts** (9.2%) also represent concerns.
 
 # Discrimination Analysis
 
@@ -1669,7 +1678,7 @@ create_discrimination_analysis <- function(discrimination_var, discrimination_ty
     theme_vanilla() %>%
     autofit()
   
-  print(discrimination_table)
+  #print(discrimination_table)
   
   # Return results for potential further analysis
   return(list(
@@ -1691,7 +1700,7 @@ discrimination_vars <- list(
 )
 ```
 
-## Sex-based Discrimination 
+## Sex-based Discrimination
 
 ```{r discrimination-sex-analysis}
 #| fig-width: 12
@@ -1710,8 +1719,7 @@ sex_discrimination_result <- create_discrimination_analysis(
 
 The sex-based discrimination analysis reveals significant variation in discrimination experiences across demographic groups, with **Black workers** reporting the highest rates of sex-based discrimination (42.9% experienced discrimination), followed by **workers born outside the UK** (41.9%). **Asian workers** also face elevated rates (38.2%), while **female workers** report discrimination at 31.3%. The overall rate among all outsourced workers is 30.8%. Notably, **Black workers** show the lowest percentage reporting "Never" experiencing discrimination (57%), compared to the overall average of 69%, suggesting more pervasive experiences of sex-based discrimination within this group. The pattern indicates that **ethnicity and migration status intersect with gender** to create heightened vulnerability to discriminatory treatment.
 
-## Ethnicity-based Discrimination 
-
+## Ethnicity-based Discrimination
 
 ```{r discrimination-ethnicity-analysis}
 #| fig-width: 12
@@ -1730,8 +1738,7 @@ ethnicity_discrimination_result <- create_discrimination_analysis(
 
 The ethnicity-based discrimination analysis reveals **the highest discrimination rates** among all forms examined, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.3% respectively. **Asian workers** also face substantial discrimination (45.6%), while the overall rate among all outsourced workers is 30.0%. The data shows particularly concerning patterns for **Black workers**, with only 48% reporting "Never" experiencing ethnicity-based discrimination, compared to 70% overall. Similarly, **workers born outside the UK** show only 48% reporting "Never" experiencing discrimination. Notably, **Black workers** report the highest rates of frequent discrimination, with 24% experiencing it "Sometimes" and 10% "Often". This pattern suggests that **ethnicity-based discrimination is the most pervasive form of discrimination** faced by outsourced workers, with **Black workers and migrants** bearing the heaviest burden.
 
-## Age-based Discrimination 
-
+## Age-based Discrimination
 
 ```{r discrimination-age-analysis}
 #| fig-width: 12
@@ -1748,10 +1755,9 @@ age_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-The age-based discrimination analysis shows **moderate but significant discrimination rates** across demographic groups, with **Black workers** experiencing the highest rates (44.9%), followed by **workers born outside the UK** (44.1%). **Asian workers** report discrimination at 35.8%, while the overall rate among all outsourced workers is 35.2%. **Female workers** experience age-based discrimination at 34.6%. The data reveals that **Black workers** have the lowest percentage reporting "Never" experiencing discrimination (55%), compared to 65% overall. **Workers born outside the UK** also show elevated vulnerability with 56% reporting "Never" experiencing discrimination. Age-based discrimination appears to be **the second most common form of discrimination** after ethnicity-based discrimination, with **Black workers and migrants** again showing heightened exposure to discriminatory treatment.
+The age-based discrimination analysis shows **moderate discrimination rates** across demographic groups, with **Black workers** experiencing the highest rates (44.9%), followed by **workers born outside the UK** (44.1%). **Asian workers** report discrimination at 35.8%, while the overall rate among all outsourced workers is 35.2%. **Female workers** experience age-based discrimination at 34.6%. The data reveals that **Black workers** have the lowest percentage reporting "Never" experiencing discrimination (55%), compared to 65% overall. **Workers born outside the UK** also show elevated vulnerability with 56% reporting "Never" experiencing discrimination. Age-based discrimination appears to be **the second most common form of discrimination** after ethnicity-based discrimination, with **Black workers and migrants** again showing heightened exposure to discriminatory treatment.
 
-## Disability-based Discrimination 
-
+## Disability-based Discrimination
 
 ```{r discrimination-disability-analysis}
 #| fig-width: 12
@@ -1768,11 +1774,9 @@ disability_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-The disability-based discrimination analysis shows **lower but still significant discrimination rates** compared to other forms, with **workers born outside the UK** experiencing the highest rates (31.9%), followed by **Asian workers** (27.5%) and **Black workers** (25.1%). The overall rate among all outsourced workers is 22.5%, while **female workers** report the lowest rate at 20.0%. The data shows that **workers born outside the UK** have the lowest percentage reporting "Never" experiencing discrimination (68%), compared to 77% overall. Notably, **Asian workers** show relatively high rates of frequent discrimination, with 14% experiencing it "Sometimes" and 6% "Often". While disability-based discrimination is **the least prevalent form** among those examined, it still affects **nearly one in four outsourced workers overall**, with **migrant workers** showing particular vulnerability.
+The disability-based discrimination analysis shows **lower overall discrimination rates** compared to other forms, with **workers born outside the UK** experiencing the highest rates (31.9%), followed by **Asian workers** (27.5%) and **Black workers** (25.1%). The overall rate among all outsourced workers is 22.5%, while **female workers** report the lowest rate at 20.0%. The data shows that **workers born outside the UK** have the lowest percentage reporting "Never" experiencing discrimination (68%), compared to 77% overall. Notably, **Asian workers** show relatively high rates of frequent discrimination, with 14% experiencing it "Sometimes" and 6% "Often". While disability-based discrimination is **the least prevalent form** among those examined, it still affects **nearly one in four outsourced workers overall**, with **migrant workers** showing particular vulnerability.
 
-## Nationality-based Discrimination 
-
-
+## Nationality-based Discrimination
 
 ```{r discrimination-nationality-analysis}
 #| fig-width: 12
@@ -1789,11 +1793,11 @@ nationality_discrimination_result <- create_discrimination_analysis(
 )
 ```
 
-The nationality-based discrimination analysis reveals **high discrimination rates** that mirror the ethnicity-based patterns, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.4% respectively. **Asian workers** face substantial discrimination at 43.1%, while the overall rate among all outsourced workers is 31.0%. **Female workers** report discrimination at 28.7%. The data shows that **Black workers** and **workers born outside the UK** both have only 48% reporting "Never" experiencing discrimination, compared to 69% overall. **Black workers** and **workers born outside the UK** also show the highest rates of frequent discrimination, with **Black workers** experiencing it "Sometimes" (24%) and "Often" (7%), while **workers born outside the UK** report similar patterns (21% "Sometimes", 8% "Often"). The pattern confirms that **nationality-based discrimination closely parallels ethnicity-based discrimination**, suggesting these forms of discrimination are **interconnected and particularly target migrant workers and ethnic minorities**.
+The nationality-based discrimination analysis reveals **high discrimination rates** that mirror the ethnicity-based patterns, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.4% respectively. **Asian workers** face substantial discrimination at 43.1%, while the overall rate among all outsourced workers is 31.0%. **Female workers** report discrimination at 28.7%. The data shows that **Black workers** and **workers born outside the UK** both have only 48% reporting "Never" experiencing discrimination, compared to 69% overall. **Black workers** and **workers born outside the UK** also show the highest rates of frequent discrimination, with **Black workers** experiencing it "Sometimes" (24%) and "Often" (7%), while **workers born outside the UK** report similar patterns (21% "Sometimes", 8% "Often"). The pattern confirms that **nationality-based discrimination closely parallels ethnicity-based discrimination**, suggesting these forms of discrimination are **interconnected and particularly target migrant and ethnic minority workers**.
 
 # Clarity Questions Analysis
 
-This analysis examines workplace clarity among outsourced workers across eleven key dimensions including clarity about reporting structures for pay problems, rights and entitlements, time-off approval processes, promotion pathways, and role responsibilities. The analysis also assesses communication effectiveness between organizations, workers' confidence in raising workplace improvements, and management responsiveness to discrimination, bullying, and racism complaints. Descriptive statistics and cross-tabulations with demographic variables identify patterns in workplace clarity and potential disparities in organizational transparency across different groups of outsourced workers.
+We also explored workplace clarity among outsourced workers across eleven key dimensions including clarity about reporting structures for pay problems, rights and entitlements, time-off approval processes, promotion pathways, and role responsibilities. The analysis also assesses communication effectiveness between organisations, workers' confidence in raising workplace improvements, and management responsiveness to discrimination, bullying, and racism complaints. Descriptive statistics and cross-tabulations with demographic variables identify patterns in workplace clarity and potential disparities in organisational transparency across different groups of outsourced workers.
 
 ```{r clarity-questions-analysis}
 #| fig-width: 12
@@ -1809,7 +1813,7 @@ clarity_questions <- data.frame(
     "Clear about who to speak to about other rights/entitlements", 
     "Straightforward to understand who approves time off",
     "Clear about who to speak to about promotion",
-    "Clear communication between organizations",
+    "Clear communication between organisations",
     "Clear about role responsibilities",
     "Confident can communicate improvements to right people",
     "Confident opinion will be respected about improvements",
@@ -1820,7 +1824,7 @@ clarity_questions <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Prepare data for visualization - convert to long format
+# Prepare data for visualisation - convert to long format
 clarity_long <- data %>%
   dplyr::select(all_of(paste0("Clarity", 1:11))) %>%
   pivot_longer(
@@ -1842,7 +1846,7 @@ clarity_long <- data %>%
       Variable == "Clarity2" ~ "Rights/entitlements contact", 
       Variable == "Clarity3" ~ "Time off approval",
       Variable == "Clarity4" ~ "Promotion contact",
-      Variable == "Clarity5" ~ "Organizational communication",
+      Variable == "Clarity5" ~ "Organisational communication",
       Variable == "Clarity6" ~ "Role responsibilities",
       Variable == "Clarity7" ~ "Can suggest improvements",
       Variable == "Clarity8" ~ "Opinion will be respected",
@@ -1955,7 +1959,7 @@ clarity_income_long <- data_no_income_outliers %>%
       Variable == "Clarity2" ~ "Rights/entitlements contact", 
       Variable == "Clarity3" ~ "Time off approval",
       Variable == "Clarity4" ~ "Promotion contact",
-      Variable == "Clarity5" ~ "Organizational communication",
+      Variable == "Clarity5" ~ "Organisational communication",
       Variable == "Clarity6" ~ "Role responsibilities",
       Variable == "Clarity7" ~ "Can suggest improvements",
       Variable == "Clarity8" ~ "Opinion will be respected",
@@ -2071,11 +2075,9 @@ Clarity.fit1<- (lm(Clarity_Overall_Mean ~
                      Region +
                      income_group, weights = Outsourced, data_no_income_outliers)) 
 
-summary(Clarity.fit1) # some significant
+#summary(Clarity.fit1) # some significant
 
-## CLARITY REGRESSION RESULTS VISUALIZATION
-
-cat("\n=== CLARITY REGRESSION FOREST PLOT ===\n")
+## CLARITY REGRESSION RESULTS VISUALIsATION
 
 # Load broom for tidy regression results
 library(broom)
@@ -2106,7 +2108,6 @@ clarity_results <- tidy(Clarity.fit1, conf.int = TRUE) %>%
       p.value < 0.001 ~ "***",
       p.value < 0.01 ~ "**", 
       p.value < 0.05 ~ "*",
-      p.value < 0.1 ~ "†",
       TRUE ~ ""
     ),
     # Round estimates and confidence intervals
@@ -2138,7 +2139,7 @@ forest_plot <- ggplot(clarity_results, aes(x = estimate, y = reorder(Variable_Cl
     subtitle = "Regression coefficients showing how different factors relate to overall clarity scores",
     x = "Effect on Clarity Score (95% Confidence Interval)",
     y = "Factors",
-    caption = "*** p<0.001, ** p<0.01, * p<0.05, † p<0.1\nData: JRF Experiential Survey. Reference groups: Male, White British, Born in UK, Mid income, London region"
+    caption = "*** p<0.001, ** p<0.01, * p<0.05\nData: JRF Experiential Survey. Reference groups: Male, White British, Born in UK, Mid income, London region"
   ) +
   theme_minimal() +
   theme(
@@ -2184,17 +2185,24 @@ if(nrow(key_results) > 0) {
   cat("\nStatistically Significant Results (p < 0.1):\n")
   key_results_table
 } else {
-  cat("\nNo statistically significant results found at p < 0.1 level.\n")
+  cat("\nNo statistically significant results found at p < 0.05 level.\n")
 }
+```
 
-# =============================================================================
-# WORK PREFERENCE BY INCOME GROUP ANALYSIS
-# =============================================================================
+The clarity analysis reveals **significant variation in workplace transparency** across different domains and income groups. **Role responsibilities** show the highest clarity (77.5% agreement), followed by **time off approval** (72.8%) and **pay problems contact** (71.6%), indicating that basic operational processes are generally well-understood. However, areas requiring **higher-level organisational engagement** show concerning gaps: **opinion will be respected** (64.1%), **management prevents discrimination** (64.4%), and **promotion contact** (64.7%) have the lowest agreement rates.
 
-cat("\n" %>% rep(3) %>% paste(collapse=""))
-cat("=================================================================\n")
-cat("WORK PREFERENCE BY INCOME GROUP ANALYSIS\n") 
-cat("=================================================================\n\n")
+**Income-based disparities** are particularly stark, with **high-income workers** consistently reporting greater clarity than **low-income workers** across all domains. The largest gaps appear in **management prevents discrimination** (18.5 percentage point difference), **opinion will be respected** (17.1 points), and **management handles bullying** (16.9 points). These patterns suggest that **organisational transparency and confidence in management responsiveness decrease substantially as income levels fall**, potentially reflecting **differential treatment** or **reduced organisational investment** in communication with lower-paid outsourced workers. The consistency of these income-based disparities across multiple domains points to **systemic inequalities** in workplace clarity rather than isolated communication issues.
+
+# Work Preference by Income Group
+
+Finally we examine the relationship between income levels and work preferences among outsourced workers, comparing preferences for in-house versus outsourced employment across low, mid, and high income groups. The analysis employs cross-tabulations and statistical tests to identify whether income level influences workers' preferences for employment arrangements, with particular attention to understanding how economic circumstances may shape attitudes toward outsourcing.
+
+```{r work-preference-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
 
 # Create work preference by income group cross-tabulation
 work_pref_crosstab <- crosstable(
@@ -2220,7 +2228,7 @@ work_pref_crosstab <- crosstable(
 cat("Work Preference by Income Group Cross-tabulation:\n")
 work_pref_crosstab
 
-# Prepare data for visualization
+# Prepare data for visualisation
 work_pref_data <- data_no_income_outliers %>%
   filter(!is.na(Work_Preference) & !is.na(income_group)) %>%
   count(income_group, Work_Preference) %>%
@@ -2281,35 +2289,98 @@ work_pref_table_test <- table(data_no_income_outliers$Work_Preference, data_no_i
 # Remove rows/columns with all zeros if any
 work_pref_table_test <- work_pref_table_test[rowSums(work_pref_table_test) > 0, colSums(work_pref_table_test) > 0]
 
-# Fisher's exact test (use simulation for large tables)
-if(nrow(work_pref_table_test) > 2 || ncol(work_pref_table_test) > 2) {
-  work_pref_fisher <- fisher.test(work_pref_table_test, simulate.p.value = TRUE, B = 10000)
-  cat("Fisher's Exact Test (simulated):\n")
-  cat("p-value:", format.pval(work_pref_fisher$p.value, digits = 4), "\n")
-} else {
-  work_pref_fisher <- fisher.test(work_pref_table_test)
-  cat("Fisher's Exact Test:\n")
-  cat("p-value:", format.pval(work_pref_fisher$p.value, digits = 4), "\n")
+# Standardised Fisher's exact test function
+format_fisher_test <- function(contingency_table, test_name = "Fisher's Exact Test") {
+  
+  # Determine if simulation is needed
+  use_simulation <- nrow(contingency_table) > 2 || ncol(contingency_table) > 2
+  
+  # Perform Fisher's exact test
+  if(use_simulation) {
+    fisher_result <- fisher.test(contingency_table, simulate.p.value = TRUE, B = 10000)
+    test_method <- "Fisher's Exact Test (simulated)"
+    simulation_note <- "Monte Carlo simulation with 10,000 replicates"
+  } else {
+    fisher_result <- fisher.test(contingency_table)
+    test_method <- "Fisher's Exact Test (exact)"
+    simulation_note <- "Exact calculation"
+  }
+  
+  # Format p-value
+  p_formatted <- if(fisher_result$p.value < 0.001) {
+    "< 0.001"
+  } else {
+    formatC(fisher_result$p.value, format = "f", digits = 3)
+  }
+  
+  # Determine significance level
+  significance <- case_when(
+    fisher_result$p.value < 0.001 ~ "***",
+    fisher_result$p.value < 0.01 ~ "**",
+    fisher_result$p.value < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+  
+  # Calculate effect size (Cramér's V)
+  if(require(vcd, quietly = TRUE)) {
+    assoc_stats <- vcd::assocstats(contingency_table)
+    cramers_v <- round(assoc_stats$cramer, 3)
+    
+    # Interpret effect size
+    effect_interpretation <- case_when(
+      cramers_v < 0.1 ~ "Negligible",
+      cramers_v < 0.3 ~ "Small",
+      cramers_v < 0.5 ~ "Medium",
+      TRUE ~ "Large"
+    )
+  } else {
+    cramers_v <- NA
+    effect_interpretation <- "Unable to calculate"
+  }
+  
+  # Create results data frame
+  results_df <- data.frame(
+    Statistic = c("Test Method", "Sample Size", "P-value", "Significance", "Cramér's V", "Effect Size", "Method Details"),
+    Value = c(
+      test_method,
+      as.character(sum(contingency_table)),
+      p_formatted,
+      significance,
+      as.character(cramers_v),
+      effect_interpretation,
+      simulation_note
+    ),
+    stringsAsFactors = FALSE
+  )
+  
+  # Create formatted table
+  results_table <- results_df %>%
+    flextable() %>%
+    set_header_labels(
+      Statistic = "Statistic",
+      Value = "Value"
+    ) %>%
+    theme_vanilla() %>%
+    width(j = 1, width = 2) %>%
+    width(j = 2, width = 2.5) %>%
+    align(align = "left", part = "all") %>%
+    add_header_lines(paste("Statistical Test Results:", test_name)) %>%
+    autofit()
+  
+  return(list(
+    test_result = fisher_result,
+    formatted_table = results_table,
+    p_value = fisher_result$p.value,
+    cramers_v = cramers_v,
+    effect_interpretation = effect_interpretation
+  ))
 }
 
-# Effect size (Cramér's V)
-if(require(vcd, quietly = TRUE)) {
-  work_pref_assoc <- vcd::assocstats(work_pref_table_test)
-  cat("Cramér's V:", round(work_pref_assoc$cramer, 3), "\n")
-  
-  # Interpretation of effect size
-  cramer_v <- work_pref_assoc$cramer
-  if(cramer_v < 0.1) {
-    effect_size <- "negligible"
-  } else if(cramer_v < 0.3) {
-    effect_size <- "small"
-  } else if(cramer_v < 0.5) {
-    effect_size <- "medium"
-  } else {
-    effect_size <- "large"
-  }
-  cat("Effect size interpretation:", effect_size, "\n")
-}
+# Apply standardised Fisher's test
+work_pref_fisher_results <- format_fisher_test(work_pref_table_test, "Work Preference by Income Group")
+
+# Display results
+work_pref_fisher_results$formatted_table
 
 # Summary statistics
 cat("\n=== Summary Statistics ===\n")
@@ -2335,3 +2406,9 @@ for(income_grp in c("Low", "Mid", "High")) {
 }
 
 ```
+
+The work preference analysis reveals **clear patterns in employment arrangement preferences across income groups**, with **statistical significance** confirmed by Fisher's exact test (p \< 0.001, Cramér's V = 0.104, small effect size). **No preference** dominates across all income groups (approximately 41%), but meaningful differences emerge in definitive preferences and uncertainty levels.
+
+**Income-based preference patterns** show that **higher-income workers increasingly prefer in-house employment**: low-income workers prefer in-house work at 27.4%, rising to 33.0% for mid-income and 35.2% for high-income workers. Conversely, **outsourced work preferences remain relatively stable** across income groups (14.8% to 17.8%), suggesting that **income level primarily influences attraction to in-house employment rather than satisfaction with outsourcing**.
+
+The most striking pattern appears in **uncertainty levels**, where **low-income workers show dramatically higher "not sure" responses** (16.5%) compared to mid-income (8.4%) and high-income workers (5.4%). This **11.1 percentage point gap** between low and high-income groups suggests that **economic insecurity may contribute to greater uncertainty about employment preferences**, potentially reflecting **limited exposure to alternative employment arrangements** or **anxiety about job security** that makes definitive preferences more difficult to form. The consistent **2:1 ratio favoring in-house work** across all income groups indicates that while income influences preference strength, the fundamental appeal of in-house employment remains broadly consistent.
