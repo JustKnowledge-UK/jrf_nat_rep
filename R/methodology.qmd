@@ -1,16 +1,4 @@
----
-title: "Methodology"
-author: 
-  - Jolyon Miles-Wilson
-  - Celestin Okoroji
-date: "`r format(Sys.time(), '%e %B %Y')`"
-always_allow_html: true
-format: 
-  html:
-    page-layout: full
-    self-contained: true
-    code-fold: true
-    code-tools: true
+
     code-summary: "Code"
     toc: true
     toc-depth: 5
@@ -20,6 +8,8 @@ format:
 execute: 
   echo: false
   warning: false
+  message: false
+  outwidth: "100%"
 number-sections: true
 ---
 
@@ -2693,11 +2683,7 @@ ci_results2 <- ci_results %>%
     values_to = "value"
   ) %>%
   pivot_wider(
-    names_from = metric,
-    values_from = value
-  )
-
-# Reshape data for plotting
+	      
 plot_data <- ci_results2 %>%
   # pivot_longer(cols = starts_with("prob_"),
   #              names_to = "income_level",
@@ -3586,6 +3572,7 @@ ggplot(difference_results3, aes(x = prob_ratio , y = ethnicity, colour = signifi
 
 
 ```
+
 ```{r}
 #| include: false
 #| message: false
@@ -3628,11 +3615,2394 @@ ggplot(plot_data, aes(y = Ethnicity_collapsed_disaggregated, x = boot_mean,
 
 # Analysis - Study 2
 
+# Study 2 Overview
+
+
 Analysis from Study 2 appearing in \[NAME OF REPORT\] primarily employs a descriptive approach to understand the data. We conducted several cross-tabulations focusing on key demographic variables including Migration Status, Low Pay, and Ethnicity.
 
-Due to the extensive number of variables examined, these cross-tabulations are not reproduced in this document. However, researchers can easily recreate all analyses by running the "Crosstabulations.qmd" script available in the GitHub repository associated with this project (see @reproducibility). The repository contains all necessary data files and code to replicate our findings.
+Due to the extensive number of variables examined, these cross-tabulations are not reproduced in this document. However, researchers can easily recreate these analyses by running the “Crosstabulations.qmd” script available in the GitHub repository associated with this project (see \@reproducibility). The repository contains all necessary data files and code to replicate our findings.
 
-\[TO CHECK WITH MORGAN WHETHER ANY OF THE MODELLING IS USED IN THE REPORT\]
+For brevity this document only focuses on the findings which are included in the report (and/or closely related)
+
+
+Data used for these analysis can be reproduced by runing the data cleaning file in the repository \[link/name\]. The data was then split into two datasets, one containing income outliers and one with income outliers removed. The no outliers dataset is used in any analyses which include pay related variables. The outlier exclusion criteria are the same as those in Study 1. In this dataset 10.1% (183) cases are removed in the no outlier dataset.
+
+```{r setup}
+library(tidyverse)
+library(crosstable) 
+library(flextable)
+library(vcd)
+library(MASS)
+library(forcats)
+library(broom)
+
+# Load data
+experiential_data <- read_csv("../Experiential/data/2025-06-30 - clean_data_jrf_experiential.csv")
+
+# Set reference levels for factors
+experiential_data$Ethnicity_Collapsed <- relevel(factor(experiential_data$Ethnicity_Collapsed), ref = "White British")
+experiential_data$Sex <- relevel(factor(experiential_data$Sex), ref = "Male")
+experiential_data$Region <- relevel(factor(experiential_data$Region), ref = "London")
+experiential_data$income_group <- relevel(factor(experiential_data$income_group), ref = "Mid")
+
+# Create filtered dataset excluding income outliers for income-related analyses
+# income_drop: 1 = outlier, 0 = not outlier (from data_cleaning.R)
+experiential_data_no_income_outliers <- experiential_data %>%
+  filter(income_drop == 0)
+
+# Data quality check - Income outlier filtering
+cat("Data quality check - Income outlier filtering:\n")
+cat("Original dataset:", nrow(experiential_data), "rows\n")
+cat("After removing income outliers:", nrow(experiential_data_no_income_outliers), "rows\n")
+cat("Income outliers removed:", nrow(experiential_data) - nrow(experiential_data_no_income_outliers), 
+    "(", round((nrow(experiential_data) - nrow(experiential_data_no_income_outliers))/nrow(experiential_data)*100, 1), "%)\n\n")
+```
+
+## Pay Comparison
+
+First we explore subjective perceptions of Pay, where participants selected whether they believed they were paid more or less than in-house workers. The analysis is conducted using simple crosstabulations across key demographic variables; Sex, Age, Eethnicity, Region, Income group (e.g. High, Low or Middle), Education Band (High, Low, Middle) and Place of Birth (UK, Not UK)
+
+```{r pay-comparison-cross}
+
+Paid_Less_Cross <- crosstable(experiential_data_no_income_outliers %>% 
+                                dplyr::select(Pros_And_Cons_Pay, Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, income_group, Education_Band, BORNUK_binary), 
+                              by = Pros_And_Cons_Pay,
+                              total = "both",
+                              showNA = "no", 
+                              funs = c("median", "mean", "std dev" = "sd"),
+                              percent_digits = 2, 
+                              percent_pattern = "{n} ({p_row})") %>%
+  as_flextable()
+
+Paid_Less_Cross
+```
+
+The pay comparison analysis reveals several notable demographic patterns in perceived pay inequality among outsourced workers. **Sex differences** are evident, with men more likely to report being paid more than in-house workers (31.77%) compared to women (21.35%), while women more frequently report no pay difference (52.25% vs 42.25%). **Age patterns** show that those reporting higher pay tend to be younger (mean age 35.7 years) compared to those reporting lower pay (mean age 38.5 years). **Education disparities** are striking, with highly educated workers much more likely to report being paid more (32.47%) compared to those with low education (16.15%). **Place of birth** differences emerge, with workers not born in the UK more likely to report being paid more (33.41%) than UK-born workers (24.98%), though they also report higher rates of being paid less (21.18% vs 16.06%). **Income group patterns** show that high-income workers are most likely to report being paid more as expected (32.74%), while low-income workers show the highest rates of uncertainty about their pay situation (12.47% "don't know").
+
+## Work Preferences
+
+Next we explore simple counts/percentages of Outsourced workers preferences for in-house vs outsourced work.
+
+```{r work-preferences}
+work_pref_table <- experiential_data %>%
+  count(Work_Preference) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) %>%
+  dplyr::select(Work_Preference, n, Percentage) %>%
+  flextable() %>%
+  set_header_labels(
+    Work_Preference = "Work Preference",
+    n = "Count",
+    Percentage = "Percentage"
+  ) %>%
+  theme_vanilla()
+
+work_pref_table
+```
+
+The work preferences data show that the largest group of outsourced workers (39.6%) express no preference between in-house and outsourced employment. However, among those with preferences, there is a clear preference for in-house work, with 32.1% preferring in-house positions (16.3% strongly + 15.8% prefer) compared to 17.9% preferring outsourced work (6.9% strongly + 11.0% prefer).
+
+## Job Motivation
+
+Here we examine the motivational factors that influence outsourced workers' decisions to remain in their current roles. Using a descriptive approach, we present the frequency and percentage distribution of responses across eleven distinct motivational categories, ranging from intrinsic factors (job satisfaction, workplace culture) to extrinsic factors (pay, location convenience) and personal circumstances (health conditions, caregiving responsibilities).
+
+```{r job-motivation-setup}
+
+# Create a summary of reasons why outsourced workers are in their current role
+why_job_reasons <- data.frame(
+  Reason = c(
+    "I like doing this kind of work",
+    "My job is in a convenient location", 
+    "I can work flexibly in a way which suits me",
+    "The pay is good",
+    "I like my colleagues",
+    "I like the workplace culture",
+    "It is helping me develop skills and experience I need to progress",
+    "This was the best job available to me",
+    "I do not have the formal qualifications I need to do another job I would prefer",
+    "I can do the job alongside managing my health conditions",
+    "I can do the job alongside childcare or caring for others"
+  ),
+  Variable = c(
+    "Why_Job_Like", "Why_Job_Convinient", "Why_Job_Flexibility", "Why_Job_Pay",
+    "Why_Job_Collegues", "Why_Job_Culture", "Why_Job_Progress", "Why_Job_BestAvailable",
+    "Why_Job_NotQualified", "Why_Job_Health", "Why_Job_Carer"
+  )
+)
+
+# Count responses for each reason (excluding NAs)
+why_job_counts <- data.frame(
+  Reason = character(0),
+  Count = numeric(0),
+  Percentage = numeric(0)
+)
+
+for(i in 1:nrow(why_job_reasons)) {
+  var_name <- why_job_reasons$Variable[i]
+  reason_text <- why_job_reasons$Reason[i]
+  
+  # Count non-NA responses
+  count <- sum(!is.na(experiential_data[[var_name]]))
+  total_responses <- nrow(experiential_data)
+  percentage <- round(count / total_responses * 100, 1)
+  
+  why_job_counts <- rbind(why_job_counts, data.frame(
+    Reason = reason_text,
+    Count = count,
+    Percentage = percentage
+  ))
+}
+
+# Sort by count (descending)
+why_job_counts <- why_job_counts[order(why_job_counts$Count, decreasing = TRUE), ]
+
+# Create table
+why_job_table <- why_job_counts %>%
+  flextable() %>%
+  set_header_labels(
+    Reason = "Reason for Current Role",
+    Count = "Count",
+    Percentage = "Percentage"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+# Create and display plot
+why_job_plot <- ggplot(why_job_counts, aes(x = Percentage, y = reorder(Reason, Percentage))) +
+  geom_col(fill = "steelblue", alpha = 0.7) +
+  geom_text(aes(label = paste0(Percentage, "%")), 
+            hjust = -0.05, size = 3) +
+  labs(
+    title = "Reasons for Current Role",
+    x = "Percentage of Total Sample",
+    y = "Reason"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 8),
+    axis.title = element_text(size = 10)
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.15)))
+
+```
+
+
+#| layout-ncol: 2
+#| echo: false
+#| out-width: "100%"
+
+# Display table
+why_job_table
+
+# Display plot
+why_job_plot
+```
+
+The job motivation analysis shows the key factors driving outsourced workers' employment decisions. **Practical considerations dominate**, with job location convenience being the most frequently cited reason (41.2%), followed closely by pay satisfaction (40.7%) and intrinsic job satisfaction (40.1%). **Social factors** also play a significant role, with over one-third (35.9%) citing positive relationships with colleagues. **Flexibility**, often assumed to be a primary motivation for outsourced work, ranks fifth at 32.0%. **Workplace culture** is important to just over a quarter (27.7%) of workers. **Necessity-driven motivations** are less common but notable, with 24.1% stating this was the best job available and 23.6% viewing it as a stepping stone for skill development. **Personal circumstances** account for smaller proportions: 14.6% balance the job with caregiving responsibilities, 13.0% manage health conditions, and only 9.0% remain due to qualification constraints (although it is possible that social desirability is playing a role in participants willingness to respond to questions about their level of qualifications and its relation to their employment possibilities).
+
+## Pros and Cons of Outsourced Work
+
+Here we explore outsourced workers' comparative assessments of their employment conditions relative to hypothetical in-house positions. Participants rated fourteen distinct workplace dimensions on a scale ranging from "less/worse" to "more/better" compared to in-house workers.
+
+```{r pros-cons-setup}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Function to categorise pros and cons responses
+categorise_response <- function(response) {
+  if (is.na(response)) {
+    return(NA)
+  }
+  
+  response <- as.character(response)
+  
+  # Don't know category
+  if (grepl("Don't know", response, ignore.case = TRUE)) {
+    return("Don't know")
+  }
+  
+  # Neither/No impact category
+  if (grepl("Neither|no impact", response, ignore.case = TRUE)) {
+    return("No impact / Neither")
+  }
+  
+  # Less/Worse category
+  if (grepl("less|worse|harder", response, ignore.case = TRUE)) {
+    return("Less / Worse")
+  }
+  
+  # More/Better category  
+  if (grepl("more|better|easier", response, ignore.case = TRUE)) {
+    return("More / Better")
+  }
+  
+  # Default to Neither for other responses
+  return("No impact / Neither")
+}
+
+
+# Define variable labels
+pros_cons_labels <- data.frame(
+  Variable = c("Pros_And_Cons_Flexibility", "Pros_And_Cons_Pay", "Pros_And_Cons_Hours", 
+               "Pros_And_Cons_Holiday", "Pros_And_Cons_Terms", "Pros_And_Cons_Promotion",
+               "Pros_And_Cons_Training", "Pros_And_Cons_Security", "Pros_And_Cons_Treatment",
+               "Pros_And_Cons_Specialisation", "Pros_And_Cons_Connection",
+               "Pros_And_Cons_FeelInvested","Pros_And_Cons_Rights", 
+               "Pros_And_Cons_HealthSafety"),
+  Label = c("Get to work flexibly", "Pay", "Access to secure working hours",
+            "Holiday leave", "Terms and conditions", "Opportunity to progress / promotion",
+            "Access to training / development", "Access to job security", "Treatment compared to in-house colleagues",
+            "Opportunity to specialise in role or industry", "Feeling connected to people I work with",
+            "Feeling invested in my role and my work", "Ease of asserting rights at work",
+            "Protection of health and safety at work")
+)
+
+# Process each pros and cons variable
+pros_cons_data <- data.frame()
+
+for (i in 1:nrow(pros_cons_labels)) {
+  var_name <- pros_cons_labels$Variable[i]
+  label <- pros_cons_labels$Label[i]
+  
+  # Categorise responses
+  categorised <- sapply(experiential_data[[var_name]], categorise_response)
+  
+  # Count categories
+  counts <- table(categorised, useNA = "no")
+  total <- sum(counts)
+  
+  # Calculate percentages
+  for (category in names(counts)) {
+    percentage <- round(counts[category] / total * 100, 0)
+    pros_cons_data <- rbind(pros_cons_data, data.frame(
+      Variable = label,
+      Category = category,
+      Count = as.numeric(counts[category]),
+      Percentage = percentage
+    ))
+  }
+}
+
+# Calculate Less/Worse percentage for ordering
+less_worse_pct <- pros_cons_data %>%
+  filter(Category == "Less / Worse") %>%
+  dplyr::select(Variable, Percentage) %>%
+  rename(LessWorse_Pct = Percentage)
+
+# Order by Less/Worse percentage (descending)
+variable_order <- less_worse_pct[order(less_worse_pct$LessWorse_Pct, decreasing = TRUE), "Variable"]
+
+# Set factor levels for proper ordering
+pros_cons_data$Variable <- factor(pros_cons_data$Variable, levels = variable_order)
+pros_cons_data$Category <- factor(pros_cons_data$Category, 
+                                  levels = c("Don't know", "No impact / Neither", "More / Better", "Less / Worse"))
+
+# Create the stacked bar chart
+
+pros_cons_plot <- ggplot(pros_cons_data, aes(x = Percentage, y = Variable, fill = Category)) +
+  geom_col(position = "stack") +
+  geom_text(aes(label = ifelse(Percentage >= 5, paste0(Percentage, "%"), "")), 
+            position = position_stack(vjust = 0.5), 
+            size = 3, color = "white", fontface = "bold") +
+  scale_fill_manual(values = c("Less / Worse" = "#e74c3c", 
+                               "More / Better" = "#27ae60", 
+                               "No impact / Neither" = "#3498db", 
+                               "Don't know" = "#95a5a6")) +
+  labs(
+    title = "Reflections on the potential benefits and drawbacks of outsourced work",
+    subtitle = "Compared to if you were an in-house / non-outsourced worker",
+    x = "Percentage",
+    y = "",
+    fill = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray60"),
+    axis.text.y = element_text(size = 9),
+    axis.title.x = element_text(size = 11),
+    legend.position = "top",
+    legend.text = element_text(size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_x_continuous(labels = function(x) paste0(x, "%"), 
+                     breaks = seq(0, 100, 10),
+                     expand = c(0, 0))
+
+pros_cons_plot
+```
+
+The pros and cons suggests areas of disadvantage for outsourced workers compared to hypothetical in-house positions. **Career development emerges as the most problematic area**, with 24% reporting worse opportunities for progression/promotion and 20% citing reduced access to training and development. **Job security concerns** are similarly prominent, with 20% reporting worse access to job security. **Workplace relationships and engagement** show notable deficits, with 19% feeling less connected to colleagues and 17% feeling less invested in their role. **Workers' rights and voice** present challenges, with 19% finding it harder to assert rights at work.
+
+**Flexibility stands out as a key advantage**, with 41.8% reporting better flexibility compared to only 14.2% reporting worse flexibility - making it the strongest positive aspect of outsourced work. **Pay perceptions are mixed**, with 17% reporting worse pay, though this varies significantly by demographic group as shown in the earlier analysis.
+
+**The overall pattern** shows that while outsourced workers may benefit from increased flexibility, they face systematic disadvantages in career development, job security, workplace relationships, and employee voice. Most concerning is that career progression and training opportunities - crucial for long-term economic mobility - rank as the most problematic areas for outsourced workers.
+
+## Cumulative Burden
+
+Here we quantify the cumulative burden of negative work experiences among outsourced workers by transforming the categorical responses from the pros and cons analysis into numerical scores (-1 for negative, 0 for neutral, +1 for positive). We calculate the total number of negative outcomes per respondent across all 14 workplace dimensions and examine the distribution of these counts within the sample. The analysis includes a focused examination of workers who report being paid less than in-house colleagues, investigating whether pay disadvantage is associated with broader patterns of workplace disadvantage.
+
+```{r negative-outcomes-processing}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+
+# Function to transform categorical responses to numeric values
+recode_pros_cons <- function(x) {
+  case_when(
+    grepl("more|better|easier", tolower(x)) ~ 1,
+    grepl("less|harder|worse", tolower(x)) ~ -1,
+    grepl("neither|no impact", tolower(x)) ~ 0,
+    grepl("don't know", tolower(x)) ~ NA_real_,
+    # Default case
+    TRUE ~ NA_real_
+  )
+}
+
+# Process the data using the same approach as the Quarto file
+experiential_data <- experiential_data %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric"))
+
+## Analysis of Negative Outcomes per Worker (using Quarto approach)
+
+# Count negative outcomes for each respondent using the same method as Quarto file
+experiential_data <- experiential_data %>%
+  mutate(
+    total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE),
+    num_neg_excl_pay = rowSums(dplyr::select(., contains("_numeric"), -Pros_And_Cons_Pay_numeric) == -1, na.rm = TRUE)
+  ) %>%
+  # Create meaningful categories (same as Quarto file)
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Create categories excluding pay for the paid less analysis
+  mutate(neg_category_excl_pay = case_when(
+    num_neg_excl_pay == 0 ~ "0",
+    num_neg_excl_pay == 1 ~ "1",
+    num_neg_excl_pay == 2 ~ "2",
+    num_neg_excl_pay == 3 ~ "3",
+    num_neg_excl_pay == 4 ~ "4",
+    num_neg_excl_pay >= 5 ~ "5+"
+  )) %>%
+  # Create readable categories for display
+  mutate(
+    negative_outcomes_category = case_when(
+      num_neg == 0 ~ "No negative Impacts",
+      num_neg %in% 1:2 ~ "1-2 negative Impacts", 
+      num_neg %in% 3:4 ~ "3-4 negative Impacts",
+      num_neg >= 5 ~ "5+ negative Impacts",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Apply the same transformations to the filtered dataset
+experiential_data_no_income_outliers <- experiential_data_no_income_outliers %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  mutate(
+    total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE)
+  ) %>%
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  mutate(
+    negative_outcomes_category = case_when(
+      num_neg == 0 ~ "No negative impacts",
+      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
+      num_neg %in% 3:4 ~ "3-4 negative outcomes",
+      num_neg >= 5 ~ "5+ negative outcomes",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Create summary table using the same approach as Quarto file
+negative_outcomes_summary <- experiential_data %>%
+  count(negative_outcomes_category) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) %>%
+  filter(!is.na(negative_outcomes_category)) %>%
+  # Reorder for logical presentation
+  mutate(negative_outcomes_category = factor(negative_outcomes_category, 
+                                           levels = c("No negative impacts", 
+                                                     "1-2 negative outcomes",
+                                                     "3-4 negative outcomes", 
+                                                     "5+ negative outcomes"))) %>%
+  arrange(negative_outcomes_category)
+
+# Create table using flextable
+negative_outcomes_table <- negative_outcomes_summary %>%
+  dplyr::select(negative_outcomes_category, n, Percentage) %>%
+  flextable() %>%
+  set_header_labels(
+    negative_outcomes_category = "Number of Negative Outcomes",
+    n = "Count",
+    Percentage = "Percentage"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+negative_outcomes_table
+
+# Create visualisation
+negative_outcomes_plot <- ggplot(negative_outcomes_summary, 
+                                aes(x = Percentage, y = fct_rev(negative_outcomes_category))) +
+  geom_col(fill = c("#27ae60", "#f39c12", "#e67e22", "#e74c3c"), alpha = 0.8) +
+  geom_text(aes(label = paste0(Percentage, "%")), 
+            hjust = -0.05, size = 4, fontweight = "bold") +
+  labs(
+    title = "Distribution of Negative Outcomes Among Outsourced Workers",
+    subtitle = "Number of negative impacts compared to in-house work",
+    x = "Percentage of Workers",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12, color = "gray60"),
+    axis.text.y = element_text(size = 11),
+    axis.title.x = element_text(size = 11),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.15)))
+
+negative_outcomes_plot
+```
+
+The negative Impacts analysis reveals the cumulative burden of workplace disadvantages among outsourced workers. **The distribution shows significant polarisation**: 38.5% of workers report no negative outcomes, while 23.6% experience five or more negative outcomes across the fourteen workplace dimensions (mean = 2.51, median = 1).
+
+```{r negative-outcomes-paid-less}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+
+#Percentage of people reportring they are paid less and number of negative outcomes
+
+# Filter for people paid less and create negative categories (excluding pay)
+paid_less_group <- experiential_data %>%
+  filter(Pros_And_Cons_Pay == 'I get paid less') %>%
+  count(neg_category_excl_pay) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Create the bar plot for paid less group
+ggplot(paid_less_group, aes(x = neg_category_excl_pay, y = percent, fill = neg_category_excl_pay)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Additional Negative Outcomes for People Who Say They Are Paid Less",
+       subtitle = "Excluding pay disadvantage (showing additional workplace problems)",
+       x = "Number of Additional Negative Responses (beyond pay)",
+       y = "Percentage of People Paid Less") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+```
+
+**Most striking is the relationship between pay disadvantage and cumulative negative outcomes.** Among workers who report being paid less than in-house colleagues, **96.4% experience at least one additional negative outcome beyond pay** - only 3.6% report pay disadvantage as an isolated issue. The concentration of negative outcomes among this group is severe: **69.7% experience five or more total negative outcomes** (including pay) compared to just 23.6% in the overall population - nearly a threefold difference.
+
+**The pattern suggests that pay disadvantage rarely occurs in isolation** but is typically accompanied by broader workplace disadvantages. Workers reporting pay disadvantage show dramatically higher rates of multiple negative outcomes (10.1% have 4+ negatives including pay vs 7.4% overall), indicating that pay inequity is a marker of comprehensive workplace disadvantage rather than an isolated issue.
+
+## Statistical Analysis
+
+Continuing the analysis of pros and cons of outsourced working this section presents descriptive analysis of mean negative outcomes across demographic groups, followed by regression modeling to identify predictors. The analysis compares Poisson, linear, and negative binomial regression models using fit statistics (AIC, deviance, RMSE) to select the best-fitting model. Results are presented through a model comparison table, coefficients table with rate ratios and confidence intervals, forest plot visualisation of rate ratios, and predicted values for different income groups. The analysis identifies which demographic characteristics are associated with higher rates of negative workplace outcomes among outsourced workers.
+
+The statistical analysis reveals significant demographic predictors of negative workplace outcomes among outsourced workers. **Model selection favoured negative binomial regression** due to overdispersion (ratio = 3.387), with this model showing the best fit (AIC = 6519.5) compared to Poisson (AIC = 8173.4) and linear models (AIC = 7700.3).
+
+```{r statistical-analysis-setup}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# 4. Mean number of negatives by group
+means_by_group <- experiential_data_no_income_outliers %>%
+  dplyr::select(income_group, Ethnicity_Collapsed, Sex, Education_Band, BORNUK_binary, num_neg) %>%
+  pivot_longer(cols = -num_neg, names_to = "demographic", values_to = "group") %>%
+  filter(!is.na(group)) %>%
+  group_by(demographic, group) %>%
+  summarise(
+    mean_negatives = round(mean(num_neg, na.rm = TRUE), 2),
+    median_negatives = median(num_neg, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+
+# Create visualisation of means
+means_plot <- means_by_group %>%
+  ggplot(aes(x = group, y = mean_negatives, fill = demographic)) +
+  geom_col(alpha = 0.8) +
+  geom_text(aes(label = mean_negatives), vjust = -0.5, size = 3) +
+  facet_wrap(~ demographic, scales = "free_x") +
+  labs(
+    title = "Mean Number of Negative Outcomes by Demographic Group",
+    x = "",
+    y = "Mean Number of Negatives"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+means_plot
+
+## Regression Analysis of Demographic Differences
+
+# Ensure we have complete data for regression
+regression_data <- experiential_data_no_income_outliers %>%
+  filter(!is.na(num_neg), !is.na(income_group), !is.na(Ethnicity_Collapsed),
+         !is.na(Sex), !is.na(Education_Band), !is.na(BORNUK_binary),
+         !is.na(Region), !is.na(OutsourcedNonOL), !is.na(Age))
+
+demographics <- c("income_group", "Ethnicity_Collapsed", "Sex", "Education_Band", "BORNUK_binary", "Region", "Age", "OutsourcedNonOL")
+
+# 1.1 Univariate Models
+univariate_models <- list()
+model_summaries <- list()
+
+for (demo in demographics) {
+  # Create formula dynamically
+  formula_str <- paste("num_neg ~", demo)
+  formula_obj <- as.formula(formula_str)
+  
+  # Poisson regression
+  poisson_model <- glm(formula_obj, 
+                      data = regression_data, 
+                      family = poisson)
+  
+  # Linear regression for comparison
+  linear_model <- lm(formula_obj, 
+                    data = regression_data)
+  
+  # Store models
+  univariate_models[[demo]] <- list(
+    poisson = poisson_model,
+    linear = linear_model
+  )
+  
+  # Extract summary statistics
+  poisson_summary <- tidy(poisson_model, conf.int = TRUE)
+  linear_summary <- tidy(linear_model, conf.int = TRUE)
+  
+  model_summaries[[demo]] <- list(
+    demographic = demo,
+    poisson_aic = AIC(poisson_model),
+    linear_r_squared = summary(linear_model)$r.squared,
+    poisson_deviance = poisson_model$deviance,
+    linear_rmse = sqrt(mean(residuals(linear_model)^2))
+  )
+}
+
+# 1.2 Multivariate Model
+# Poisson regression with all demographics
+full_poisson <- glm(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                   Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                   data = regression_data, 
+                   family = poisson)
+
+# Linear regression with all demographics  
+full_linear <- lm(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                 Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                 data = regression_data)
+
+# Check for overdispersion in Poisson model
+overdispersion_ratio <- full_poisson$deviance / full_poisson$df.residual
+cat("Overdispersion ratio:", round(overdispersion_ratio, 3), "\n")
+cat("If > 1.5, consider negative binomial or quasi-Poisson\n")
+
+# If overdispersed, fit negative binomial
+if(overdispersion_ratio > 1.5) {
+  full_negbin <- glm.nb(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                       Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                       data = regression_data)
+  cat("Negative binomial model fitted due to overdispersion\n")
+}
+
+# 1.3 Model Comparison Table
+model_comparison <- data.frame(
+  Model = c("Full Poisson", "Full Linear", if(exists("full_negbin")) "Full Negative Binomial"),
+  AIC = c(AIC(full_poisson), AIC(full_linear), if(exists("full_negbin")) AIC(full_negbin) else NA),
+  Deviance = c(full_poisson$deviance, NA, if(exists("full_negbin")) full_negbin$deviance else NA),
+  R_Squared = c(NA, summary(full_linear)$r.squared, NA),
+  RMSE = c(sqrt(mean(residuals(full_poisson)^2)), 
+           sqrt(mean(residuals(full_linear)^2)), 
+           if(exists("full_negbin")) sqrt(mean(residuals(full_negbin)^2)) else NA)
+) %>%
+  filter(!is.na(Model))
+
+# Create model comparison table
+model_comparison_table <- model_comparison %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3))) %>%
+  flextable() %>%
+  set_header_labels(
+    Model = "Model Type",
+    AIC = "AIC",
+    Deviance = "Deviance", 
+    R_Squared = "R-Squared",
+    RMSE = "RMSE"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+model_comparison_table
+
+# 1.4 Coefficient Analysis (using best model)
+best_model <- if(exists("full_negbin")) full_negbin else full_poisson
+
+# Extract coefficients with confidence intervals
+coefficients_df <- tidy(best_model, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    # For Poisson/NegBin: exp(estimate) gives rate ratios
+    rate_ratio = exp(estimate),
+    rate_ratio_lower = exp(conf.low),
+    rate_ratio_upper = exp(conf.high),
+    significant = p.value < 0.05
+  )
+
+# Create coefficients table
+coefficients_table <- coefficients_df %>%
+  dplyr::select(term, estimate, std.error, rate_ratio, conf.low, conf.high, p.value, significant) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  flextable() %>%
+  set_header_labels(
+    term = "Variable",
+    estimate = "Coefficient",
+    std.error = "Std Error",
+    rate_ratio = "Rate Ratio",
+    conf.low = "95% CI Lower",
+    conf.high = "95% CI Upper", 
+    p.value = "P-Value",
+    significant = "Significant"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+coefficients_table
+
+# 1.5 Forest Plot of Coefficients
+forest_plot <- coefficients_df %>%
+  mutate(
+   term_clean = str_replace_all(term, "BORNUK_binary", ""),
+   term_clean = str_replace_all(term_clean, "_", " ")
+  ) %>%
+  ggplot(aes(x = rate_ratio, y = reorder(term_clean, rate_ratio))) +
+  geom_point(size = 3, color = "darkblue") +
+  geom_errorbarh(aes(xmin = rate_ratio_lower, xmax = rate_ratio_upper), 
+                 height = 0.2, color = "darkblue") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  labs(
+    title = "Rate Ratios for Number of Negative Outcomes",
+    subtitle = "Showing 95% confidence intervals",
+    x = "Rate Ratio (>1 = higher rate of negatives)",
+    y = "",
+    caption = "Reference: Male, White British, Mid income, etc."
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+forest_plot
+```
+
+**Education emerges as the strongest predictor**, with both mid-education (rate ratio = 0.738) and low-education workers (rate ratio = 0.649) experiencing significantly fewer negative outcomes than highly educated workers. This counterintuitive finding suggests that **higher education may increase expectations or awareness of workplace disadvantages** rather than protecting against them.
+
+**Place of birth shows significant effects**, with workers not born in the UK experiencing 38% more negative outcomes (rate ratio = 1.38) compared to UK-born workers, while those preferring not to disclose birth status report 56% fewer negative outcomes (rate ratio = 0.436). **Descriptive patterns show** that workers not born in the UK have the highest mean negative outcomes (3.2), while those born in the UK average 2.33 negative outcomes.
+
+**Ethnicity shows some variation**, with Black/African/Caribbean workers reporting 24% fewer negative outcomes than White British workers (rate ratio = 0.761).
+
+**Gender differences are evident**, with female workers experiencing 21% fewer negative outcomes than male workers (rate ratio = 0.789). **Age shows a protective effect**, with each additional year associated with slightly fewer negative outcomes (rate ratio = 0.994).
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+# Create prediction data with proper error handling
+predicted_data <- expand_grid(
+  income_group = levels(factor(regression_data$income_group)),
+  Ethnicity_Collapsed = "White British",  # Hold constant
+  Sex = "Male",  # Hold constant
+  Education_Band = if("Education_Band" %in% names(regression_data)) levels(factor(regression_data$Education_Band))[1] else "High",
+  BORNUK_binary = if("BORNUK_binary" %in% names(regression_data)) levels(factor(regression_data$BORNUK_binary))[1] else "Yes",
+  Region = if("Region" %in% names(regression_data)) names(sort(table(regression_data$Region), decreasing = TRUE))[1] else "London",
+  OutsourcedNonOL = if("OutsourcedNonOL" %in% names(regression_data)) names(sort(table(regression_data$OutsourcedNonOL), decreasing = TRUE))[1] else "Outsourced",
+  Age = median(regression_data$Age, na.rm = TRUE)  # Hold constant
+)
+
+# Ensure all variables are factors where needed
+predicted_data <- predicted_data %>%
+  mutate(
+    income_group = factor(income_group, levels = levels(factor(regression_data$income_group))),
+    Ethnicity_Collapsed = factor(Ethnicity_Collapsed, levels = levels(factor(regression_data$Ethnicity_Collapsed))),
+    Sex = factor(Sex, levels = levels(factor(regression_data$Sex))),
+    Education_Band = if("Education_Band" %in% names(regression_data)) factor(Education_Band, levels = levels(factor(regression_data$Education_Band))) else Education_Band,
+    BORNUK_binary = if("BORNUK_binary" %in% names(regression_data)) factor(BORNUK_binary, levels = levels(factor(regression_data$BORNUK_binary))) else BORNUK_binary,
+    Region = if("Region" %in% names(regression_data)) factor(Region, levels = levels(factor(regression_data$Region))) else Region,
+    OutsourcedNonOL = if("OutsourcedNonOL" %in% names(regression_data)) factor(OutsourcedNonOL, levels = levels(factor(regression_data$OutsourcedNonOL))) else OutsourcedNonOL
+  ) %>%
+  mutate(
+    predicted_negatives = predict(best_model, newdata = ., type = "response")
+  )
+
+# Plot predicted values
+predicted_plot <- predicted_data %>%
+  ggplot(aes(x = income_group, y = predicted_negatives)) +
+  geom_col(fill = "steelblue", alpha = 0.7) +
+  geom_text(aes(label = round(predicted_negatives, 2)), vjust = -0.5) +
+  labs(
+    title = "Predicted Number of Negative Outcomes by Income Group",
+    subtitle = "Holding other demographics constant",
+    x = "Income Group",
+    y = "Predicted Number of Negatives"
+  ) +
+  theme_minimal()
+
+predicted_plot
+```
+
+**Income effects are notable**, with high-income workers experiencing 22% fewer negative outcomes than mid-income workers (rate ratio = 0.777). **The predicted values plot demonstrates this income effect more clearly** by holding all other demographic variables constant. Under these controlled conditions, the model predicts that high-income workers will experience approximately 2.14 negative outcomes compared to 2.75 for mid-income workers and 3.56 for low-income workers - a reduction of 0.61 and 1.42 (respectively) negative outcomes purely attributable to income level.
+
+## Work Conditions
+
+Next we examine specific employment conditions that characterise outsourced work arrangements, focusing on five key dimensions: guaranteed hours, notice periods for working schedules, advance warning of shift cancellations, compensation for cancelled shifts, and sick pay provision. The analysis presents descriptive statistics for each condition and conducts cross-tabulations with demographic variables to identify potential disparities in work conditions across different groups. Statistical tests (chi-square or Fisher's exact tests) are employed to assess the significance of observed associations, with effect sizes calculated using Cramér's V.
+
+```{r work-conditions-setup}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+#| echo: false
+
+# Variables to analyze:
+work_variables <- c("Guaranteed_Hours", "Notice_Of_Working_Hours", "Notice_Of_Cancelled_Shifts", 
+                   "Cancelled_Shift_Pay", "Sick_Pay")
+
+for (var in work_variables) {
+  cat("\n", var, ":\n")
+  response_counts <- table(experiential_data[[var]], useNA = "ifany")
+  print(response_counts)
+  cat("Total responses:", sum(response_counts), "\n")
+}
+
+# Create percentage summaries for each variable
+work_conditions_summary <- list()
+
+for (var in work_variables) {
+  # Calculate counts and percentages
+  counts <- table(experiential_data[[var]], useNA = "no")  # Exclude NAs from percentage calculation
+  total_responses <- sum(counts)
+  
+  # Create summary dataframe
+  summary_df <- data.frame(
+    Response = names(counts),
+    Count = as.numeric(counts),
+    Percentage = round(as.numeric(counts) / total_responses * 100, 1),
+    stringsAsFactors = FALSE
+  )
+  
+  # Store in list
+  work_conditions_summary[[var]] <- summary_df
+}
+
+# Display tables for each variable
+library(flextable)
+
+# Variable labels for better presentation
+variable_labels <- c(
+  "Guaranteed_Hours" = "Guaranteed Hours",
+  "Notice_Of_Working_Hours" = "Notice of Working Hours", 
+  "Notice_Of_Cancelled_Shifts" = "Notice of Cancelled Shifts",
+  "Cancelled_Shift_Pay" = "Cancelled Shift Pay",
+  "Sick_Pay" = "Sick Pay"
+)
+
+# Create tables for each variable
+work_tables <- list()
+
+for (var in work_variables) {
+  table_data <- work_conditions_summary[[var]] %>%
+    arrange(desc(Percentage))  # Order by percentage descending
+  
+  work_table <- table_data %>%
+    flextable() %>%
+    set_header_labels(
+      Response = variable_labels[var],
+      Count = "Count",
+      Percentage = "Percentage (%)"
+    ) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  work_tables[[var]] <- work_table
+  
+  # Print table
+  #print(work_table)
+}
+```
+
+```{r work-conditions-visualisation}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+
+# Create visualisations for each variable
+work_plots <- list()
+
+for (var in work_variables) {
+  plot_data <- work_conditions_summary[[var]] %>%
+    arrange(Percentage) %>%  # Order for horizontal bar chart
+    mutate(Response = factor(Response, levels = Response))  # Preserve order
+  
+  work_plot <- ggplot(plot_data, aes(x = Percentage, y = Response)) +
+    geom_col(fill = "steelblue", alpha = 0.7) +
+    geom_text(aes(label = paste0(Percentage, "%")), 
+              hjust = -0.05, size = 3) +
+    labs(
+      title = paste("Distribution of Responses:", variable_labels[var]),
+      x = "Percentage of Respondents",
+      y = ""
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 12, face = "bold"),
+      axis.text.y = element_text(size = 9),
+      axis.title.x = element_text(size = 10),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.15)))
+  
+  work_plots[[var]] <- work_plot
+  
+  # Print plot
+  print(work_plot)
+}
+
+# Create a combined summary showing key statistics
+work_summary_stats <- data.frame(
+  Variable = variable_labels[work_variables],
+  Total_Responses = sapply(work_variables, function(var) {
+    sum(table(experiential_data[[var]], useNA = "no"))
+  }),
+  Missing_Values = sapply(work_variables, function(var) {
+    sum(is.na(experiential_data[[var]]))
+  }),
+  Most_Common_Response = sapply(work_variables, function(var) {
+    summary_data <- work_conditions_summary[[var]]
+    summary_data$Response[which.max(summary_data$Count)]
+  }),
+  Most_Common_Percentage = sapply(work_variables, function(var) {
+    summary_data <- work_conditions_summary[[var]]
+    paste0(max(summary_data$Percentage), "%")
+  }),
+  stringsAsFactors = FALSE
+)
+
+# Create summary table
+work_summary_table <- work_summary_stats %>%
+  flextable() %>%
+  set_header_labels(
+    Variable = "Work Condition Variable",
+    Total_Responses = "Total Responses",
+    Missing_Values = "Missing Values",
+    Most_Common_Response = "Most Common Response",
+    Most_Common_Percentage = "Percentage"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+work_summary_table
+
+## Cross-tabulation: Notice of Working Hours by Income Group
+
+# Create simplified categorisation for Notice of Working Hours
+experiential_data <- experiential_data %>%
+  mutate(Notice_Of_Working_Hours_Simplified = case_when(
+    Notice_Of_Working_Hours %in% c("Less than 24 hours", "1-3 days", "4-6 days") ~ "Less than a week",
+    TRUE ~ Notice_Of_Working_Hours
+  ))
+
+# Apply same simplification to filtered dataset
+experiential_data_no_income_outliers <- experiential_data_no_income_outliers %>%
+  mutate(Notice_Of_Working_Hours_Simplified = case_when(
+    Notice_Of_Working_Hours %in% c("Less than 24 hours", "1-3 days", "4-6 days") ~ "Less than a week",
+    TRUE ~ Notice_Of_Working_Hours
+  ))
+
+# Cross-tabulation with simplified variable (using filtered dataset for income analysis)
+notice_pay_crosstab <- crosstable(experiential_data_no_income_outliers, 
+                                  cols = Notice_Of_Working_Hours_Simplified, 
+                                  by = income_group,
+                                  total = "both",
+                                  percent_pattern = "{n} ({p_col})",
+                                  percent_digits = 2) %>%
+  as_flextable() %>%
+  set_caption("Notice of Working Hours by Income Group")
+
+notice_pay_crosstab
+
+## Cross-tabulation: Guaranteed Hours by Income Group
+
+guaranteed_hours_income_crosstab <- crosstable(experiential_data_no_income_outliers, 
+                                              cols = Guaranteed_Hours, 
+                                              by = income_group,
+                                              total = "both",
+                                              percent_pattern = "{n} ({p_col})",
+                                              percent_digits = 2) %>%
+  as_flextable() %>%
+  set_caption("Guaranteed Hours by Income Group")
+
+guaranteed_hours_income_crosstab
+
+## Cross-tabulation: Sick Pay by Income Group
+
+sick_pay_income_crosstab <- crosstable(experiential_data_no_income_outliers, 
+                                      cols = Sick_Pay, 
+                                      by = income_group,
+                                      total = "both",
+                                      percent_pattern = "{n} ({p_col})",
+                                      percent_digits = 2) %>%
+  as_flextable() %>%
+  set_caption("Sick Pay by Income Group")
+
+sick_pay_income_crosstab
+
+## Notice of Working Hours by Ethnicity
+notice_ethnicity_crosstab <- crosstable(experiential_data, 
+                                        cols = Notice_Of_Working_Hours_Simplified, 
+                                        by = Ethnicity_Collapsed,
+                                        total = "both",
+                                        percent_pattern = "{n} ({p_col})",
+                                        percent_digits = 2) %>%
+  as_flextable() %>%
+  set_caption("Notice of Working Hours by Ethnicity")
+
+notice_ethnicity_crosstab
+
+
+# Statistical analysis of notice of working hours by ethnicity
+# First check chi-square assumptions
+chi_results <- chisq.test(table(experiential_data$Notice_Of_Working_Hours_Simplified, 
+                                experiential_data$Ethnicity_Collapsed))
+
+min_expected <- min(chi_results$expected)
+cat("Chi-square assumption check - Minimum expected frequency:", round(min_expected, 2))
+if(min_expected >= 5) {
+  cat(" ✓ Chi-square assumptions met\n")
+} else {
+  cat(" ✗ Chi-square assumptions violated - using Fisher's exact test\n")
+}
+
+# Create contingency table for analysis
+contingency_table <- table(experiential_data$Notice_Of_Working_Hours_Simplified, 
+                          experiential_data$Ethnicity_Collapsed)
+
+#print(contingency_table)
+
+# Fisher's exact test (appropriate when chi-square assumptions violated)
+fisher_results <- fisher.test(contingency_table, simulate.p.value = TRUE, B = 10000)
+
+# Calculate Cramér's V for effect size
+library(vcd)
+cramers_v <- assocstats(contingency_table)$cramer
+
+# Create comprehensive results summary
+fisher_summary <- data.frame(
+  Test = "Fisher's exact test",
+  `p-value` = ifelse(fisher_results$p.value < 0.001, "< 0.001", 
+                     round(fisher_results$p.value, 4)),
+  `Cramers V` = round(cramers_v, 3),
+  `Effect Size` = case_when(
+    cramers_v < 0.1 ~ "Negligible",
+    cramers_v < 0.3 ~ "Small",
+    cramers_v < 0.5 ~ "Medium", 
+    TRUE ~ "Large"
+  ),
+  Significance = ifelse(fisher_results$p.value < 0.05, "Significant", "Not significant"),
+  stringsAsFactors = FALSE
+)
+
+# Display results
+print(fisher_summary)
+
+# Post-hoc analysis assessment
+cat("\nPost-hoc Analysis Assessment:\n")
+if(fisher_results$p.value < 0.05) {
+  cat("✓ Overall association is significant\n")
+  
+  # Check if post-hoc tests are warranted
+  ethnicity_levels <- length(unique(experiential_data$Ethnicity_Collapsed[!is.na(experiential_data$Ethnicity_Collapsed)]))
+  notice_levels <- length(unique(experiential_data$Notice_Of_Working_Hours_Simplified[!is.na(experiential_data$Notice_Of_Working_Hours_Simplified)]))
+  
+  if(ethnicity_levels > 2 || notice_levels > 2) {
+    cat("✓ Multiple categories present - post-hoc pairwise comparisons recommended\n")
+    
+    # Perform pairwise Fisher's exact tests between ethnicity groups
+    cat("\nPairwise Fisher's Exact Tests (Bonferroni corrected):\n")
+    
+    ethnicity_groups <- unique(experiential_data$Ethnicity_Collapsed[!is.na(experiential_data$Ethnicity_Collapsed)])
+    pairwise_results <- list()
+    
+    # Get all pairwise combinations
+    combinations <- combn(ethnicity_groups, 2, simplify = FALSE)
+    
+    for(i in seq_along(combinations)) {
+      group1 <- combinations[[i]][1]
+      group2 <- combinations[[i]][2]
+      
+      # Create pairwise table
+      subset_data <- experiential_data[experiential_data$Ethnicity_Collapsed %in% c(group1, group2), ]
+      subset_table <- table(subset_data$Notice_Of_Working_Hours_Simplified, 
+                           subset_data$Ethnicity_Collapsed, useNA = "no")
+      subset_table <- subset_table[rowSums(subset_table) > 0, colSums(subset_table) > 0, drop = FALSE]
+      
+      if(nrow(subset_table) > 1 && ncol(subset_table) > 1) {
+        # Fisher's exact test
+        pairwise_fisher <- fisher.test(subset_table, simulate.p.value = TRUE, B = 5000)
+        pairwise_cramers <- assocstats(subset_table)$cramer
+        
+        # Calculate directional interpretation with safe indexing
+        direction <- tryCatch({
+          # Use safer indexing with existence checks
+          row_idx <- which(rownames(subset_table) == "Less than a week")
+          col1_idx <- which(colnames(subset_table) == group1)
+          col2_idx <- which(colnames(subset_table) == group2)
+          
+          if(length(row_idx) > 0 && length(col1_idx) > 0 && length(col2_idx) > 0) {
+            group1_count <- subset_table[row_idx, col1_idx]
+            group2_count <- subset_table[row_idx, col2_idx]
+            
+            group1_total <- sum(subset_table[, col1_idx])
+            group2_total <- sum(subset_table[, col2_idx])
+            
+            group1_pct <- round(group1_count / group1_total * 100, 1)
+            group2_pct <- round(group2_count / group2_total * 100, 1)
+            
+            if(group1_pct > group2_pct) {
+              paste0(group1, " higher (", group1_pct, "% vs ", group2_pct, "%)")
+            } else if(group2_pct > group1_pct) {
+              paste0(group2, " higher (", group2_pct, "% vs ", group1_pct, "%)")
+            } else {
+              paste0("Similar (", group1_pct, "% vs ", group2_pct, "%)")
+            }
+          } else {
+            "Cannot calculate - missing categories"
+          }
+        }, error = function(e) {
+          "Error in calculation"
+        })
+        
+        pairwise_results[[i]] <- data.frame(
+          Comparison = paste(group1, "vs", group2),
+          p_value = pairwise_fisher$p.value,
+          cramers_v = round(pairwise_cramers, 3),
+          less_than_week_direction = direction,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    
+    # Combine results and apply Bonferroni correction
+    if(length(pairwise_results) > 0) {
+      pairwise_df <- do.call(rbind, pairwise_results)
+      pairwise_df$p_adjusted = p.adjust(pairwise_df$p_value, method = "bonferroni")
+      pairwise_df$significant_adjusted = pairwise_df$p_adjusted < 0.05
+      
+      # Add effect size interpretation
+      pairwise_df$effect_size = case_when(
+        pairwise_df$cramers_v < 0.1 ~ "Negligible",
+        pairwise_df$cramers_v < 0.3 ~ "Small",
+        pairwise_df$cramers_v < 0.5 ~ "Medium", 
+        TRUE ~ "Large"
+      )
+      
+      # Round p-values for display
+      pairwise_df$p_value = round(pairwise_df$p_value, 4)
+      pairwise_df$p_adjusted = round(pairwise_df$p_adjusted, 4)
+      
+      # Reorder columns for better readability
+      pairwise_df <- pairwise_df[, c("Comparison", "p_value", "p_adjusted", "significant_adjusted", 
+                                   "cramers_v", "effect_size", "less_than_week_direction")]
+      
+      print(pairwise_df)
+      
+      # Highlight significant findings
+      significant_pairs <- pairwise_df[pairwise_df$significant_adjusted, ]
+      if(nrow(significant_pairs) > 0) {
+        cat("\nSignificant pairwise differences (after Bonferroni correction):\n")
+        for(i in 1:nrow(significant_pairs)) {
+          cat("•", significant_pairs$Comparison[i], 
+              "(p =", significant_pairs$p_adjusted[i], 
+              ", Cramér's V =", significant_pairs$cramers_v[i], ")\n")
+          cat("  Direction:", significant_pairs$less_than_week_direction[i], "\n")
+        }
+      } else {
+        cat("\nNo significant pairwise differences after Bonferroni correction.\n")
+      }
+    }
+    
+  } else {
+    cat("→ Only 2 categories in each variable - no post-hoc tests needed\n")
+  }
+} else {
+  cat("→ Overall association not significant - post-hoc tests not recommended\n")
+}
+
+## Cross-tabulation and Statistical Analysis: Guaranteed Hours by Ethnicity
+
+# Cross-tabulation table
+guaranteed_hours_ethnicity_crosstab <- crosstable(experiential_data, 
+                                                 cols = Guaranteed_Hours, 
+                                                 by = Ethnicity_Collapsed,
+                                                 total = "both",
+                                                 percent_pattern = "{n} ({p_col})",
+                                                 percent_digits = 2) %>%
+  as_flextable() %>%
+  set_caption("Guaranteed Hours by Ethnicity")
+
+guaranteed_hours_ethnicity_crosstab
+
+# Statistical analysis of guaranteed hours by ethnicity
+# First check chi-square assumptions
+chi_results_hours <- chisq.test(table(experiential_data$Guaranteed_Hours, 
+                                     experiential_data$Ethnicity_Collapsed))
+
+min_expected_hours <- min(chi_results_hours$expected)
+cat("Chi-square assumption check - Minimum expected frequency:", round(min_expected_hours, 2))
+if(min_expected_hours >= 5) {
+  cat(" ✓ Chi-square assumptions met\n")
+} else {
+  cat(" ✗ Chi-square assumptions violated - using Fisher's exact test\n")
+}
+
+# Create contingency table for analysis
+contingency_table_hours <- table(experiential_data$Guaranteed_Hours, 
+                                experiential_data$Ethnicity_Collapsed)
+
+print(contingency_table_hours)
+
+# Fisher's exact test (appropriate when chi-square assumptions violated)
+fisher_results_hours <- fisher.test(contingency_table_hours, simulate.p.value = TRUE, B = 10000)
+
+# Calculate Cramér's V for effect size
+cramers_v_hours <- assocstats(contingency_table_hours)$cramer
+
+# Create comprehensive results summary
+fisher_summary_hours <- data.frame(
+  Test = "Fisher's exact test",
+  `p-value` = ifelse(fisher_results_hours$p.value < 0.001, "< 0.001", 
+                     round(fisher_results_hours$p.value, 4)),
+  `Cramers V` = round(cramers_v_hours, 3),
+  `Effect Size` = case_when(
+    cramers_v_hours < 0.1 ~ "Negligible",
+    cramers_v_hours < 0.3 ~ "Small",
+    cramers_v_hours < 0.5 ~ "Medium", 
+    TRUE ~ "Large"
+  ),
+  Significance = ifelse(fisher_results_hours$p.value < 0.05, "Significant", "Not significant"),
+  stringsAsFactors = FALSE
+)
+
+# Display results
+cat("\nFisher's Exact Test Results:\n")
+print(fisher_summary_hours)
+
+# Post-hoc analysis assessment
+cat("\nPost-hoc Analysis Assessment:\n")
+if(fisher_results_hours$p.value < 0.05) {
+  cat("✓ Overall association is significant\n")
+  
+  # Check if post-hoc tests are warranted
+  ethnicity_levels_hours <- length(unique(experiential_data$Ethnicity_Collapsed[!is.na(experiential_data$Ethnicity_Collapsed)]))
+  hours_levels <- length(unique(experiential_data$Guaranteed_Hours[!is.na(experiential_data$Guaranteed_Hours)]))
+  
+  if(ethnicity_levels_hours > 2 || hours_levels > 2) {
+    cat("✓ Multiple categories present - post-hoc pairwise comparisons recommended\n")
+    
+    # Perform pairwise Fisher's exact tests between ethnicity groups
+    cat("\nPairwise Fisher's Exact Tests (Bonferroni corrected):\n")
+    
+    ethnicity_groups_hours <- unique(experiential_data$Ethnicity_Collapsed[!is.na(experiential_data$Ethnicity_Collapsed)])
+    pairwise_results_hours <- list()
+    
+    # Get all pairwise combinations
+    combinations_hours <- combn(ethnicity_groups_hours, 2, simplify = FALSE)
+    
+    for(i in seq_along(combinations_hours)) {
+      group1 <- combinations_hours[[i]][1]
+      group2 <- combinations_hours[[i]][2]
+      
+      # Create pairwise table
+      subset_data <- experiential_data[experiential_data$Ethnicity_Collapsed %in% c(group1, group2), ]
+      subset_table <- table(subset_data$Guaranteed_Hours, 
+                           subset_data$Ethnicity_Collapsed, useNA = "no")
+      subset_table <- subset_table[rowSums(subset_table) > 0, colSums(subset_table) > 0, drop = FALSE]
+      
+      if(nrow(subset_table) > 1 && ncol(subset_table) > 1) {
+        # Fisher's exact test
+        pairwise_fisher <- fisher.test(subset_table, simulate.p.value = TRUE, B = 5000)
+        pairwise_cramers <- assocstats(subset_table)$cramer
+        
+        # Calculate directional interpretation with safe indexing
+        # Focus on "35+ hours" as the key category (full-time equivalent)
+        direction <- tryCatch({
+          # Use safer indexing with existence checks
+          row_idx <- which(rownames(subset_table) == "35+ hours")
+          col1_idx <- which(colnames(subset_table) == group1)
+          col2_idx <- which(colnames(subset_table) == group2)
+          
+          if(length(row_idx) > 0 && length(col1_idx) > 0 && length(col2_idx) > 0) {
+            group1_count <- subset_table[row_idx, col1_idx]
+            group2_count <- subset_table[row_idx, col2_idx]
+            
+            group1_total <- sum(subset_table[, col1_idx])
+            group2_total <- sum(subset_table[, col2_idx])
+            
+            group1_pct <- round(group1_count / group1_total * 100, 1)
+            group2_pct <- round(group2_count / group2_total * 100, 1)
+            
+            if(group1_pct > group2_pct) {
+              paste0(group1, " higher 35+ hours (", group1_pct, "% vs ", group2_pct, "%)")
+            } else if(group2_pct > group1_pct) {
+              paste0(group2, " higher 35+ hours (", group2_pct, "% vs ", group1_pct, "%)")
+            } else {
+              paste0("Similar 35+ hours (", group1_pct, "% vs ", group2_pct, "%)")
+            }
+          } else {
+            "Cannot calculate - missing categories"
+          }
+        }, error = function(e) {
+          "Error in calculation"
+        })
+        
+        pairwise_results_hours[[i]] <- data.frame(
+          Comparison = paste(group1, "vs", group2),
+          p_value = pairwise_fisher$p.value,
+          cramers_v = round(pairwise_cramers, 3),
+          hours_35plus_direction = direction,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+    
+    # Combine results and apply Bonferroni correction
+    if(length(pairwise_results_hours) > 0) {
+      pairwise_df_hours <- do.call(rbind, pairwise_results_hours)
+      pairwise_df_hours$p_adjusted = p.adjust(pairwise_df_hours$p_value, method = "bonferroni")
+      pairwise_df_hours$significant_adjusted = pairwise_df_hours$p_adjusted < 0.05
+      
+      # Add effect size interpretation
+      pairwise_df_hours$effect_size = case_when(
+        pairwise_df_hours$cramers_v < 0.1 ~ "Negligible",
+        pairwise_df_hours$cramers_v < 0.3 ~ "Small",
+        pairwise_df_hours$cramers_v < 0.5 ~ "Medium", 
+        TRUE ~ "Large"
+      )
+      
+      # Round p-values for display
+      pairwise_df_hours$p_value = round(pairwise_df_hours$p_value, 4)
+      pairwise_df_hours$p_adjusted = round(pairwise_df_hours$p_adjusted, 4)
+      
+      # Reorder columns for better readability
+      pairwise_df_hours <- pairwise_df_hours[, c("Comparison", "p_value", "p_adjusted", "significant_adjusted", 
+                                               "cramers_v", "effect_size", "hours_35plus_direction")]
+      
+      print(pairwise_df_hours)
+      
+      # Highlight significant findings
+      significant_pairs_hours <- pairwise_df_hours[pairwise_df_hours$significant_adjusted, ]
+      if(nrow(significant_pairs_hours) > 0) {
+        cat("\nSignificant pairwise differences (after Bonferroni correction):\n")
+        for(i in 1:nrow(significant_pairs_hours)) {
+          cat("•", significant_pairs_hours$Comparison[i], 
+              "(p =", significant_pairs_hours$p_adjusted[i], 
+              ", Cramér's V =", significant_pairs_hours$cramers_v[i], ")\n")
+          cat("  Direction:", significant_pairs_hours$hours_35plus_direction[i], "\n")
+        }
+      } else {
+        cat("\nNo significant pairwise differences after Bonferroni correction.\n")
+      }
+    }
+    
+  } else {
+    cat("→ Only 2 categories in each variable - no post-hoc tests needed\n")
+  }
+} else {
+  cat("→ Overall association not significant - post-hoc tests not recommended\n")
+}
+```
+
+The work conditions analysis reveals varying degrees of job security and workplace protections among outsourced workers. **Hour guarantees show moderate security**, with 53.6% having 35+ hour contracts, though 6.0% work zero-hours contracts and 23.9% have part-time guarantees (1-24 hours). **Income disparities are stark in hour guarantees**: low-income workers face zero-hours contracts at triple the rate (12.0%) compared to high-income (3.7%) and mid-income workers (4.3%), while only 15.8% of low-income workers have 35+ hour guarantees versus 64.5% of high-income workers.
+
+**Scheduling predictability presents challenges**, with 40.3% of workers receiving less than one week's notice of working hours, while 28.7% receive one week or more notice. **Shift cancellations affect a significant minority**, with 22.4% experiencing cancelled shifts. **Compensation for cancelled shifts shows concerning patterns**: among those experiencing cancellations, 22.6% receive no pay, 45.3% receive partial compensation (1-49%), and only 32.2% receive most or full pay (50-100%).
+
+**Sick pay provision is mixed**, with half (50.6%) receiving full usual pay when sick, but 14.5% having no sick pay access and 13.8% limited to statutory minimum (£116.75/week). **Uncertainty about entitlements** affects 6.3% who don't know their sick pay rights.
+
+**The overall pattern suggests a two-tier system** where higher-income outsourced workers enjoy more stable conditions (guaranteed hours, better scheduling predictability) while lower-income workers face greater insecurity through zero-hours contracts and unpredictable scheduling. This stratification within outsourced work creates differential vulnerabilities across income groups.
+
+## Rights Violations
+
+This analysis examines reported workplace rights violations among outsourced workers, focusing on the prevalence and nature of violations across different categories. The analysis employs descriptive statistics to document the frequency of various rights violations and explores demographic correlates of violation experiences. Cross-tabulations with key variables (income group, ethnicity, employment type) are conducted to identify vulnerable populations, with statistical significance assessed through appropriate tests and effect sizes calculated where applicable.
+
+```{r rights-violations-setup}
+#| fig-width: 10
+#| fig-height: 6
+#| out-width: "100%"
+#| dpi: 300
+
+# Create mapping of rights violations variables to readable labels
+rights_violations_mapping <- data.frame(
+  Label = c(
+    "Not being paid on time",
+    "Not being paid the full amount I am entitled to for the work I have completed", 
+    "Not being given time off that I am entitled to",
+    "Not being paid for paid leave that I am entitled to",
+    "Not being given pay that I am entitled to while being off sick",
+    "Not being provided with a pay slip",
+    "Not having adequate health and safety protections"
+  ),
+  Variable = c(
+    "RightsViolations_Paid_On_Time",
+    "RightsViolations_Paid_Correct_Amount", 
+    "RightsViolations_Leave_Entitlement",
+    "RightsViolations_Holiday_Pay",
+    "RightsViolations_Sick_Pay", 
+    "RightsViolations_Pay_Slip",
+    "RightsViolations_Health_Safety"
+  )
+)
+
+# Define rights variables for analysis
+rights_vars <- rights_violations_mapping$Variable
+
+# Count responses for each rights violation (excluding NAs)
+rights_violations_counts <- data.frame(
+  Label = character(0),
+  Count = numeric(0),
+  Percentage = numeric(0)
+)
+
+for(i in 1:nrow(rights_violations_mapping)) {
+  var_name <- rights_violations_mapping$Variable[i]
+  label_text <- rights_violations_mapping$Label[i]
+  
+  # Count non-NA responses (people who experienced this violation)
+  count <- sum(!is.na(experiential_data[[var_name]]))
+  total_responses <- nrow(experiential_data)
+  percentage <- round(count / total_responses * 100, 0)  # Round to whole numbers like reference
+  
+  rights_violations_counts <- rbind(rights_violations_counts, data.frame(
+    Label = label_text,
+    Count = count,
+    Percentage = percentage
+  ))
+}
+
+# Sort by percentage (descending order)
+rights_violations_counts <- rights_violations_counts[order(rights_violations_counts$Percentage, decreasing = TRUE), ]
+
+# Create the horizontal bar chart
+rights_violations_plot <- ggplot(rights_violations_counts, aes(x = Percentage, y = reorder(Label, Percentage))) +
+  geom_col(fill = "#8B4A6B", alpha = 0.9) +  # Dark purple/maroon color like reference
+  geom_text(aes(label = paste0(Percentage, "%")), 
+            hjust = -0.05, size = 3.5, color = "white", fontface = "bold") +
+  labs(
+    title = "Proportion of outsourced workers who report having\ngone without key entitlements",
+    subtitle = "\"Some workers don't receive everything that they are entitled to from their\nemployer. In your current role, have you experienced any of the following –\nplease tick all that apply.\"",
+    x = "Percentage of outsourced workers",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 11, color = "gray40", margin = margin(b = 20)),
+    axis.text.y = element_text(size = 10),
+    axis.title.x = element_text(size = 11),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(color = "gray90", size = 0.5)
+  ) +
+  scale_x_continuous(labels = function(x) paste0(x, "%"), 
+                     breaks = seq(0, 60, 10), 
+                     expand = expansion(mult = c(0, 0.1))) +
+  coord_cartesian(xlim = c(0, max(rights_violations_counts$Percentage) + 5))
+
+rights_violations_plot
+
+# Create summary table
+rights_violations_table <- rights_violations_counts %>%
+  flextable() %>%
+  set_header_labels(
+    Label = "Rights Violation",
+    Count = "Count",
+    Percentage = "Percentage (%)"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+rights_violations_table
+
+# Create a custom function to recode experiences
+# Regular rights violations are coded as -1 (negative)
+# "None" responses are coded as +1 (positive)
+# NA values coded as 0 (not experienced)
+recode_rights_experiences <- function(x, is_none_column = FALSE) {
+  if (is_none_column) {
+    # For RightsViolations_None column
+    case_when(
+      is.na(x) ~ 0,          # NA means not answered
+      TRUE ~ 1               # "None" response is positive (+1)
+    )
+  } else {
+    # For all other rights columns
+    case_when(
+      is.na(x) ~ 0,          # NA means not experienced (0)
+      TRUE ~ -1              # Any non-NA value means negative experience (-1)
+    )
+  }
+}
+
+# Process the data - create numeric columns for rights variables
+rights_experiential_data <- experiential_data %>%
+  # Recode regular rights violations
+  mutate(across(starts_with("Rights") & !contains("None"), 
+                ~ recode_rights_experiences(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  # Special handling for None column
+  mutate(RightsViolations_None_numeric = 
+           recode_rights_experiences(RightsViolations_None, is_none_column = TRUE)) %>%
+  # Select both original and numeric columns plus demographic variables
+  dplyr::select(
+    starts_with("Rights"),
+    contains("_numeric"),
+    Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
+    OutsourcedNonOL, BORNUK
+  )
+
+rights_summary <- rights_experiential_data %>%
+  # Select only the rights violation numeric columns (7 variables only)
+  dplyr::select(RightsViolations_Paid_On_Time_numeric,
+                RightsViolations_Paid_Correct_Amount_numeric,
+                RightsViolations_Leave_Entitlement_numeric,
+                RightsViolations_Holiday_Pay_numeric,
+                RightsViolations_Sick_Pay_numeric,
+                RightsViolations_Pay_Slip_numeric,
+                RightsViolations_Health_Safety_numeric) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorise by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+# Visualise the distribution of negative rights experiences
+ggplot(rights_summary, aes(x = neg_category, y = percent, fill = neg_category)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste0(round(percent, 1), "%")), vjust = -0.5) +
+  labs(title = "Distribution of Negative Responses on Rights",
+       x = "Number of Negative Responses (-1s)",
+       y = "Percentage of Respondents") +
+  scale_fill_brewer(palette = "Reds") +
+  theme_minimal()
+```
+
+The rights violations analysis reveals that **nearly half of outsourced workers experience at least one workplace rights violation**, with 56.3% reporting no violations. **Leave entitlement issues** are the most prevalent violation (11.2%), followed closely by **payment timing problems** (11.0%) and **sick pay violations** (10.9%). **Health and safety protections** are inadequate for 9.8% of workers, while **pay slip provision** (9.0%) and **correct payment amounts** (9.2%) also represent concerns.
+
+## Discrimination Analysis
+
+This analysis examines reported experiences of discrimination among outsourced workers across multiple dimensions including age, disability, ethnicity, nationality, religion, and sex. The analysis employs descriptive statistics to document the prevalence of different types of discrimination and conducts cross-tabulations with demographic variables to identify patterns and vulnerable populations. Statistical tests assess the significance of observed associations, with particular attention to intersectional effects where multiple forms of discrimination may compound disadvantage among specific groups.
+
+```{r discrimination-function-setup}
+# Define the valid discrimination response categories
+valid_discrimination_responses <- c("Never", "Rarely", "Sometimes", "Often")
+
+# Define demographic groups structure (reusable across all discrimination variables)
+demographic_groups <- list(
+  list(var = NULL, value = NULL, name = "All outsourced workers"),
+  list(var = "Ethnicity_Collapsed", value = "Black/African/Caribbean/Black British", name = "Black workers"),
+  list(var = "Ethnicity_Collapsed", value = "Asian/Asian British", name = "Asian workers"), 
+  list(var = "Sex", value = "Female", name = "Female workers"),
+  list(var = "BORNUK_binary", value = "Not born in UK", name = "Workers born outside of the UK")
+)
+
+# Create master function for discrimination analysis
+create_discrimination_analysis <- function(discrimination_var, discrimination_type, data, demographic_groups) {
+  cat("\n=== ", toupper(discrimination_type), " DISCRIMINATION ANALYSIS ===\n")
+  # Check data availability first
+  total_responses <- sum(!is.na(experiential_data[[discrimination_var]]) & 
+                        experiential_data[[discrimination_var]] %in% valid_discrimination_responses)
+  
+  cat("Total valid responses for", discrimination_var, ":", total_responses, "\n")
+  
+  # Only proceed if we have sufficient data
+  if (total_responses < 10) {
+    cat("Insufficient data for", discrimination_type, "discrimination analysis (< 10 responses)\n")
+    return(NULL)
+  }
+  
+  # Helper function to calculate discrimination percentages by demographic group  
+  calculate_discrimination_by_group <- function(data, group_var, group_value = NULL, group_name, discrim_var) {
+    
+    # Filter data based on group
+    if (!is.null(group_var)) {
+      filtered_data <- data %>% filter(!!sym(group_var) == group_value)
+    } else {
+      filtered_data <- data  # For "All outsourced workers"
+    }
+    
+    # Calculate percentages for each discrimination response
+    discrimination_counts <- filtered_data %>%
+      filter(!!sym(discrim_var) %in% valid_discrimination_responses) %>%
+      count(!!sym(discrim_var)) %>%
+      mutate(
+        Group = group_name,
+        Total = sum(n),
+        Percentage = round((n / Total) * 100, 0)
+      ) %>%
+      rename(Response = !!sym(discrim_var))
+    
+    return(discrimination_counts)
+  }
+  
+  # Calculate discrimination percentages for each demographic group
+  discrimination_results <- bind_rows(
+    lapply(demographic_groups, function(group) {
+      calculate_discrimination_by_group(data, group$var, group$value, group$name, discrimination_var)
+    })
+  )
+  
+  # Remove groups with no data
+  discrimination_results <- discrimination_results %>% filter(Total > 0)
+  
+  if (nrow(discrimination_results) == 0) {
+    cat("No valid data found for", discrimination_type, "discrimination analysis\n")
+    return(NULL)
+  }
+  
+  # Ensure proper ordering of response categories
+  discrimination_results$Response <- factor(discrimination_results$Response, 
+                                          levels = c("Never", "Rarely", "Sometimes", "Often"))
+  
+  # Create color palette for response categories (light to dark)
+  response_colors <- c("Never" = "#E8F4F8", "Rarely" = "#9ECAE1", "Sometimes" = "#4292C6", "Often" = "#084594")
+  
+  # Create the faceted horizontal bar chart
+  discrimination_plot <- ggplot(discrimination_results, aes(x = Percentage, y = Response, fill = Response)) +
+    geom_col(alpha = 0.8) +
+    geom_text(aes(label = paste0(Percentage, "%")), 
+              hjust = -0.1, size = 3, color = "black") +
+    facet_wrap(~ Group, ncol = 2, scales = "free_x") +
+    scale_fill_manual(values = response_colors) +
+    labs(
+      title = paste("Experiences of", discrimination_type, "discrimination from in-house workers"),
+      subtitle = "Percentage of workers reporting each level of discrimination experience",
+      x = "Percentage of workers",
+      y = "Discrimination experience"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", margin = margin(b = 5)),
+      plot.subtitle = element_text(size = 11, color = "gray40", margin = margin(b = 15)),
+      strip.text = element_text(size = 10, face = "bold"),
+      axis.text.y = element_text(size = 9),
+      axis.title = element_text(size = 10),
+      legend.position = "none",
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_line(color = "gray90", size = 0.3)
+    ) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.15)))
+  
+  print(discrimination_plot)
+  
+  # Create summary table
+  discrimination_table <- discrimination_results %>%
+    dplyr::select(Group, Response, n, Percentage) %>%
+    rename(
+      "Demographic Group" = Group,
+      "Response Category" = Response,
+      "Count" = n,
+      "Percentage (%)" = Percentage
+    ) %>%
+    flextable() %>%
+    add_header_lines(paste(toupper(discrimination_type), "DISCRIMINATION SUMMARY")) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  #print(discrimination_table)
+  
+  # Return results for potential further analysis
+  return(list(
+    plot = discrimination_plot,
+    table = discrimination_table,
+    data = discrimination_results
+  ))
+}
+```
+
+```{r discrimination-variables-config}
+# Define discrimination variables to analyze
+discrimination_vars <- list(
+  list(var = "Inhouse_Discrimination_Sex", type = "sex-based"),
+  list(var = "Inhouse_Discrimination_Ethnicity", type = "ethnicity-based"),
+  list(var = "Inhouse_Discrimination_Age", type = "age-based"),
+  list(var = "Inhouse_Discrimination_Disability", type = "disability-based"),
+  list(var = "Inhouse_Discrimination_Nationality", type = "nationality-based")
+)
+```
+
+### Sex-based Discrimination
+
+```{r discrimination-sex-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run sex-based discrimination analysis
+sex_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Sex",
+  discrimination_type = "sex-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+```
+
+The sex-based discrimination analysis reveals significant variation in discrimination experiences across demographic groups, with **Black workers** reporting the highest rates of sex-based discrimination (42.9% experienced discrimination), followed by **workers born outside the UK** (41.9%). **Asian workers** also face elevated rates (38.2%), while **female workers** report discrimination at 31.3%. The overall rate among all outsourced workers is 30.8%. Notably, **Black workers** show the lowest percentage reporting "Never" experiencing discrimination (57%), compared to the overall average of 69%, suggesting more pervasive experiences of sex-based discrimination within this group. The pattern indicates that **ethnicity and migration status intersect with gender** to create heightened vulnerability to discriminatory treatment.
+
+### Ethnicity-based Discrimination
+
+```{r discrimination-ethnicity-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run ethnicity-based discrimination analysis
+ethnicity_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Ethnicity",
+  discrimination_type = "ethnicity-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+```
+
+The ethnicity-based discrimination analysis reveals **the highest discrimination rates** among all forms examined, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.3% respectively. **Asian workers** also face substantial discrimination (45.6%), while the overall rate among all outsourced workers is 30.0%. The data shows particularly concerning patterns for **Black workers**, with only 48% reporting "Never" experiencing ethnicity-based discrimination, compared to 70% overall. Similarly, **workers born outside the UK** show only 48% reporting "Never" experiencing discrimination. Notably, **Black workers** report the highest rates of frequent discrimination, with 24% experiencing it "Sometimes" and 10% "Often". This pattern suggests that **ethnicity-based discrimination is the most pervasive form of discrimination** faced by outsourced workers, with **Black workers and migrants** bearing the heaviest burden.
+
+### Age-based Discrimination
+
+```{r discrimination-age-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run age-based discrimination analysis
+age_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Age",
+  discrimination_type = "age-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+```
+
+The age-based discrimination analysis shows **moderate discrimination rates** across demographic groups, with **Black workers** experiencing the highest rates (44.9%), followed by **workers born outside the UK** (44.1%). **Asian workers** report discrimination at 35.8%, while the overall rate among all outsourced workers is 35.2%. **Female workers** experience age-based discrimination at 34.6%. The data reveals that **Black workers** have the lowest percentage reporting "Never" experiencing discrimination (55%), compared to 65% overall. **Workers born outside the UK** also show elevated vulnerability with 56% reporting "Never" experiencing discrimination. Age-based discrimination appears to be **the second most common form of discrimination** after ethnicity-based discrimination, with **Black workers and migrants** again showing heightened exposure to discriminatory treatment.
+
+### Disability-based Discrimination
+
+```{r discrimination-disability-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run disability-based discrimination analysis
+disability_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Disability",
+  discrimination_type = "disability-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+```
+
+The disability-based discrimination analysis shows **lower overall discrimination rates** compared to other forms, with **workers born outside the UK** experiencing the highest rates (31.9%), followed by **Asian workers** (27.5%) and **Black workers** (25.1%). The overall rate among all outsourced workers is 22.5%, while **female workers** report the lowest rate at 20.0%. The data shows that **workers born outside the UK** have the lowest percentage reporting "Never" experiencing discrimination (68%), compared to 77% overall. Notably, **Asian workers** show relatively high rates of frequent discrimination, with 14% experiencing it "Sometimes" and 6% "Often". While disability-based discrimination is **the least prevalent form** among those examined, it still affects **nearly one in four outsourced workers overall**, with **migrant workers** showing particular vulnerability.
+
+### Nationality-based Discrimination
+
+```{r discrimination-nationality-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run nationality-based discrimination analysis
+nationality_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Nationality",
+  discrimination_type = "nationality-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+```
+
+The nationality-based discrimination analysis reveals **high discrimination rates** that mirror the ethnicity-based patterns, with **Black workers** and **workers born outside the UK** both experiencing discrimination at 52.5% and 52.4% respectively. **Asian workers** face substantial discrimination at 43.1%, while the overall rate among all outsourced workers is 31.0%. **Female workers** report discrimination at 28.7%. The data shows that **Black workers** and **workers born outside the UK** both have only 48% reporting "Never" experiencing discrimination, compared to 69% overall. **Black workers** and **workers born outside the UK** also show the highest rates of frequent discrimination, with **Black workers** experiencing it "Sometimes" (24%) and "Often" (7%), while **workers born outside the UK** report similar patterns (21% "Sometimes", 8% "Often"). The pattern confirms that **nationality-based discrimination closely parallels ethnicity-based discrimination**, suggesting these forms of discrimination are **interconnected and particularly target migrant and ethnic minority workers**.
+
+## Clarity Questions Analysis
+
+We also explored workplace clarity among outsourced workers across eleven key dimensions including clarity about reporting structures for pay problems, rights and entitlements, time-off approval processes, promotion pathways, and role responsibilities. The analysis also assesses communication effectiveness between organisations, workers' confidence in raising workplace improvements, and management responsiveness to discrimination, bullying, and racism complaints. Descriptive statistics and cross-tabulations with demographic variables identify patterns in workplace clarity and potential disparities in organisational transparency across different groups of outsourced workers.
+
+```{r clarity-questions-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Define the clarity questions with their descriptions
+clarity_questions <- data.frame(
+  Variable = paste0("Clarity", 1:11),
+  Question = c(
+    "Clear about who to speak to about pay problems",
+    "Clear about who to speak to about other rights/entitlements", 
+    "Straightforward to understand who approves time off",
+    "Clear about who to speak to about promotion",
+    "Clear communication between organisations",
+    "Clear about role responsibilities",
+    "Confident can communicate improvements to right people",
+    "Confident opinion will be respected about improvements",
+    "Management prevents discrimination",
+    "Management takes bullying complaints seriously",
+    "Management takes racism complaints seriously"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Prepare data for visualisation - convert to long format
+clarity_long <- experiential_data %>%
+  dplyr::select(all_of(paste0("Clarity", 1:11))) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Variable",
+    values_to = "Response"
+  ) %>%
+  filter(!is.na(Response)) %>%
+  left_join(clarity_questions, by = "Variable") %>%
+  mutate(
+    # Ensure consistent response order
+    Response = factor(Response, levels = c(
+      "Strongly disagree", "Somewhat disagree", "Neither agree nor disagree", 
+      "Somewhat agree", "Strongly agree"
+    )),
+    # Create shorter question labels for plotting
+    Question_Short = case_when(
+      Variable == "Clarity1" ~ "Pay problems contact",
+      Variable == "Clarity2" ~ "Rights/entitlements contact", 
+      Variable == "Clarity3" ~ "Time off approval",
+      Variable == "Clarity4" ~ "Promotion contact",
+      Variable == "Clarity5" ~ "Organisational communication",
+      Variable == "Clarity6" ~ "Role responsibilities",
+      Variable == "Clarity7" ~ "Can suggest improvements",
+      Variable == "Clarity8" ~ "Opinion will be respected",
+      Variable == "Clarity9" ~ "Management prevents discrimination",
+      Variable == "Clarity10" ~ "Management handles bullying",
+      Variable == "Clarity11" ~ "Management handles racism"
+    )
+  )
+
+# Calculate percentages for each question and response
+clarity_summary <- clarity_long %>%
+  group_by(Question_Short, Response) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Question_Short) %>%
+  mutate(
+    total = sum(count),
+    percentage = round(count / total * 100, 1)
+  ) %>%
+  ungroup()
+
+# Create horizontal bar chart
+clarity_plot <- ggplot(clarity_summary, aes(x = percentage, y = reorder(Question_Short, desc(Question_Short)), fill = Response)) +
+  geom_col(position = "stack", width = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Strongly disagree" = "#d73027",
+      "Somewhat disagree" = "#fc8d59", 
+      "Neither agree nor disagree" = "#fee08b",
+      "Somewhat agree" = "#91bfdb",
+      "Strongly agree" = "#4575b4"
+    ),
+    name = "Response"
+  ) +
+  labs(
+    title = "Clarity and Confidence at Work: Response Distribution",
+    subtitle = "How clearly do outsourced workers understand workplace processes and feel confident about communication?",
+    x = "Percentage",
+    y = "Question Areas",
+    caption = "Data: JRF Experiential Survey"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+print(clarity_plot)
+
+# Create summary table
+clarity_table <- clarity_long %>%
+  group_by(Question_Short) %>%
+  summarise(
+    Total_Responses = n(),
+    `Strongly Agree %` = round(mean(Response == "Strongly agree", na.rm = TRUE) * 100, 1),
+    `Somewhat Agree %` = round(mean(Response == "Somewhat agree", na.rm = TRUE) * 100, 1),
+    `Neither %` = round(mean(Response == "Neither agree nor disagree", na.rm = TRUE) * 100, 1),
+    `Somewhat Disagree %` = round(mean(Response == "Somewhat disagree", na.rm = TRUE) * 100, 1),
+    `Strongly Disagree %` = round(mean(Response == "Strongly disagree", na.rm = TRUE) * 100, 1),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(`Strongly Agree %`))
+
+clarity_table_formatted <- clarity_table %>%
+  flextable() %>%
+  set_header_labels(
+    Question_Short = "Question Area",
+    Total_Responses = "Total Responses",
+    `Strongly Agree %` = "Strongly Agree (%)",
+    `Somewhat Agree %` = "Somewhat Agree (%)",
+    `Neither %` = "Neither (%)",
+    `Somewhat Disagree %` = "Somewhat Disagree (%)",
+    `Strongly Disagree %` = "Strongly Disagree (%)"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+cat("\nClarity Questions Summary Table:\n")
+clarity_table_formatted
+
+## CLARITY BY INCOME GROUP ANALYSIS
+
+cat("\n=== CLARITY QUESTIONS BY INCOME GROUP ===\n")
+
+# Prepare data with income group information
+clarity_income_long <- experiential_data_no_income_outliers %>%
+  dplyr::filter(!is.na(income_group)) %>%
+  dplyr::select(all_of(paste0("Clarity", 1:11)), income_group) %>%
+  pivot_longer(
+    cols = starts_with("Clarity"),
+    names_to = "Variable",
+    values_to = "Response"
+  ) %>%
+  filter(!is.na(Response)) %>%
+  left_join(clarity_questions, by = "Variable") %>%
+  mutate(
+    Response = factor(Response, levels = c(
+      "Strongly disagree", "Somewhat disagree", "Neither agree nor disagree", 
+      "Somewhat agree", "Strongly agree"
+    )),
+    Question_Short = case_when(
+      Variable == "Clarity1" ~ "Pay problems contact",
+      Variable == "Clarity2" ~ "Rights/entitlements contact", 
+      Variable == "Clarity3" ~ "Time off approval",
+      Variable == "Clarity4" ~ "Promotion contact",
+      Variable == "Clarity5" ~ "Organisational communication",
+      Variable == "Clarity6" ~ "Role responsibilities",
+      Variable == "Clarity7" ~ "Can suggest improvements",
+      Variable == "Clarity8" ~ "Opinion will be respected",
+      Variable == "Clarity9" ~ "Management prevents discrimination",
+      Variable == "Clarity10" ~ "Management handles bullying",
+      Variable == "Clarity11" ~ "Management handles racism"
+    )
+  )
+
+# Calculate percentages by income group for selected key questions
+key_clarity_questions <- c("Clarity1", "Clarity2", "Clarity3", "Clarity4", "Clarity5",
+                           "Clarity6", "Clarity7", "Clarity8","Clarity9", "Clarity10", "Clarity11")
+key_question_labels <- c(
+  "Clarity1" = "Pay problems contact",
+  "Clarity2" = "Rights/entitlements contact", 
+  "Clarity3" ~ "Time off approval",
+  "Clarity4" = "Promotion contact",
+  "Clarity5" ~ "Organizational communication",
+  "Clarity6" ~ "Role responsibilities",
+  "Clarity7" = "Can suggest improvements",
+  "Clarity8" = "Opinion will be respected",
+  "Clarity9" ~ "Management prevents discrimination",
+  "Clarity10" ~ "Management handles bullying",
+  "Clarity11" ~ "Management handles racism"
+)
+
+
+
+clarity_income_summary <- clarity_income_long %>%
+  dplyr::filter(Variable %in% key_clarity_questions) %>%
+  group_by(income_group, Question_Short, Response) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(income_group, Question_Short) %>%
+  mutate(
+    total = sum(count),
+    percentage = round(count / total * 100, 1)
+  ) %>%
+  ungroup()
+
+# Create faceted plot by income group
+clarity_income_plot <- ggplot(clarity_income_summary, aes(x = percentage, y = income_group, fill = Response)) +
+  geom_col(position = "stack", width = 0.7) +
+  facet_wrap(~Question_Short, ncol = 2, scales = "free_x") +
+  scale_fill_manual(
+    values = c(
+      "Strongly disagree" = "#d73027",
+      "Somewhat disagree" = "#fc8d59", 
+      "Neither agree nor disagree" = "#fee08b",
+      "Somewhat agree" = "#91bfdb",
+      "Strongly agree" = "#4575b4"
+    ),
+    name = "Response"
+  ) +
+  labs(
+    title = "Workplace Clarity by Income Group",
+    subtitle = "Key clarity questions showing differences across income levels",
+    x = "Percentage",
+    y = "Income Group",
+    caption = "Data: JRF Experiential Survey (excluding income outliers)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    strip.text = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+print(clarity_income_plot)
+
+# Create summary comparison table
+clarity_by_income_comparison <- clarity_income_long %>%
+  filter(Variable %in% key_clarity_questions) %>%
+  group_by(income_group, Question_Short) %>%
+  summarise(
+    Total_Responses = n(),
+    `Agree %` = round(mean(Response %in% c("Strongly agree", "Somewhat agree"), na.rm = TRUE) * 100, 1),
+    `Disagree %` = round(mean(Response %in% c("Strongly disagree", "Somewhat disagree"), na.rm = TRUE) * 100, 1),
+    `Neither %` = round(mean(Response == "Neither agree nor disagree", na.rm = TRUE) * 100, 1),
+    .groups = "drop"
+  ) %>%
+  arrange(Question_Short, desc(`Agree %`))
+
+clarity_income_table <- clarity_by_income_comparison %>%
+  flextable() %>%
+  set_header_labels(
+    income_group = "Income Group",
+    Question_Short = "Question Area",
+    Total_Responses = "Total",
+    `Agree %` = "Agree (%)",
+    `Disagree %` = "Disagree (%)",
+    `Neither %` = "Neither (%)"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+cat("\nClarity by Income Group Summary:\n")
+clarity_income_table
+
+## Clarity regression
+Clarity.fit1<- (lm(Clarity_Overall_Mean ~ 
+                     Age +
+                     Sex +
+                     Ethnicity_Collapsed +
+                     BORNUK_binary +
+                     Region +
+                     income_group, weights = Outsourced, experiential_data_no_income_outliers)) 
+
+#summary(Clarity.fit1) # some significant
+
+## CLARITY REGRESSION RESULTS VISUALIsATION
+
+# Load broom for tidy regression results
+library(broom)
+
+# Extract regression results
+clarity_results <- tidy(Clarity.fit1, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    # Create clean variable labels for non-technical audience
+    Variable_Clean = case_when(
+      term == "Age" ~ "Age (per year)",
+      term == "SexFemale" ~ "Female (vs Male)",
+      term == "Ethnicity_CollapsedAsian/Asian British" ~ "Asian/Asian British (vs White British)",
+      term == "Ethnicity_CollapsedBlack/African/Caribbean/Black British" ~ "Black/African/Caribbean (vs White British)",
+      term == "Ethnicity_CollapsedMixed/Multiple ethnic groups" ~ "Mixed/Multiple ethnicities (vs White British)",
+      term == "Ethnicity_CollapsedWhite Other" ~ "White Other (vs White British)",
+      term == "Ethnicity_CollapsedArab" ~ "Arab (vs White British)",
+      term == "Ethnicity_CollapsedOther ethnic group" ~ "Other ethnic group (vs White British)",
+      term == "BORNUK_binaryNot born in UK" ~ "Not born in UK (vs Born in UK)",
+      term == "BORNUK_binaryPrefer not to say" ~ "Prefer not to say: Birth country",
+      str_starts(term, "Region") ~ str_replace(term, "Region", "Region: "),
+      term == "income_groupLow" ~ "Low income (vs Mid income)",
+      term == "income_groupHigh" ~ "High income (vs Mid income)",
+      TRUE ~ term
+    ),
+    # Create significance indicators
+    Significance = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01 ~ "**", 
+      p.value < 0.05 ~ "*",
+      TRUE ~ ""
+    ),
+    # Round estimates and confidence intervals
+    estimate_round = round(estimate, 3),
+    conf.low_round = round(conf.low, 3),
+    conf.high_round = round(conf.high, 3)
+  ) %>%
+  arrange(desc(abs(estimate)))
+
+# Create forest plot
+forest_plot <- ggplot(clarity_results, aes(x = estimate, y = reorder(Variable_Clean, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", alpha = 0.7) +
+  geom_pointrange(
+    aes(xmin = conf.low, xmax = conf.high),
+    size = 0.8,
+    color = "#2c3e50",
+    fill = "#3498db",
+    shape = 21,
+    stroke = 0.5
+  ) +
+  geom_text(
+    aes(x = conf.high + 0.02, label = paste0(estimate_round, Significance)),
+    hjust = 0,
+    size = 3,
+    color = "#2c3e50"
+  ) +
+  labs(
+    title = "Factors Associated with Workplace Clarity and Confidence",
+    subtitle = "Regression coefficients showing how different factors relate to overall clarity scores",
+    x = "Effect on Clarity Score (95% Confidence Interval)",
+    y = "Factors",
+    caption = "*** p<0.001, ** p<0.01, * p<0.05\nData: JRF Experiential Survey. Reference groups: Male, White British, Born in UK, Mid income, London region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    panel.grid.major.x = element_line(color = "gray90", size = 0.3),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.caption = element_text(size = 8, color = "gray50", hjust = 0)
+  )
+
+print(forest_plot)
+
+# Create summary table of key results
+key_results <- clarity_results %>%
+  filter(p.value < 0.05) %>%  # Only significant 
+  dplyr::select(Variable_Clean, estimate_round, conf.low_round, conf.high_round, p.value, Significance) %>%
+  arrange(p.value)
+
+if(nrow(key_results) > 0) {
+  key_results_table <- key_results %>%
+    mutate(
+      `P-value` = case_when(
+        p.value < 0.001 ~ "<0.001",
+        TRUE ~ as.character(round(p.value, 3))
+      )
+    ) %>%
+   dplyr::select(-p.value) %>%
+    flextable() %>%
+    set_header_labels(
+      Variable_Clean = "Factor",
+      estimate_round = "Effect",
+      conf.low_round = "95% CI Lower",
+      conf.high_round = "95% CI Upper",
+      Significance = "Sig.",
+      `P-value` = "P-value"
+    ) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  cat("\nStatistically Significant Results (p < 0.1):\n")
+  key_results_table
+} else {
+  cat("\nNo statistically significant results found at p < 0.05 level.\n")
+}
+```
+
+The clarity analysis reveals **significant variation in workplace transparency** across different domains and income groups. **Role responsibilities** show the highest clarity (77.5% agreement), followed by **time off approval** (72.8%) and **pay problems contact** (71.6%), indicating that basic operational processes are generally well-understood. However, areas requiring **higher-level organisational engagement** show concerning gaps: **opinion will be respected** (64.1%), **management prevents discrimination** (64.4%), and **promotion contact** (64.7%) have the lowest agreement rates.
+
+**Income-based disparities** are particularly stark, with **high-income workers** consistently reporting greater clarity than **low-income workers** across all domains. The largest gaps appear in **management prevents discrimination** (18.5 percentage point difference), **opinion will be respected** (17.1 points), and **management handles bullying** (16.9 points). These patterns suggest that **organisational transparency and confidence in management responsiveness decrease substantially as income levels fall**, potentially reflecting **differential treatment** or **reduced organisational investment** in communication with lower-paid outsourced workers. The consistency of these income-based disparities across multiple domains points to **systemic inequalities** in workplace clarity rather than isolated communication issues.
+
+## Work Preference by Income Group
+
+Finally we examine the relationship between income levels and work preferences among outsourced workers, comparing preferences for in-house versus outsourced employment across low, mid, and high income groups. The analysis employs cross-tabulations and statistical tests to identify whether income level influences workers' preferences for employment arrangements, with particular attention to understanding how economic circumstances may shape attitudes toward outsourcing.
+
+```{r work-preference-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+
+# Create work preference by income group cross-tabulation
+work_pref_crosstab <- crosstable(
+  experiential_data_no_income_outliers %>% 
+    dplyr::select(Work_Preference, income_group),
+  by = income_group,
+  total = "both",
+  showNA = "no",
+  percent_digits = 1,
+  percent_pattern = "{n} ({p_col})"
+) %>%
+  as_flextable() %>%
+  theme_vanilla() %>%
+  set_header_labels(
+    label = "Work Preference",
+    Low = "Low Income",
+    Mid = "Mid Income", 
+    High = "High Income",
+    Total = "Total"
+  ) %>%
+  autofit()
+
+cat("Work Preference by Income Group Cross-tabulation:\n")
+work_pref_crosstab
+
+# Prepare data for visualisation
+work_pref_data <- experiential_data_no_income_outliers %>%
+  filter(!is.na(Work_Preference) & !is.na(income_group)) %>%
+  count(income_group, Work_Preference) %>%
+  group_by(income_group) %>%
+  mutate(
+    total = sum(n),
+    percentage = round(n / total * 100, 1)
+  ) %>%
+  ungroup()
+
+# Create stacked bar chart
+work_pref_plot <- ggplot(work_pref_data, aes(x = percentage, y = income_group, fill = Work_Preference)) +
+  geom_col(position = "stack", width = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "I would strongly prefer to be an in-house worker" = "#2166ac",
+      "I would prefer to be an in-house worker" = "#4393c3", 
+      "I have no preference" = "#cccccc",
+      "Not sure" = "#999999",
+      "I would prefer to be an outsourced worker" = "#fdbf6f",
+      "I would strongly prefer to be an outsourced worker" = "#ff7f00"
+    ),
+    name = "Work Preference"
+  ) +
+  labs(
+    title = "Work Preferences by Income Group",
+    subtitle = "Percentage distribution within each income group",
+    x = "Percentage (%)",
+    y = "Income Group",
+    caption = "Source: JRF Experiential Survey 2025"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0),
+    plot.subtitle = element_text(size = 12, color = "gray60", hjust = 0),
+    axis.title = element_text(size = 11, face = "bold"),
+    axis.text = element_text(size = 10),
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 9),
+    legend.position = "bottom",
+    legend.key.size = unit(0.8, "lines"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.caption = element_text(size = 9, color = "gray50", hjust = 1)
+  ) +
+  guides(fill = guide_legend(nrow = 3, byrow = TRUE)) +
+  scale_x_continuous(labels = function(x) paste0(x, "%"), expand = c(0, 0))
+
+# Display the plot
+print(work_pref_plot)
+
+# Statistical test for association
+cat("\n=== Statistical Analysis: Work Preference by Income Group ===\n")
+
+# Create contingency table for statistical testing
+work_pref_table_test <- table(experiential_data_no_income_outliers$Work_Preference, experiential_data_no_income_outliers$income_group)
+
+# Remove rows/columns with all zeros if any
+work_pref_table_test <- work_pref_table_test[rowSums(work_pref_table_test) > 0, colSums(work_pref_table_test) > 0]
+
+# Standardised Fisher's exact test function
+format_fisher_test <- function(contingency_table, test_name = "Fisher's Exact Test") {
+  
+  # Determine if simulation is needed
+  use_simulation <- nrow(contingency_table) > 2 || ncol(contingency_table) > 2
+  
+  # Perform Fisher's exact test
+  if(use_simulation) {
+    fisher_result <- fisher.test(contingency_table, simulate.p.value = TRUE, B = 10000)
+    test_method <- "Fisher's Exact Test (simulated)"
+    simulation_note <- "Monte Carlo simulation with 10,000 replicates"
+  } else {
+    fisher_result <- fisher.test(contingency_table)
+    test_method <- "Fisher's Exact Test (exact)"
+    simulation_note <- "Exact calculation"
+  }
+  
+  # Format p-value
+  p_formatted <- if(fisher_result$p.value < 0.001) {
+    "< 0.001"
+  } else {
+    formatC(fisher_result$p.value, format = "f", digits = 3)
+  }
+  
+  # Determine significance level
+  significance <- case_when(
+    fisher_result$p.value < 0.001 ~ "***",
+    fisher_result$p.value < 0.01 ~ "**",
+    fisher_result$p.value < 0.05 ~ "*",
+    TRUE ~ ""
+  )
+  
+  # Calculate effect size (Cramér's V)
+  if(require(vcd, quietly = TRUE)) {
+    assoc_stats <- vcd::assocstats(contingency_table)
+    cramers_v <- round(assoc_stats$cramer, 3)
+    
+    # Interpret effect size
+    effect_interpretation <- case_when(
+      cramers_v < 0.1 ~ "Negligible",
+      cramers_v < 0.3 ~ "Small",
+      cramers_v < 0.5 ~ "Medium",
+      TRUE ~ "Large"
+    )
+  } else {
+    cramers_v <- NA
+    effect_interpretation <- "Unable to calculate"
+  }
+  
+  # Create results data frame
+  results_df <- data.frame(
+    Statistic = c("Test Method", "Sample Size", "P-value", "Significance", "Cramér's V", "Effect Size", "Method Details"),
+    Value = c(
+      test_method,
+      as.character(sum(contingency_table)),
+      p_formatted,
+      significance,
+      as.character(cramers_v),
+      effect_interpretation,
+      simulation_note
+    ),
+    stringsAsFactors = FALSE
+  )
+  
+  # Create formatted table
+  results_table <- results_df %>%
+    flextable() %>%
+    set_header_labels(
+      Statistic = "Statistic",
+      Value = "Value"
+    ) %>%
+    theme_vanilla() %>%
+    width(j = 1, width = 2) %>%
+    width(j = 2, width = 2.5) %>%
+    align(align = "left", part = "all") %>%
+    add_header_lines(paste("Statistical Test Results:", test_name)) %>%
+    autofit()
+  
+  return(list(
+    test_result = fisher_result,
+    formatted_table = results_table,
+    p_value = fisher_result$p.value,
+    cramers_v = cramers_v,
+    effect_interpretation = effect_interpretation
+  ))
+}
+
+# Apply standardised Fisher's test
+work_pref_fisher_results <- format_fisher_test(work_pref_table_test, "Work Preference by Income Group")
+
+# Display results
+work_pref_fisher_results$formatted_table
+
+# Summary statistics
+cat("\n=== Summary Statistics ===\n")
+work_pref_summary <- experiential_data_no_income_outliers %>%
+  filter(!is.na(Work_Preference) & !is.na(income_group)) %>%
+  count(income_group, Work_Preference) %>%
+  group_by(income_group) %>%
+  mutate(
+    total = sum(n),
+    percentage = round(n / total * 100, 1)
+  ) %>%
+  ungroup()
+
+# Print key findings
+cat("Key findings:\n")
+for(income_grp in c("Low", "Mid", "High")) {
+  grp_data <- work_pref_summary %>% filter(income_group == income_grp)
+  inhouse_total <- sum(grp_data$percentage[grepl("in-house", grp_data$Work_Preference)])
+  outsourced_total <- sum(grp_data$percentage[grepl("outsourced", grp_data$Work_Preference)])
+  
+  cat(sprintf("- %s income: %.1f%% prefer in-house, %.1f%% prefer outsourced\n", 
+              income_grp, inhouse_total, outsourced_total))
+}
+
+```
+
+The work preference analysis reveals **clear patterns in employment arrangement preferences across income groups**, with **statistical significance** confirmed by Fisher's exact test (p \< 0.001, Cramér's V = 0.104, small effect size). **No preference** dominates across all income groups (approximately 41%), but meaningful differences emerge in definitive preferences and uncertainty levels.
+
+**Income-based preference patterns** show that **higher-income workers increasingly prefer in-house employment**: low-income workers prefer in-house work at 27.4%, rising to 33.0% for mid-income and 35.2% for high-income workers. Conversely, **outsourced work preferences remain relatively stable** across income groups (14.8% to 17.8%), suggesting that **income level primarily influences attraction to in-house employment rather than satisfaction with outsourcing**.
+
+The most striking pattern appears in **uncertainty levels**, where **low-income workers show dramatically higher "not sure" responses** (16.5%) compared to mid-income (8.4%) and high-income workers (5.4%). This **11.1 percentage point gap** between low and high-income groups suggests that **economic insecurity may contribute to greater uncertainty about employment preferences**, potentially reflecting **limited exposure to alternative employment arrangements** or **anxiety about job security** that makes definitive preferences more difficult to form. The consistent **2:1 ratio favoring in-house work** across all income groups indicates that while income influences preference strength, the fundamental appeal of in-house employment remains broadly consistent.
+
 
 # Limitations and Future Research?
 
@@ -3749,9 +6119,7 @@ ethnicity_statistics_collapsed <- data %>%
     Percentage = 100 * (Frequency / Sum),
     Ethnicity_short = Ethnicity_collapsed
   )
-
-write_csv(ethnicity_statistics_collapsed, file="../outputs/methodology/data/ethnicity_statistics_aggregated.csv")
-
+:
 ethnicity_statistics_collapsed %>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
   dplyr::select(-c(n, N, Sum, Ethnicity_short)) %>%
