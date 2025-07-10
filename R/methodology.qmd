@@ -2536,6 +2536,9 @@ calculate_boot_ci <- function(boot_samples, prob_cols) {
       if(is.null(x) || !col %in% names(x)) return(NA)
       x[[col]]
     })
+  
+    # Point estimate from bootstrap (mean)
+    ci_results[[paste0(col, "_boot_mean")]] <- rowMeans(boot_probs, na.rm = TRUE)
     
     # Calculate percentile confidence intervals
     ci_lower <- apply(boot_probs, 1, quantile, probs = 0.025, na.rm = TRUE)
@@ -2551,11 +2554,19 @@ calculate_boot_ci <- function(boot_samples, prob_cols) {
 # Get confidence intervals
 prob_cols <- names(pred_results)[grepl("^prob_", names(pred_results))]
 ci_results <- calculate_boot_ci(boot_samples, prob_cols)
+  
+boot_mean_results <- ci_results[, 1:2]  # Keep grouping vars
+for (col in prob_cols) {
+  boot_mean_results[[col]] <- ci_results[[paste0(col, "_boot_mean")]]
+}
+
 ```
 
 ```{r}
 #| message: false
 #| output: false
+
+
 
 # Function to calculate differences and their bootstrap CIs
 calculate_differences_with_ci <- function(pred_data, boot_samples, income_level) {
@@ -2623,7 +2634,7 @@ income_levels <- levels(mod_data$income_group)
 # Calculate differences for each income level
 all_differences <- list()
 for(level in income_levels) {
-  all_differences[[level]] <- calculate_differences_with_ci(pred_results, boot_samples, level)
+  all_differences[[level]] <- calculate_differences_with_ci(boot_mean_results, boot_samples, level)
 }
 
 difference_results <- do.call(rbind, all_differences)
@@ -2674,28 +2685,25 @@ difference_results_sig <- difference_results3 %>%
 In essence, a White British person is more likely to be in the low or mid income group, and less likely to be in the high income group, if they are outsourced compared to not-outsourced.
 
 ```{r}
-
-# Reshape ci_results
 ci_results2 <- ci_results %>%
   pivot_longer(
     cols = starts_with("prob_"),
-    names_to = c("income_level", "ci_bound"),
-    names_pattern = "prob_(.*)_ci_(.*)",
-    values_to = "ci_value"
+    names_to = c("income_level", "metric"),
+    names_pattern = "prob_(.*)_(ci_.*|boot_mean)",
+    values_to = "value"
   ) %>%
   pivot_wider(
-    names_from = ci_bound,
-    values_from = ci_value,
-    names_prefix = "ci_"
+    names_from = metric,
+    values_from = value
   )
 
 # Reshape data for plotting
-plot_data <- pred_results %>%
-  pivot_longer(cols = starts_with("prob_"),
-               names_to = "income_level",
-               values_to = "probability") %>%
-  mutate(income_level = gsub("prob_", "", income_level)) %>%
-  left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed","income_level")) %>% 
+plot_data <- ci_results2 %>%
+  # pivot_longer(cols = starts_with("prob_"),
+  #              names_to = "income_level",
+  #              values_to = "probability") %>%
+  # mutate(income_level = gsub("prob_", "", income_level)) %>%
+  # left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed","income_level")) %>% 
 
   mutate(
     income_level = factor(income_level, levels = c("Low","Mid","High"))) %>%
@@ -2705,7 +2713,7 @@ plot_data <- pred_results %>%
   # Preserve order
 
 # Plot predicted probabilities
-ggplot(plot_data, aes(y = Ethnicity_collapsed, x = probability,
+ggplot(plot_data, aes(y = Ethnicity_collapsed, x = boot_mean,
                       colour = outsourcing_status)) +
   geom_point(position = position_nudge(y = plot_data$nudge)) +
   geom_errorbar(position = position_nudge(y = plot_data$nudge), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
@@ -2738,6 +2746,30 @@ ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = signific
 
 
 
+
+```
+
+```{r}
+#| include: false
+#| message: false
+#| output: false
+test <- plot_data %>% 
+  mutate(
+    wrong = ifelse(boot_mean < ci_lower | boot_mean > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+test2 <- difference_results3 %>% 
+  mutate(
+    wrong = ifelse(prob_ratio < ci_lower | prob_ratio > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
 
 ```
 
@@ -2820,7 +2852,7 @@ calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_s
 income_levels <- levels(mod_data$income_group)
 all_ethnicity_differences <- list()
 for(level in income_levels) {
-  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(pred_results, boot_samples, level)
+  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(boot_mean_results, boot_samples, level)
 }
 
 ethnicity_diff_results <- do.call(rbind, all_ethnicity_differences)
@@ -2863,11 +2895,7 @@ difference_results_sig <- difference_results3 %>%
   arrange(desc(ethnicity))
 ```
 
-Comparing ethnicities within outsourcing status does not add to the picture much,
-
--   Among `r difference_results_sig$outsourcing_status[1]` workers, people of `r difference_results_sig$ethnicity[1]` ethnicity are `r difference_results_sig$prob_ratio[1]` times as likely to be in the `r difference_results_sig$income_level[1]` group compared to White British people.
--   Among `r difference_results_sig$outsourcing_status[2]` workers, people of `r difference_results_sig$ethnicity[2]` ethnicity are `r difference_results_sig$prob_ratio[2]` times as likely to be in the `r difference_results_sig$income_level[2]` group compared to White British people.
-
+Comparing ethnicities within outsourcing status revealed no significant contrasts.
 
 
 ```{r}
@@ -2920,10 +2948,35 @@ ggplot(difference_results3, aes(x = prob_ratio, y = ethnicity, colour = signific
 
 
 ```
+```{r}
+#| include: false
+#| message: false
+#| output: false
+test <- plot_data %>% 
+  mutate(
+    wrong = ifelse(boot_mean < ci_lower | boot_mean > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+test2 <- difference_results3 %>% 
+  mutate(
+    wrong = ifelse(prob_ratio < ci_lower | prob_ratio > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+```
+
 The plot below of predicted probabilities suggests that non-White ethnicities are not more or less likely to be in the low income group regardless of the outsourcing status, compared to White British. That is, the lack of an effect of outsourcing status on low income group membership does not appear to be attributable to a higher likelihood generally of marginalised ethnicities being low paid.
 
+
 ```{r}
-ggplot(plot_data, aes(y = Ethnicity_collapsed , x = probability,
+ggplot(plot_data, aes(y = Ethnicity_collapsed , x = boot_mean,
                     )) +
   geom_point(position = position_dodge(dodge_val)) +
   geom_errorbar(position = position_dodge(dodge_val), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
@@ -3152,7 +3205,10 @@ calculate_boot_ci <- function(boot_samples, prob_cols) {
       if(is.null(x) || !col %in% names(x)) return(NA)
       x[[col]]
     })
-    
+  
+    # Point estimate from bootstrap (mean)
+    ci_results[[paste0(col, "_boot_mean")]] <- rowMeans(boot_probs, na.rm = TRUE)
+  
     # Calculate percentile confidence intervals
     ci_lower <- apply(boot_probs, 1, quantile, probs = 0.025, na.rm = TRUE)
     ci_upper <- apply(boot_probs, 1, quantile, probs = 0.975, na.rm = TRUE)
@@ -3167,6 +3223,13 @@ calculate_boot_ci <- function(boot_samples, prob_cols) {
 # Get confidence intervals
 prob_cols <- names(pred_results)[grepl("^prob_", names(pred_results))]
 ci_results <- calculate_boot_ci(boot_samples, prob_cols)
+
+# Rename so that it's in format the difference calculation is happy with
+boot_mean_results <- ci_results[, 1:2]  # Keep grouping vars
+for (col in prob_cols) {
+  boot_mean_results[[col]] <- ci_results[[paste0(col, "_boot_mean")]]
+}
+
 ```
 
 ```{r}
@@ -3239,7 +3302,7 @@ income_levels <- levels(mod_data$income_group)
 # Calculate differences for each income level
 all_differences <- list()
 for(level in income_levels) {
-  all_differences[[level]] <- calculate_differences_with_ci(pred_results, boot_samples, level)
+  all_differences[[level]] <- calculate_differences_with_ci(boot_mean_results, boot_samples, level)
 }
 
 difference_results <- do.call(rbind, all_differences)
@@ -3293,23 +3356,22 @@ difference_results_sig <- difference_results3 %>%
 ci_results2 <- ci_results %>%
   pivot_longer(
     cols = starts_with("prob_"),
-    names_to = c("income_level", "ci_bound"),
-    names_pattern = "prob_(.*)_ci_(.*)",
-    values_to = "ci_value"
+    names_to = c("income_level", "metric"),
+    names_pattern = "prob_(.*)_(ci_.*|boot_mean)",
+    values_to = "value"
   ) %>%
   pivot_wider(
-    names_from = ci_bound,
-    values_from = ci_value,
-    names_prefix = "ci_"
+    names_from = metric,
+    values_from = value
   )
 
 # Reshape data for plotting
-plot_data <- pred_results %>%
-  pivot_longer(cols = starts_with("prob_"),
-               names_to = "income_level",
-               values_to = "probability") %>%
-  mutate(income_level = gsub("prob_", "", income_level)) %>%
-  left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed_disaggregated","income_level")) %>% 
+plot_data <- ci_results2 %>%
+  # pivot_longer(cols = starts_with("prob_"),
+  #              names_to = "income_level",
+  #              values_to = "probability") %>%
+  # mutate(income_level = gsub("prob_", "", income_level)) %>%
+  # left_join(ci_results2, by = c("outsourcing_status","Ethnicity_collapsed_disaggregated","income_level")) %>% 
 
   mutate(
     income_level = factor(income_level, levels = c("Low","Mid","High"))) %>%
@@ -3318,7 +3380,7 @@ plot_data <- pred_results %>%
   )
 
 # Plot predicted probabilities
-ggplot(plot_data, aes(y = Ethnicity_collapsed_disaggregated, x = probability,
+ggplot(plot_data, aes(y = Ethnicity_collapsed_disaggregated, x = boot_mean,
                       colour = outsourcing_status)) +
   geom_point(position = position_nudge(y = plot_data$nudge)) +
   geom_errorbar(position = position_nudge(y = plot_data$nudge), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
@@ -3349,6 +3411,30 @@ ggplot(difference_results3, aes(x = prob_ratio , y = ethnicity, colour = signifi
     caption = "Red line indicates no difference from not outsourced\nRed dots show significant effects"
 ) +
   scale_colour_manual(values = c("black","red"))
+
+```
+
+```{r}
+#| include: false
+#| message: false
+#| output: false
+test <- plot_data %>% 
+  mutate(
+    wrong = ifelse(boot_mean < ci_lower | boot_mean > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+test2 <- difference_results3 %>% 
+  mutate(
+    wrong = ifelse(prob_ratio < ci_lower | prob_ratio > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
 
 ```
 
@@ -3428,8 +3514,9 @@ calculate_ethnicity_differences_within_outsourcing <- function(pred_data, boot_s
 }
 
 all_ethnicity_differences <- list()
+income_levels <- levels(mod_data$income_group)
 for(level in income_levels) {
-  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(pred_results, boot_samples, level)
+  all_ethnicity_differences[[level]] <- calculate_ethnicity_differences_within_outsourcing(boot_mean_results, boot_samples, level)
 }
 
 ethnicity_diff_results <- do.call(rbind, all_ethnicity_differences)
@@ -3498,6 +3585,45 @@ ggplot(difference_results3, aes(x = prob_ratio , y = ethnicity, colour = signifi
   scale_colour_manual(values = c("black","red"))
 
 
+```
+```{r}
+#| include: false
+#| message: false
+#| output: false
+test <- plot_data %>% 
+  mutate(
+    wrong = ifelse(boot_mean < ci_lower | boot_mean > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+test2 <- difference_results3 %>% 
+  mutate(
+    wrong = ifelse(prob_ratio < ci_lower | prob_ratio > ci_upper,1, 0)
+  ) %>%
+  summarise(
+    sum(wrong)
+    ) %>%
+  pull()
+
+```
+
+As for the aggregated model, there is no evidence to suggest that the lack of a difference for ethnic minorities is due to a higher likelihood of being low paid regardless of outsourcing status.
+
+```{r}
+ggplot(plot_data, aes(y = Ethnicity_collapsed_disaggregated, x = boot_mean,
+                    )) +
+  geom_point(position = position_dodge(dodge_val)) +
+  geom_errorbar(position = position_dodge(dodge_val), aes(xmin = ci_lower, xmax = ci_upper), width = 0.2) +
+  facet_grid(rows = vars(outsourcing_status), cols = vars(income_level)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(hjust = 1)) +
+  labs(title = "Predicted Probabilities by Ethnicity and Outsourcing Status",
+       y = "", x = "Predicted Probability",
+       colour = "Outsourcing Status") +
+  scale_x_continuous(breaks = seq(0,1,0.2))
 ```
 
 # Analysis - Study 2
@@ -3636,3 +3762,101 @@ ethnicity_statistics_collapsed %>%
   )) %>%
   kable_styling(full_width = F)
 ```
+
+## Study 1 - Income by outsourcing and income group
+
+```{r}
+plot_income <- function(data, frequency = "weekly"){
+  income_var <- case_when(frequency == "weekly" ~ "income_weekly_all",
+                          frequency == "hourly" ~ "income_hourly_all",
+                          TRUE ~ "income_annual_all"
+  )
+                          
+  
+  sector_summary_paysplit <- data %>%
+  filter(income_drop_all == 0) %>%
+  group_by(SectorName, SectorName_labelled, income_group, outsourcing_status) %>%
+  drop_na(income_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(!!!rlang::syms(income_var), na.rm=T),
+    wtd_avg_income = weighted.mean(!!!rlang::syms(income_var), w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName, income_group) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+  
+  plot_data <- sector_summary_paysplit %>%
+    drop_na(SectorName_short) %>%
+    droplevels() %>%
+    ungroup()
+  
+    
+  # Filter for 'outsourced' level and reorder SectorName_short
+  not_outsourced_levels <- plot_data %>%
+    filter(outsourcing_status == 'Not outsourced') %>%
+    mutate(SectorName_short = forcats::fct_reorder(SectorName_short, perc, .desc = TRUE))
+  
+  # outsourced <- plot_data %>%
+  #   filter(outsourcing_status == 'Outsourced') %>%
+  #   mutate(
+  #     rank = rank(desc(perc))
+  #   )
+  
+  # Apply the reordered levels back to the original data - uses original orders for ease of comparison
+  plot_data <- plot_data %>%
+    mutate(
+      SectorName_short = factor(SectorName_short, levels = levels(not_outsourced_levels$SectorName_short)),
+           )
+  
+  annotation_df <- plot_data %>%
+    #filter(outsourcing_status == "Not outsourced") %>%
+    select(SectorName_short, n) %>%
+    group_by(SectorName_short) %>%
+    summarise(
+      N = sum(n)
+    ) %>%
+      mutate(
+      ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+    ) 
+
+
+  plot_data %>%
+    # mutate(
+    #   SectorName = as.factor(SectorName)
+    # ) %>%
+    ggplot(., aes(wtd_avg_income,SectorName_short, size = perc, colour = outsourcing_status, shape = income_group)) +
+      geom_point(position = "dodge") + 
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          legend.title = element_blank())+
+        #coord_flip() +
+    # scale_x_continuous(breaks=seq(0,max(plot_data$wtd_avg_income), 10000)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=SectorName_short, label = paste0("N = ", N)), hjust=1) +
+    geom_text_repel(inherit.aes = F, aes(wtd_avg_income, SectorName_short, colour = outsourcing_status, label=paste0("n=",n)), size=2) +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab(paste0("Weighted average ", frequency, " income")) + ylab("Sector") +
+    labs(caption = "Size of bubble represents the size of the respective workforce")
+}
+  
+plot_income(data, "annual")
+plot_income(data, "weekly")
+plot_income(data, "hourly")
+```
+
