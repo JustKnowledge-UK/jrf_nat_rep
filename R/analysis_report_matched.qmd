@@ -41,6 +41,7 @@ library(readr)
 library(sjPlot)
 library(nnet)
 library(apaTables)
+library(survey)
 ```
 
 ```{r palette}
@@ -81,7 +82,7 @@ get_pvalue <- function(model){
 ```
 
 ```{r data, output=FALSE}
-data <- readRDS("../Data/2025-04-07 - Cleaned_data.rds")
+data <- readRDS("../Data/2025-06-23 - Cleaned_data.rds")
 
 # Specify data to be used in income analysis
 income_data <- filter(data, income_drop_all==0)
@@ -96,11 +97,13 @@ income_data <- filter(data, income_drop_all==0)
 #| warning: false
 #| message: false
 
+income_data2 <- income_data %>%
+  drop_na(c(income_annual_all, Age,Gender,Has_Degree, Ethnicity_collapsed, Region, outsourcing_status, BORNUK_labelled))
 # Annual income
 # Intercept only
-mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+mod_base <- lm(income_annual_all ~ 1, income_data2, weights = NatRepemployees)
 # H1
-mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data2, weights = NatRepemployees)
 
 summary(mod_annual)
 
@@ -120,9 +123,9 @@ rsquare_annual <- round(summary(mod_annual)$r.squared,2)
 
 # Weekly income
 # Intercept only
-mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+mod_base <- lm(income_weekly_all ~ 1, income_data2, weights = NatRepemployees)
 # H1
-mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data2, weights = NatRepemployees)
 summary(mod_weekly)
 
 # F and p
@@ -297,9 +300,11 @@ sectors_of_interest <- sectors_of_interest[1:13] %>%
 
 ## Minor sub groups across sectors
 
+### Weekly
+
 ```{r}
-#| height: 20
-#| width: 10
+#| fig-height: 10
+#| fig-width: 10
 unit_occ_summary_pay <- data %>%
   filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
   group_by(UnitOccupation_labelled, outsourcing_status) %>%
@@ -409,11 +414,125 @@ show(p)
 
 ```
 
-## Minor subgroups within sectors
+### Hourly
 
 ```{r}
-#| height: 10
-#| width: 10
+#| fig-height: 10
+#| fig-width: 10
+unit_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+# write_csv(unit_occ_summary_pay, file="../outputs/data/minor_group_occupation_summary_pay_hourly_across_sectors.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_hourly <- unit_occ_summary_pay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(min_n >= 10)
+
+unit_subset <- unit_subset_hourly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+# write_csv(paid_less, file="../outputs/data/minor_group_occupation_hourly_pay_penalty_across_sectors.csv")
+
+#print(sector)
+# subset to this sector and drop na occupatoins
+plot_data <- unit_subset %>%
+  filter(!is.na(UnitOccupation_labelled)) %>%
+  droplevels() %>%
+  ungroup()
+
+# Order occs by N
+# First filter for 'outsourced' level and reorder by N
+not_outsourced_levels <- plot_data %>%
+  dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+  distinct(UnitOccupation_labelled, N) %>%
+  mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+
+# not_outsourced_levels <- plot_data %>%
+#   filter(outsourcing_status == 'Not outsourced') %>%
+#   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+# Then apply the reordered levels back to the original data
+plot_data <- plot_data %>%
+  mutate(
+    UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+        )
+
+annotation_df <- plot_data %>%
+  #filter(outsourcing_status == "Not outsourced") %>%
+  dplyr::select(UnitOccupation_labelled, n) %>%
+  group_by(UnitOccupation_labelled) %>%
+  summarise(
+    N = sum(n)
+  ) %>%
+    mutate(
+    ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+  )
+
+
+p <- plot_data %>%
+  ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+  geom_point(position = "dodge") + 
+geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                #force_pull = 2
+                ) + 
+  theme_minimal() +
+  theme(legend.position = "bottom",
+      legend.title = element_blank()) +
+
+  #coord_flip() +
+scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+  #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+scale_colour_manual(values=colours) +
+geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+guides(size=FALSE) + # remove size legend as gauging size is difficult 
+xlab("Weighted average hourly income") + ylab("Unit occupation") +
+labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+  ggtitle("All sectors")
+
+show(p)
+
+# ggsave(here('outputs','figures','occupation_pay_plots','unit_occupation_pay_plot_all_sectors.png'), height = 8, width = 8, dpi=800, bg="white")
+
+```
+
+## Minor subgroups within sectors
+
+### Weekly
+
+```{r}
 unit_occ_in_sect_summary_pay <- data %>%
   filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
   group_by(SectorName, SectorName_labelled, UnitOccupation_labelled, outsourcing_status) %>%
@@ -531,19 +650,138 @@ for(sector in sectors_of_interest){
 }
 ```
 
+### Hourly
+
+```{r}
+unit_occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled, UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  )  %>%
+  ungroup()
+
+summary_hourly <- unit_occ_in_sect_summary_pay %>%
+  group_by(SectorName_labelled,UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "hourly"
+  )
+
+# write_csv(unit_occ_in_sect_summary_pay, file="../outputs/data/minor_group_occupation_in_sector_summary_pay_hourly.csv")
+
+
+unit_subset <- summary_hourly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(SectorName_labelled, UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0
+  )
+
+# write_csv(paid_less, file="../outputs/data/minor_group_occupation_in_sector_hourly_pay_penalty.csv")
+
+
+for(sector in sectors_of_interest){
+    #print(sector)
+    # subset to this sector and drop na occupatoins
+    plot_data <- unit_subset %>%
+      filter(SectorName_labelled == sector) %>%
+      filter(!is.na(UnitOccupation_labelled)) %>%
+      droplevels() %>%
+      ungroup()
+    
+    # Order occs by N
+    # First filter for 'outsourced' level and reorder by N
+    not_outsourced_levels <- plot_data %>%
+      dplyr::select(UnitOccupation_labelled, outsourcing_status, N) %>%
+      distinct(UnitOccupation_labelled, N) %>%
+      mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    
+    # not_outsourced_levels <- plot_data %>%
+    #   filter(outsourcing_status == 'Not outsourced') %>%
+    #   mutate(UnitOccupation_labelled = forcats::fct_reorder(UnitOccupation_labelled, N, .desc = FALSE))
+    # Then apply the reordered levels back to the original data
+    plot_data <- plot_data %>%
+      mutate(
+        UnitOccupation_labelled = factor(UnitOccupation_labelled, levels = levels(not_outsourced_levels$UnitOccupation_labelled)),
+            )
+    
+    annotation_df <- plot_data %>%
+      #filter(outsourcing_status == "Not outsourced") %>%
+      dplyr::select(UnitOccupation_labelled, n) %>%
+      group_by(UnitOccupation_labelled) %>%
+      summarise(
+        N = sum(n)
+      ) %>%
+        mutate(
+        ypos = max(plot_data$wtd_avg_income, na.rm=T) * 1.2
+      )
+    
+    
+    p <- plot_data %>%
+      ggplot(., aes(wtd_avg_income, UnitOccupation_labelled, size = perc, colour = outsourcing_status)) +
+      geom_point(position = "dodge") + 
+    geom_label_repel(inherit.aes = F, aes(wtd_avg_income, UnitOccupation_labelled, colour = outsourcing_status, label=paste0("n=",n)), size=3, 
+                    #force_pull = 2
+                    ) + 
+      theme_minimal() +
+      theme(legend.position = "bottom",
+          legend.title = element_blank()) +
+
+      #coord_flip() +
+    scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
+      #breaks=seq(0,max(plot_data$wtd_avg_income, na.rm=T), 200)) +
+    scale_colour_manual(values=colours) +
+    geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=UnitOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
+    guides(size=FALSE) + # remove size legend as gauging size is difficult 
+    xlab("Weighted average hourly income") + ylab("Unit occupation") +
+    labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
+      ggtitle(sector)
+    
+    show(p)
+    
+    # ggsave(here('outputs','figures','occupation_pay_plots',paste0('unit_occupation_pay_plot_hourly_', sector, '.png')), height = 8, width = 8, dpi=800, bg="white")
+}
+```
 ## Major subgroups across sectors
 
 ```{r}
 #| height: 20
 #| width: 10
 major_occ_summary_pay <- data %>%
-  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
   group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
   summarise(
     n = n(),
     Frequency = sum(NatRepemployees),
-    avg_income = mean(income_weekly_all, na.rm=T),
-    wtd_avg_income = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted.mean(income_hourly_all, w = NatRepemployees, na.rm=T)
   ) %>% 
   ungroup() %>%
   group_by(MajorsubgroupOccupation_labelled) %>%
@@ -557,18 +795,18 @@ major_occ_summary_pay <- data %>%
   )  %>%
   ungroup()
 
-# write_csv(major_occ_summary_pay, file="../outputs/data/major_subgroup_across_sectors_occupation_summary_pay_weekly.csv")
+# write_csv(major_occ_summary_pay, file="../outputs/data/major_subgroup_across_sectors_occupation_summary_pay_hourly.csv")
 
 # need to identify the unit occs that have an ok n
 # subste to occs with n>=10
-unit_subset_weekly <- major_occ_summary_pay %>%
+unit_subset_hourly <- major_occ_summary_pay %>%
   group_by(MajorsubgroupOccupation_labelled) %>%
   mutate(
     min_n = min(n, na.rm=TRUE)
   ) %>%
   filter(min_n >= 10)
 
-unit_subset <- unit_subset_weekly
+unit_subset <- unit_subset_hourly
 
 
 # create a df with occs where outsourced paid less so we can just list it
@@ -582,7 +820,7 @@ paid_less <- unit_subset %>%
     pay_penalty < 0
   )
 
-# write_csv(paid_less, file="../outputs/data/major_subgroup_occupation_weekly_pay_penalty_across_sectors.csv")
+# write_csv(paid_less, file="../outputs/data/major_subgroup_occupation_hourly_pay_penalty_across_sectors.csv")
 
 #print(sector)
 # subset to this sector and drop na occupatoins
@@ -635,7 +873,7 @@ scale_x_continuous(breaks=scales::breaks_pretty(n=5)) +
 scale_colour_manual(values=colours) +
 geom_text(inherit.aes=F,data=annotation_df, aes(x=ypos, y=MajorsubgroupOccupation_labelled, label = paste0("N = ", N)), hjust=1)  +
 guides(size=FALSE) + # remove size legend as gauging size is difficult 
-xlab("Weighted average weekly income") + ylab("Major sub group occupation") +
+xlab("Weighted average hourly income") + ylab("Major sub group occupation") +
 labs(caption = "Size of bubble represents the size of the respective workforce within the occupation") +
   ggtitle("All sectors")
 
@@ -935,17 +1173,68 @@ All models were run with a quasibinomial distribution to account for the survey 
 #| warning: false
 #| message: false
 mod2 <- glm(outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
+test <- data['NatRepemployees']
 
-tjur2 <- data %>%
+model_data <- mod2[["model"]] |> 
+  rename(
+    NatRepemployees = `(weights)`
+  )
+
+tjur2 <- model_data %>%
   mutate(pred = predict(mod2, type = "response")) %>%
   group_by(outsourcing_status) %>%
   summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
   summarise(tjur_r2 = diff(weighted_mean)) %>%
   pull()
 
-coefs <- extract_glm_coefs(mod2, only_sig=T)
+coefs <- extract_glm_coefs(mod2, only_sig=F)
 ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
 ```
+
+## svy
+
+```{r}
+library(survey)
+
+# Step 1: Create a survey design object
+design <- svydesign(
+  ids = ~1,                                # Assuming no clustering
+  weights = ~NatRepemployees,             # Your national survey weights
+  data = data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 3: View results
+summary(mod_svy1)
+summary(mod_svy2)
+
+anova(mod_svy1,mod_svy2)
+anova(mod_svy1,mod_svy2, method="Wald")
+
+coefs2 <- extract_glm_coefs(mod_svy2, only_sig=F)
+
+```
+
+```{r}
+regTermTest(mod_svy2, ~ Age + Gender + Has_Degree + Region + BORNUK_labelled)
+regTermTest(mod_svy2, ~ Age + Gender + Has_Degree + Region + BORNUK_labelled, method = "Wald")
+
+```
+
+
 
 For model 1, the value of Tjur's pseudo *R^2^* is `r tjur2 %>% round(3)`. The table below shows the model coefficients.
 
@@ -994,7 +1283,12 @@ tab_model(mod2,
 #| message: false
 mod <- glm(outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled, data, weights = NatRepemployees, family="quasibinomial")
 
-tjur <- data %>%
+model_data <- mod2[["model"]] |> 
+  rename(
+    NatRepemployees = `(weights)`
+  )
+
+tjur <- model_data %>%
   mutate(pred = predict(mod, type = "response")) %>%
   group_by(outsourcing_status) %>%
   summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
@@ -1005,7 +1299,46 @@ coefs <- extract_glm_coefs(mod, only_sig=T)
 
 ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
 
+
 ```
+
+## svy
+
+
+```{r}
+# Now, fit the model again
+design <- svydesign(
+  ids = ~1,  # Assuming no clustering
+  weights = ~NatRepemployees,  # Survey weights
+  data = data
+)
+
+mod_svy <- svyglm(
+  outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+# Check results
+summary(mod_svy)
+
+model_data <- mod2[["model"]] |> 
+  rename(
+    NatRepemployees = `(weights)`
+  )
+
+
+tjur <- model_data %>%
+  mutate(pred = predict(mod_svy, type = "response")) %>%
+  group_by(outsourcing_status) %>%
+  summarise(weighted_mean = weighted.mean(pred, NatRepemployees)) %>%
+  summarise(tjur_r2 = diff(weighted_mean)) %>%
+  pull()
+
+
+```
+
+
 
 For model 2, the value of Tjur's pseudo *R^2^* for this model is `r tjur %>% round(3)`. The table below shows the model coefficients.
 
@@ -1217,7 +1550,13 @@ tab_model(mod,
 mod <- glm(outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region, data, weights = NatRepemployees, family="quasibinomial")
 summary(mod)
 
-tjur <- data %>%
+
+model_data <- mod2[["model"]] |> 
+  rename(
+    NatRepemployees = `(weights)`
+  )
+
+tjur <- model_data %>%
   #filter(!is.na(Ethnicity_collapsed_disaggregated)) %>%
   mutate(pred = predict(mod, type = "response")) %>%
   group_by(outsourcing_status) %>%
@@ -1490,11 +1829,12 @@ The same model as the previous was used to estimate the effect of Gender on outs
 #| warning: false
 #| message: false
 
+
 # Annual income
 # Intercept only
-mod_base <- lm(income_annual_all ~ 1, income_data, weights = NatRepemployees)
+mod_base <- lm(income_annual_all ~ 1, income_data2, weights = NatRepemployees)
 # H1
-mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data2, weights = NatRepemployees)
 
 summary(mod_annual)
 
@@ -1514,9 +1854,9 @@ rsquare_annual <- round(summary(mod_annual)$r.squared,2)
 
 # Weekly income
 # Intercept only
-mod_base <- lm(income_weekly_all ~ 1, income_data, weights = NatRepemployees)
+mod_base <- lm(income_weekly_all ~ 1, income_data2, weights = NatRepemployees)
 # H1
-mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data, weights = NatRepemployees)
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, income_data2, weights = NatRepemployees)
 summary(mod_weekly)
 
 # F and p
