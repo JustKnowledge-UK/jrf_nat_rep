@@ -5218,13 +5218,6 @@ low_none <- rights_violations_summary_table$pct_no_violations[rights_violations_
 high_none <- rights_violations_summary_table$pct_no_violations[rights_violations_summary_table$income_group == "High"]
 ```
 
-The analysis reveals **clear income-related disparities in workplace rights violations** among outsourced workers. **Low-income workers face the highest burden of multiple violations**: `r low_multiple`% experience two or more rights violations compared to `r mid_multiple`% of mid-income workers and `r high_multiple`% of high-income workers.
-
-**The income gradient in violations is pronounced**: low-income workers average `r low_mean` violations per person, compared to `r mid_mean` for mid-income and `r high_mean` for high-income workers. **Most concerning is that only `r low_none`% of low-income workers report no rights violations** compared to `r high_none`% of high-income workers, indicating that **the majority of low-paid outsourced workers experience at least one workplace rights violation**.
-
-This pattern **directly mirrors the benefits/downsides analysis**, where low-paid workers also experienced more negative workplace outcomes. The findings suggest that **pay disadvantage in outsourced work is systematically associated with broader patterns of workplace rights violations** - low pay appears to be a marker of comprehensively disadvantaged working conditions rather than an isolated issue.
-
-The statistical analysis confirms a significant association between income level and multiple rights violations (χ² = `r round(chi_test_rights$statistic, 2)`, p `r ifelse(chi_test_rights$p.value < 0.001, "< 0.001", paste("=", round(chi_test_rights$p.value, 3)))`, Cramér's V = `r round(cramers_v_rights, 3)`), providing strong evidence that **income level is a meaningful predictor of cumulative workplace rights violations among outsourced workers**.
 
 ## Discrimination Analysis
 
