@@ -29,7 +29,6 @@ number-sections: true
 library(haven)
 library(poLCA)
 library(Hmisc)
-library(plyr)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -598,7 +597,7 @@ labels <- c(
   'Migration: Prefer not to say'
 )
   
-sjPlot::tab_model(mod_annual, pred.labels = labels, dv.labels = "Annual income")
+tab_model(mod_annual, pred.labels = labels, dv.labels = "Annual income")
 ```
 
 As expected, the model statistics for weekly income model were identical to the those of the annual income model. The model was statistically significant (*R^2^* = `r rsquare_weekly`, *F*(`r dfs_weekly[[1]]`, `r dfs_weekly[[2]]`) = `r f_weekly`, *p* `r p_weekly`). The table below shows the coefficients for the weekly income model.
@@ -858,7 +857,7 @@ We used Rao–Scott adjusted Wald tests to compare nested survey-weighted models
 #| output: false
 #| warning: false
 #| message: false
-library(survey)
+
 mod_data <- data %>%
   filter(!is.na(Ethnicity_collapsed))
 
@@ -943,7 +942,7 @@ labels <- c(
 )
 
 
-sjPlot::tab_model(mod_svy2, 
+tab_model(mod_svy2, 
           pred.labels = labels, 
           dv.labels = "Outsourcing",
           show.r2 = FALSE)
