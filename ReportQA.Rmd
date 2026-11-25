@@ -1,0 +1,4567 @@
+---
+title: "QA by report"
+author: "Taha Bokhari"
+date: "2025-09-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+#exec summ
+
+##Outsourced workers are paid £2995 annually and 64 a week less than non outsourced
+
+```{r exec summ}
+##make sure to run all of datacleaningexp and data cleaning.qmd scripts. for the experiential data also run the lines 3656- 3678 in methodology.qmd 
+
+extract_glm_coefs <- function(mod, only_sig=F, decimal_places = 3){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") %>% # specify new variable to add rownames to 
+    mutate(
+    or = round(exp(Estimate), decimal_places), .after=Estimate,
+    
+    
+    )
+}
+
+extract_lm_coefs <- function(mod, only_sig = F){
+  coefs <- coef(summary(mod)) 
+  if(only_sig==T){
+    coefs <- coefs[which(coefs[,4] < .05),]
+  }
+  coefs <- as_tibble(coefs, rownames="variable") # specify new variable to add rownames to 
+}
+
+get_pvalue <- function(model){
+  f_value <- summary(model)$fstatistic
+  p_value <- pf(f_value['value'], f_value['numdf'], f_value['dendf'], lower.tail = F)
+  attributes(p_value) <- NULL
+  return(p_value)
+}
+
+
+# Modified from https://tech.popdata.org/pma-data-hub/posts/2021-08-15-covid-analysis/
+
+tidy.svyVGAM <- function(
+  x, 
+  conf.int = FALSE, 
+  conf.level = 0.95,
+  exponentiate = FALSE, 
+  ...
+){
+  ret <- as_tibble(summary(x)$coeftable, rownames = "term")
+  colnames(ret) <- c("term", "estimate", "std.error", "statistic", "p.value")
+  coefs <- tibble::enframe(stats::coef(x), name = "term", value = "estimate")
+  ret <- left_join(coefs, ret, by = c("term", "estimate"))
+  
+  if (conf.int){
+    ci <- broom:::broom_confint_terms(x, level = conf.level, ...)
+    ret <- dplyr::left_join(ret, ci, by = "term")
+  }
+  if (exponentiate){
+    ret <- broom:::exponentiate(ret)
+  }
+
+  # Split on last colon
+  ret <- ret %>%
+    mutate(
+      y.level = ifelse(str_detect(term, ":"), sub(".*:(.+)$", "\\1", term), NA),
+      term = ifelse(str_detect(term, ":"), sub(":(?!.*:).*$", "", term, perl = TRUE), term)
+    ) %>%
+    arrange(y.level) %>%
+    relocate(y.level, .before = term)
+  
+  ret
+}
+
+income_data <- filter(data, income_drop_all==0)
+
+
+# Annual income
+# Intercept only
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
+
+mod_base <- lm(income_annual_all ~ 1, mod_data, weights = NatRepemployees)
+# H1
+mod_annual <- lm(income_annual_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, mod_data, weights = NatRepemployees)
+
+summary(mod_annual)
+
+# F and p
+f_annual <- round(anova(mod_base, mod_annual)[2,"F"],2)
+p_annual <- anova(mod_base, mod_annual)[2,"Pr(>F)"]
+if(p_annual < .001){
+  p_annual = "< .001"
+} else{
+  p_annual = paste0("= ",round(p_annual,3))
+}
+
+# Degrees of freedom
+dfs_annual <- as.list(anova(mod_base, mod_annual)[2,c("Df","Res.Df")])
+# R2
+rsquare_annual <- round(summary(mod_annual)$r.squared,2)
+
+# Weekly income
+# Intercept only
+mod_base <- lm(income_weekly_all ~ 1, mod_data, weights = NatRepemployees)
+# H1
+mod_weekly <- lm(income_weekly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, mod_data, weights = NatRepemployees)
+summary(mod_weekly)
+
+# F and p
+f_weekly <- round(anova(mod_base, mod_weekly)[2,"F"],2)
+p_weekly <- anova(mod_base, mod_weekly)[2,"Pr(>F)"]
+if(p_weekly < .001){
+  p_weekly = "< .001"
+} else{
+  p_weekly = paste0("= ",round(p_weekly,3))
+}
+
+# Degrees of freedom
+dfs_weekly <- as.list(anova(mod_base, mod_weekly)[2,c("Df","Res.Df")])
+# R2
+rsquare_weekly <- round(summary(mod_weekly)$r.squared,2)
+
+# hourly income
+# Intercept only
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed))
+
+mod_base <- lm(income_hourly_all ~ 1, mod_data, weights = NatRepemployees)
+# H1
+mod_hourly <- lm(income_hourly_all ~ Age + Gender + Has_Degree + Ethnicity_collapsed + Region + outsourcing_status + BORNUK_labelled, mod_data, weights = NatRepemployees)
+
+summary(mod_hourly)
+
+# F and p
+f_hourly <- round(anova(mod_base, mod_hourly)[2,"F"],2)
+p_hourly <- anova(mod_base, mod_hourly)[2,"Pr(>F)"]
+if(p_hourly < .001){
+  p_hourly = "< .001"
+} else{
+  p_hourly = paste0("= ",round(p_hourly,3))
+}
+
+# Degrees of freedom
+dfs_hourly <- as.list(anova(mod_base, mod_hourly)[2,c("Df","Res.Df")])
+# R2
+rsquare_hourly <- round(summary(mod_hourly)$r.squared,2)
+
+```
+
+1 in 10 workers report paid less and 5+ downsides
+
+``` {r exec summ}
+
+# Function to categorise pros and cons responses
+categorise_response <- function(response) {
+  if (is.na(response)) {
+    return(NA)
+  }
+  
+  response <- as.character(response)
+  
+  # Don't know category
+  if (grepl("Don't know", response, ignore.case = TRUE)) {
+    return("Don't know")
+  }
+  
+  # Neither/No impact category
+  if (grepl("Neither|no impact", response, ignore.case = TRUE)) {
+    return("No impact / Neither")
+  }
+  
+  # Less/Worse category
+  if (grepl("less|worse|harder", response, ignore.case = TRUE)) {
+    return("Less / Worse")
+  }
+  
+  # More/Better category  
+  if (grepl("more|better|easier", response, ignore.case = TRUE)) {
+    return("More / Better")
+  }
+  
+  # Default to Neither for other responses
+  return("No impact / Neither")
+}
+
+
+# Define variable labels
+pros_cons_labels <- data.frame(
+  Variable = c("Pros_And_Cons_Flexibility", "Pros_And_Cons_Pay", "Pros_And_Cons_Hours", 
+               "Pros_And_Cons_Holiday", "Pros_And_Cons_Terms", "Pros_And_Cons_Promotion",
+               "Pros_And_Cons_Training", "Pros_And_Cons_Security", "Pros_And_Cons_Treatment",
+               "Pros_And_Cons_Specialisation", "Pros_And_Cons_Connection",
+               "Pros_And_Cons_FeelInvested","Pros_And_Cons_Rights", 
+               "Pros_And_Cons_HealthSafety"),
+  Label = c("Get to work flexibly", "Pay", "Access to secure working hours",
+            "Holiday leave", "Terms and conditions", "Opportunity to progress / promotion",
+            "Access to training / development", "Access to job security", "Treatment compared to in-house colleagues",
+            "Opportunity to specialise in role or industry", "Feeling connected to people I work with",
+            "Feeling invested in my role and my work", "Ease of asserting rights at work",
+            "Protection of health and safety at work")
+)
+
+# Process each pros and cons variable
+pros_cons_data <- data.frame()
+
+for (i in 1:nrow(pros_cons_labels)) {
+  var_name <- pros_cons_labels$Variable[i]
+  label <- pros_cons_labels$Label[i]
+  
+  # Categorise responses
+  categorised <- sapply(experiential_data[[var_name]], categorise_response)
+  
+  # Count categories
+  counts <- table(categorised, useNA = "no")
+  total <- sum(counts)
+  
+  # Calculate percentages
+  for (category in names(counts)) {
+    percentage <- round(counts[category] / total * 100, 0)
+    pros_cons_data <- rbind(pros_cons_data, data.frame(
+      Variable = label,
+      Category = category,
+      Count = as.numeric(counts[category]),
+      Percentage = percentage
+    ))
+  }
+}
+
+# Calculate Less/Worse percentage for ordering
+less_worse_pct <- pros_cons_data %>%
+  filter(Category == "Less / Worse") %>%
+  dplyr::select(Variable, Percentage) %>%
+  rename(LessWorse_Pct = Percentage)
+
+# Order by Less/Worse percentage (descending)
+variable_order <- less_worse_pct[order(less_worse_pct$LessWorse_Pct, decreasing = TRUE), "Variable"]
+
+# Set factor levels for proper ordering
+pros_cons_data$Variable <- factor(pros_cons_data$Variable, levels = variable_order)
+pros_cons_data$Category <- factor(pros_cons_data$Category, 
+                                  levels = c("Don't know", "No impact / Neither", "More / Better", "Less / Worse"))
+
+# Function to transform categorical responses to numeric values
+recode_pros_cons <- function(x) {
+  case_when(
+    grepl("more|better|easier", tolower(x)) ~ 1,
+    grepl("less|harder|worse", tolower(x)) ~ -1,
+    grepl("neither|no impact", tolower(x)) ~ 0,
+    grepl("don't know", tolower(x)) ~ NA_real_,
+    # Default case
+    TRUE ~ NA_real_
+  )
+}
+
+# Process the data using the same approach as the Quarto file
+experiential_data <- experiential_data %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric"))
+
+## Analysis of Negative Outcomes per Worker (using Quarto approach)
+
+# Count negative outcomes for each respondent using the same method as Quarto file
+experiential_data <- experiential_data %>%
+  mutate(
+    total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE),
+    num_neg_excl_pay = rowSums(dplyr::select(., contains("_numeric"), -Pros_And_Cons_Pay_numeric) == -1, na.rm = TRUE)
+  ) %>%
+  # Create meaningful categories (same as Quarto file)
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Create categories excluding pay for the paid less analysis
+  mutate(neg_category_excl_pay = case_when(
+    num_neg_excl_pay == 0 ~ "0",
+    num_neg_excl_pay == 1 ~ "1",
+    num_neg_excl_pay == 2 ~ "2",
+    num_neg_excl_pay == 3 ~ "3",
+    num_neg_excl_pay == 4 ~ "4",
+    num_neg_excl_pay >= 5 ~ "5+"
+  )) %>%
+  # Create readable categories for display
+  mutate(
+    negative_outcomes_category = case_when(
+      num_neg == 0 ~ "No negative impacts",
+      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
+      num_neg %in% 3:4 ~ "3-4 negative outcomes",
+      num_neg >= 5 ~ "5+ negative outcomes",
+      TRUE ~ NA_character_
+    )
+  )
+
+negative_outcomes_summary <- experiential_data %>%
+  count(negative_outcomes_category) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) %>%
+  filter(!is.na(negative_outcomes_category)) %>%
+  # Reorder for logical presentation
+  mutate(negative_outcomes_category = factor(negative_outcomes_category, 
+                                           levels = c("No negative impacts", 
+                                                     "1-2 negative outcomes",
+                                                     "3-4 negative outcomes", 
+                                                     "5+ negative outcomes"))) %>%
+  arrange(negative_outcomes_category)
+
+paid_less_group <- experiential_data %>%
+  filter(Pros_And_Cons_Pay == 'I get paid less') %>%
+  count(neg_category_excl_pay) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+#178 / 1814
+
+
+
+```
+
+# Introduction
+##Outsourced workers appear to be spread across employment sectors, though are more common in some than in others
+
+```{r intro}
+sector_summary_3 <- data %>%
+  #filter(income_drop_all == 0) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    # avg_income = mean(income_annual_all, na.rm=T),
+    # wtd_avg_income = weighted.mean(income_annual_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+sector_summary_3<-sector_summary_3 %>% filter(N>100) %>% arrange(desc(perc)) 
+
+pubprivate
+
+
+write.table(sector_summary_3, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+##Outsourced workers by region 
+
+```{r region}
+region_statistics_2 <- data %>%
+  # get values of labels
+  # mutate_all(haven::as_factor) %>%
+  group_by(Region, outsourcing_status) %>%
+  summarise(
+    Frequency = sum(NatRepemployees),
+    n = n(),
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  ) %>%
+  rename(
+    `Outsourcing status` = outsourcing_status
+  ) %>%
+  ungroup()
+
+region_statistics_2 %>% filter(N>100, `Outsourcing status`=="Outsourced") %>% arrange(desc(Percentage)) 
+
+```
+
+##When asked about their reasons for being in their current job, outsourced workers shared a combination of potentially positive “pull-factors” – like good pay (41%) and liking their colleagues (36%) – alongside potentially more constrained choices, such as it being the best job available to them (24%), or being unable to access other jobs because of a lack of formal qualifications (9%)
+
+```{r exp}
+experiential_data %>% mutate(ID=row_number(),val=1) %>%
+  dplyr::select(starts_with("Why_Job"),ID,val) %>%
+  pivot_longer(cols = !c(ID,val),
+               names_to = "JobMotivation",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(JobMotivation,response) %>%
+  summarise(
+            N = sum(val),
+            n = n()) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") %>% dplyr::select(-JobMotivation) %>% arrange(desc(pct))
+
+#gender check
+
+genmot<- experiential_data %>% mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Sex,starts_with("Why_Job"),ID,val) %>%
+  pivot_longer(cols = !c(Sex,ID,val),
+               names_to = "JobMotivation",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Sex,JobMotivation,response) %>%
+  summarise(
+            N = sum(val),
+            n = n()) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA", Sex %in% c("Male","Female")) %>% dplyr::select(-JobMotivation) %>% arrange(desc(pct))
+  
+
+write.table(genmot, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+#Chapter 1
+##Across sectors average weekly incomes lower for outsourced v non outsourced
+
+create summary table - weekly
+
+```{r chapter 1}
+#add median code 
+weighted_median <- function(x, w, na.rm = TRUE, tol = 1e-10) {
+keep <- !is.na(x) & !is.na(w)
+if (!na.rm && !all(keep)) return(NA_real_)
+x <- x[keep]; w <- w[keep]
+if (length(x) == 0 || sum(w) <= 0) return(NA_real_)
+ord <- order(x)
+x <- x[ord]; w <- w[ord]
+cum_w <- cumsum(w) / sum(w)
+i <- which(cum_w >= 0.5 - tol)[1]
+if (abs(cum_w[i] - 0.5) < tol && i < length(x)) {
+(x[i] + x[i + 1]) / 2
+} else {
+x[i]
+}
+}
+
+#
+
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T),
+    median1 = wtd.quantile(income_weekly_all, w = NatRepemployees, probs = c(.5), na.rm = T),
+    median2 = weighted.mean(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write.table(sector_summary_pay, "clipboard-16384", sep="\t", row.names=FALSE)
+
+#get overall higher lower
+sec_summ<- sector_summary_pay %>% filter(N>99) %>%
+  select(SectorName_short, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  summarise(n= n())
+
+```
+outsourced paid lower in which sectors weekly
+```{r chapter 1}
+
+summary_weekly <- sector_summary_pay %>% filter(N>99) %>%
+  select(SectorName_short, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA))
+
+
+```
+
+Across sectors average hourly incomes lower for outsourced v non outsourced
+
+create summary table - hourly 
+
+```{r chapter 1}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+write.table(sector_summary_pay, "clipboard-16384", sep="\t", row.names=FALSE)
+
+sec_summ_h<- sector_summary_pay %>% filter(N>99) %>%
+  select(SectorName_short, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  summarise(n= n())
+
+
+```
+outsourced paid lower in which sectors hourly, and hourly and weekly in x unmber of sectors
+```{r chapter 1}
+
+
+summary_hourly <- sector_summary_pay %>% filter(N>99) %>%
+  select(SectorName_short, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA))
+
+overall<-inner_join(summary_hourly,summary_weekly, by = "SectorName") %>%
+  mutate(paid_lower = case_when(Paid_higher_lower.x=="Lower"&Paid_higher_lower.y=="Lower" ~ 1,
+                                TRUE ~ 0))%>%
+  filter(paid_lower==1)
+
+
+```
+
+ceatea summary table weekly 
+
+``` {r chapter 1}
+
+summ_ig<- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled,income_group, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  ) %>% filter(N>100)
+  
+  
+summ_ig_pl<- summ_ig %>% 
+  dplyr::select(SectorName_short,income_group,outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+  
+write.table(summ_ig_pl, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+ceatea summary table hourly 
+
+``` {r chapter 1}
+
+summ_ig<- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled,income_group, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  ) %>% filter(N>100)
+  
+  
+summ_ig<- summ_ig %>% 
+  dplyr::select(SectorName_short,income_group,outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+  
+write.table(summ_ig, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+sectors and weekly avg pay by outsourced and income group
+
+```{r}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled,income_group, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+summary_weekly <- sector_summary_pay %>%
+  group_by(SectorName_labelled) %>%
+  #mutate(
+    #min_n = min(n, na.rm=TRUE) 
+  #) %>%
+  filter(N>= 100) %>% # need to identify the unit occs that have an ok n
+  ungroup()
+  
+
+summary_weekly_chart <- summary_weekly%>%
+  mutate(income_group = factor(income_group, 
+                                           levels = c("Low", 
+                                                     "Mid",
+                                                     "High")),
+         Group = paste0(outsourcing_status,": ", income_group," paid"),
+         Pay = paste0(SectorName_short,": ", income_group," paid") ) %>%
+  #select(SectorName_short,outsourcing_status,income_group,wtd_avg_income) %>%
+  #pivot_wider(names_from = outsourcing_status,
+   #           values_from = wtd_avg_income) %>% 
+  select("Sector"=SectorName_short,Group, "Pay band"=income_group, Pay, "Outsourced"=outsourcing_status,"Weekly pay"=wtd_avg_income) %>% arrange(`Pay band`)
+
+write.table(summary_weekly_chart, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+sectors and hourly avg pay by outsourced and income group
+
+```{r}
+sector_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName, SectorName_labelled,income_group, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    SectorName_labelled = case_when(SectorName_labelled == "NA" ~ NA,
+                                    TRUE ~ SectorName_labelled),
+    SectorName_short = SectorName_labelled
+  ) %>%
+  # make the sector names more readable
+  separate_wider_delim(SectorName_short, names = c("SectorName_short", "SectorName_short_detail"), delim=";",
+                       too_few = "align_start") %>%
+  mutate(
+    SectorName_short = factor(stringr::str_to_sentence(SectorName_short)),
+    SectorName_short_detail = factor(stringr::str_to_sentence(SectorName_short_detail)),
+  )
+
+summary_hourly <- sector_summary_pay %>%
+  group_by(SectorName_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  filter(N>= 100) %>% # need to identify the unit occs that have an ok n
+  ungroup()
+
+summary_hourly_chart <- summary_hourly %>%
+  mutate(income_group = factor(income_group, 
+                                           levels = c("Low", 
+                                                     "Mid",
+                                                     "High")),
+         Group = paste0(outsourcing_status,": ", income_group," paid"),
+         Pay = paste0(SectorName_short,": ", income_group," paid") ) %>%
+  #select(SectorName_short,outsourcing_status,income_group,wtd_avg_income) %>%
+  #pivot_wider(names_from = outsourcing_status,
+   #           values_from = wtd_avg_income) %>% 
+  select("Sector"=SectorName_short,"Pay band"=income_group, "Outsourced"=outsourcing_status,Pay, "Hourly pay"=wtd_avg_income) %>% arrange(desc(Outsourced), `Hourly pay`,`Pay band`)
+
+write.table(summary_hourly_chart, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+
+```
+
+MINOR / WEEK ACROSS SECTOR Fig 4.3: We find that outsourced workers have lower average incomes per week across every job type (at the “minor group occupation” level), when looking across sectors
+
+``` {r}
+unit_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+# write_csv(unit_occ_summary_pay, file="../outputs/data/minor_group_occupation_summary_pay_weekly_across_sectors.csv")
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_weekly <- unit_occ_summary_pay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(N >= 100)
+
+unit_subset <- unit_subset_weekly
+#check if job types pay more or less
+UO_summ_w<- unit_subset %>% 
+  select(UnitOccupation_labelled, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+
+write.table(UO_summ_w, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+```
+Hourly by  sector minor 
+```{r}
+unit_occ_summary_hourlypay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+unit_subset_hourly <- unit_occ_summary_hourlypay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(N >= 100)
+
+
+
+UO_summ_h<- unit_subset_hourly %>% 
+  select(UnitOccupation_labelled, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+
+overallminor<-inner_join(UO_summ_h,UO_summ_w, by = "UnitOccupation_labelled") %>%
+  mutate(paid_lower = case_when(Paid_higher_lower.x=="Lower"&Paid_higher_lower.y=="Lower" ~ 1,
+                                TRUE ~ 0)) %>%
+  filter(paid_lower==1)
+
+write.table(UO_summ_h, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+```
+
+MAJOR / WEEK IN SECTOR Figs 4.4: Looking at broad occupational types within sectors (major sub-group occupations) we see outsourced workers earning less on average per week in some key occupations (p21)
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_weekly <- major_occ_summary_pay %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(N >= 100)
+
+major_summ_w<- unit_subset_weekly %>% 
+  select(MajorsubgroupOccupation_labelled, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+
+write.table(major_summ_w, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+MAJOR / Hourly IN SECTOR Figs 4.4: Looking at broad occupational types within sectors (major sub-group occupations) we see outsourced workers earning less on average per week in some key occupations (p21)
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+
+# need to identify the unit occs that have an ok n
+# subste to occs with n>=10
+unit_subset_hourly <- major_occ_summary_pay %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE)
+  ) %>%
+  filter(N >= 100)
+
+major_summ_h<- unit_subset_hourly %>% 
+  select(MajorsubgroupOccupation_labelled, outsourcing_status,wtd_avg_income) %>%
+  pivot_wider(names_from = outsourcing_status,
+              values_from = wtd_avg_income) %>%
+  mutate(Paid_higher_lower= case_when(`Not outsourced` > Outsourced ~ "Lower",
+                                      `Not outsourced` < Outsourced ~ "Higher",
+                                      TRUE ~ NA)) %>%
+group_by(Paid_higher_lower) %>%
+  add_tally()
+
+
+#overall how many paid less in major group hourly and weekly
+
+overallmajor<-inner_join(major_summ_h,major_summ_w, by = "MajorsubgroupOccupation_labelled") %>%
+  mutate(paid_lower = case_when(Paid_higher_lower.x=="Lower"&Paid_higher_lower.y=="Lower" ~ 1,
+                                TRUE ~ 0)) %>%
+  filter(paid_lower==1)
+
+
+write.table(major_summ_h, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+MINOR / WEEK IN SECTOR Figs 4.2.1: And analysis of more specific job types (minor group occupations) within sectors also show roles in which outsourced workers typically earn less on average per week that in-house counterparts in that sector 
+
+```{r}
+unit_occ_in_sect_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName, SectorName_labelled, UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(SectorName_labelled, UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+    
+  )  %>%
+  ungroup()
+
+summary_weekly <- unit_occ_in_sect_summary_pay %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    min_n = min(n, na.rm=TRUE) 
+  ) %>%
+  #filter(min_n >= 10) %>% # need to identify the unit occs that have an ok n
+  ungroup() %>%
+  mutate(
+    pay_frame = "weekly"
+  )
+
+unit_subset <- summary_weekly
+
+
+# create a df with occs where outsourced paid less so we can just list it
+paid_less <- unit_subset %>%
+  pivot_wider(id_cols = c(SectorName_labelled, UnitOccupation_labelled), names_from = outsourcing_status, values_from = c(wtd_avg_income, n)) %>%
+  janitor::clean_names() %>%
+  mutate(
+    pay_penalty = wtd_avg_income_outsourced - wtd_avg_income_not_outsourced
+  ) %>%
+  filter(
+    pay_penalty < 0,
+    n_outsourced > 10
+  )
+
+
+```
+
+nested sector major minorhhourly 
+
+```{r chapter 1}
+
+nested_h <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName_short,SectorName_labelled, MajorsubgroupOccupation_labelled, UnitOccupation_labelled,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+  )  %>%
+  ungroup() 
+
+nested_w <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName_short,SectorName_labelled, MajorsubgroupOccupation_labelled, UnitOccupation_labelled,outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled),
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+  )  %>%
+  ungroup() 
+str(nested_h)
+
+nested_h<- nested_h %>%
+  filter(N>99, n>10)  %>%
+  select("Sector"="SectorName_short","Major"=MajorsubgroupOccupation_labelled, "Minor"=UnitOccupation_labelled,"Outsourced" = outsourcing_status, "Hourly pay"=wtd_avg_income) %>%
+  filter(Sector %in% c("Accommodation and food service activities","Education","Human health and social work activities","Information and communication","Wholesale and retail trade")) %>%
+  filter(Major %in% c("Elementary Administration And Service Occupations","Caring Personal Service Occupations","Teaching And Other Educational Professionals","Health Professionals","Science, Research, Engineering And Technology Professionals","Sales Occupations")) %>%
+  filter(Minor %in% c("Other Elementary Services Occupations",
+"Teaching And Childcare Support Occupations",
+"Teaching Professionals",
+"Caring Personal Services",
+"Nursing Professionals",
+"Information Technology Professionals",
+"Sales Assistants And Retail Cashiers",
+"Shopkeepers And Sales Supervisors"))
+
+nested_w<- nested_w %>%
+  filter(N>99, n>10)  %>%
+  select("Sector"="SectorName_short","Major"=MajorsubgroupOccupation_labelled, "Minor"=UnitOccupation_labelled,"Outsourced" = outsourcing_status, "Weekly pay"=wtd_avg_income) %>%
+  filter(Sector %in% c("Accommodation and food service activities","Education","Human health and social work activities","Information and communication","Wholesale and retail trade")) %>%
+  filter(Major %in% c("Elementary Administration And Service Occupations","Caring Personal Service Occupations","Teaching And Other Educational Professionals","Health Professionals","Science, Research, Engineering And Technology Professionals","Sales Occupations")) %>%
+  filter(Minor %in% c("Other Elementary Services Occupations",
+"Teaching And Childcare Support Occupations",
+"Teaching Professionals",
+"Caring Personal Services",
+"Nursing Professionals",
+"Information Technology Professionals",
+"Sales Assistants And Retail Cashiers",
+"Shopkeepers And Sales Supervisors"))
+
+sector_m_m<- inner_join(nested_h,nested_w, by=c("Sector","Major","Minor","Outsourced"))
+
+write.table(sector_m_m, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+##nested sector and major
+nestedm_h <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>%
+  group_by(SectorName_short,SectorName_labelled, MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+    
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+  )  %>%
+  filter(
+         SectorName_short %in% c("Accommodation and food service activities","Education",
+"Human health and social work activities","Information and communication","Wholesale and retail trade"),
+MajorsubgroupOccupation_labelled %in% c("Elementary Administration And Service Occupations","Caring Personal Service Occupations","Teaching And Other Educational Professionals","Health Professionals","Science, Research, Engineering And Technology Professionals","Sales Occupations")) %>%
+  ungroup() %>% filter(n>10) %>% mutate(Minor = "Overall") %>% select("Sector"="SectorName_short","Major"=MajorsubgroupOccupation_labelled,Minor,"Outsourced" = outsourcing_status, "Hourly pay"=wtd_avg_income)
+
+nestedm_w <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>%
+  group_by(SectorName_short,SectorName_labelled, MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>%
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled),
+   
+    SectorName_labelled = stringr::str_to_title(SectorName_labelled)
+  )  %>%
+  filter(
+         SectorName_short %in% c("Accommodation and food service activities","Education",
+"Human health and social work activities","Information and communication","Wholesale and retail trade"),
+MajorsubgroupOccupation_labelled %in% c("Elementary Administration And Service Occupations","Caring Personal Service Occupations","Teaching And Other Educational Professionals","Health Professionals","Science, Research, Engineering And Technology Professionals","Sales Occupations")) %>%
+ ungroup()  %>% filter(n>10) %>% mutate(Minor = "Overall") %>% select("Sector"="SectorName_short","Major"=MajorsubgroupOccupation_labelled,Minor,"Outsourced" = outsourcing_status, "Weekly pay"=wtd_avg_income) 
+
+sector_m_om<- inner_join(nestedm_h,nestedm_w, by=c("Sector","Major","Minor","Outsourced"))
+
+sector_m_o<- rbind(sector_m_m,sector_m_om)
+
+write.table(sector_m_o, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+
+
+Human health and social work sector and major weekly
+
+``` {r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="HUMAN HEALTH AND SOCIAL WORK ACTIVITIES")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+```
+
+Human health and social work sector and major hourly
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="HUMAN HEALTH AND SOCIAL WORK ACTIVITIES")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+```
+
+
+Human health and social work sector and minor weekly
+
+``` {r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="HUMAN HEALTH AND SOCIAL WORK ACTIVITIES")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+Human health and social work sector and minor hourly
+
+```{r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="HUMAN HEALTH AND SOCIAL WORK ACTIVITIES")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+View(minor_occ_summary_pay)
+
+```
+
+Education sector and major weekly
+
+``` {r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="EDUCATION")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+```
+
+Education sector and major hourly
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="EDUCATION")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+```
+
+education sector and minor weekly
+
+``` {r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="EDUCATION")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+education sector and minor hourly
+
+```{r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="EDUCATION")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+##Other sectors
+
+Accommodation and food services sector 
+sector and major weekly
+``` {r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="ACCOMMODATION AND FOOD SERVICE ACTIVITIES")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+major_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+sector and major hourly
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="ACCOMMODATION AND FOOD SERVICE ACTIVITIES")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+major_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+sector and minor weekly
+
+``` {r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="ACCOMMODATION AND FOOD SERVICE ACTIVITIES")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+sector and minor hourly
+
+```{r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="ACCOMMODATION AND FOOD SERVICE ACTIVITIES")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+Transportation and storage
+``` {r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="TRANSPORTATION AND STORAGE")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+
+major_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+sector and major hourly
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="TRANSPORTATION AND STORAGE")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+major_occ_summary_pay %>%
+  filter(N>100)
+
+```
+
+sector and minor weekly
+
+``` {r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="TRANSPORTATION AND STORAGE")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>90) 
+
+```
+
+sector and minor hourly
+
+```{r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="TRANSPORTATION AND STORAGE")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>90) 
+
+```
+
+Information & Communication
+sector and major weekly
+``` {r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="INFORMATION AND COMMUNICATION")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+major_occ_summary_pay %>%
+  filter(N>100)
+
+```
+
+sector and major hourly
+
+```{r}
+
+major_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="INFORMATION AND COMMUNICATION")%>%
+  group_by(MajorsubgroupOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(MajorsubgroupOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    MajorsubgroupOccupation_labelled = case_when(MajorsubgroupOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ MajorsubgroupOccupation_labelled),
+    MajorsubgroupOccupation_labelled = stringr::str_to_title(MajorsubgroupOccupation_labelled)
+  )  %>%
+  ungroup()
+major_occ_summary_pay %>%
+  filter(N>100)
+
+```
+
+sector and minor weekly
+
+``` {r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_weekly_all)) %>% filter(SectorName_labelled=="INFORMATION AND COMMUNICATION")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_weekly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_weekly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+sector and minor hourly
+
+```{r}
+
+minor_occ_summary_pay <- data %>%
+  filter(income_drop_all == 0 & !is.na(income_hourly_all)) %>% filter(SectorName_labelled=="INFORMATION AND COMMUNICATION")%>%
+  group_by(UnitOccupation_labelled, outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(UnitOccupation_labelled) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    perc = 100 * (Frequency/Sum),
+    UnitOccupation_labelled = case_when(UnitOccupation_labelled == "NA" ~ NA,
+                                    TRUE ~ UnitOccupation_labelled),
+    UnitOccupation_labelled = stringr::str_to_title(UnitOccupation_labelled)
+  )  %>%
+  ungroup()
+
+minor_occ_summary_pay %>%
+  filter(N>100) 
+
+```
+
+#Chapter 2
+
+##A third of all outsourced workers (32%) say they would prefer to be in-house – compared to just 1 in 5 (18%) who say they would prefer to remain outsourced,
+
+```{r }
+
+experiential_data %>%
+  count(Work_Preference) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) %>%
+  dplyr::select(Work_Preference, n, Percentage)
+
+inc_work_pref<-experiential_data %>%
+  mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Work_Preference,income_group,ID,val) %>%
+  pivot_longer(cols = !c(income_group,ID,val),
+               names_to = "WorkPref",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(WorkPref,income_group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") 
+
+write.table(inc_work_pref, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+
+##Our findings suggest that outsourcing seems to be working neutrally, and even well, for some workers – with some reporting no impacts, while others report feeling that they are better-off than if they were in-house, on elements including getting to work more flexibly (42%) and having more opportunity to specialise in their role or industry (36%).  
+Overall, 1 in 4 outsourced workers say they are less able to progress; 1 in 5 say it’s harder to assert their rights at work; 1 in 6 say they have less secure hours; and the same proportion feel less invested in their role and in their work, 
+
+```{r, pros cons}
+
+experiential_data %>% mutate(ID=row_number(),val=1) %>%
+  dplyr::select(starts_with("Pros_A")&!contains("numeric"),ID,val) %>%
+  pivot_longer(cols = !c(ID,val),
+               names_to = "ProCons",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(ProCons,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") 
+
+#just on pay 
+experiential_data_no_income_outliers %>%
+  count(Pros_And_Cons_Pay) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) 
+
+```
+##People who report a “premium” (receiving higher pay than if they were in-house) tend to be slightly younger, 
+
+Age
+```{r}
+
+agelowpay<-experiential_data_no_income_outliers %>%
+  mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Age,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(Age,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Group,response) %>%
+  summarise(
+            N = sum(val),
+            mean = mean(Age, na.rm = T),
+            median = median(Age, na.rm = T)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") %>%
+  filter(str_detect(response, 'paid'))
+  
+write.table(agelowpay, "clipboard-16384", sep="\t", row.names=FALSE)
+  
+```
+
+##to have higher levels of education or formal qualifications
+
+Ed band
+```{r}
+edlowpay<-experiential_data_no_income_outliers %>%mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Education_Band,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(Education_Band,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Education_Band,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") 
+
+  
+write.table(edlowpay, "clipboard-16384", sep="\t", row.names=FALSE)
+  
+```
+
+##, to be male, and / or 
+```{r}
+gendlowpay<-experiential_data_no_income_outliers %>%mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Sex,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(Sex,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Sex,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") %>%
+  filter(!is.na(Sex))
+  
+write.table(gendlowpay, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+##to be in our high-income group
+```{r}
+lowpayinc<-experiential_data_no_income_outliers %>%mutate(ID=row_number(),val=1) %>%
+  dplyr::select(income_group,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(income_group,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(income_group,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") %>%
+  filter(!is.na(income_group))
+  
+write.table(lowpayinc, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+##Women are more likely to report seeing no impact on their pay compared to if they were in-house, while people in the low-income group* are more likely to be unsure – with a higher proportion reporting that they don’t know how their pay compares to if they were in-house.  
+
+```{r}
+experiential_data_no_income_outliers %>%mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Sex,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(Sex,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Sex,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") #%>%
+  #filter(BORNUK_binary!="Prefer not to say" & str_detect(response, 'paid'))
+  
+write.table(losepayuk, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+##Workers who were born outside of the UK appear to have more stratified experiences: they are more likely than UK-born workers to report being paid more than if they were in-house (33% compared to 25%), and they also report higher rates of being paid less (21% compared to 16%).  
+
+```{r}
+
+losepayuk <- experiential_data_no_income_outliers %>%mutate(ID=row_number(),val=1) %>%
+  dplyr::select(BORNUK_binary,Pros_And_Cons_Pay,ID,val) %>%
+  pivot_longer(cols = !c(BORNUK_binary,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(BORNUK_binary,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot) %>% filter(response!="NA") %>%
+  filter(BORNUK_binary!="Prefer not to say")
+  
+write.table(losepayuk, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+## 4 in 10 (38.5%) outsourced workers report seeing no negative impacts at all compared to if they worked in-house. But very slightly more – 40% – report 3 or more negatives, and we find that a quarter of all outsourced workers (24%) report at least 5 downsides
+
+```{r}
+#| echo: false 
+#prep code for above data
+# Function to transform categorical responses to numeric values
+recode_pros_cons <- function(x) {
+  case_when(
+    grepl("more|better|easier", tolower(x)) ~ 1,
+    grepl("less|harder|worse", tolower(x)) ~ -1,
+    grepl("neither|no impact", tolower(x)) ~ 0,
+    grepl("don't know", tolower(x)) ~ NA_real_,
+    # Default case
+    TRUE ~ NA_real_
+  )
+}
+
+# Process the data using the same approach as the Quarto file
+experiential_data <- experiential_data %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric"))
+
+experiential_data <- experiential_data %>%
+  mutate(
+    total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE),
+    num_neg_excl_pay = rowSums(dplyr::select(., contains("_numeric"), -Pros_And_Cons_Pay_numeric) == -1, na.rm = TRUE)
+  ) %>%
+  # Create meaningful categories (same as Quarto file)
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Create categories excluding pay for the paid less analysis
+  mutate(neg_category_excl_pay = case_when(
+    num_neg_excl_pay == 0 ~ "0",
+    num_neg_excl_pay == 1 ~ "1",
+    num_neg_excl_pay == 2 ~ "2",
+    num_neg_excl_pay == 3 ~ "3",
+    num_neg_excl_pay == 4 ~ "4",
+    num_neg_excl_pay >= 5 ~ "5+"
+  )) %>%
+  # Create readable categories for display
+  mutate(
+    negative_outcomes_category = case_when(
+      num_neg == 0 ~ "No negative impacts",
+      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
+      num_neg %in% 3:4 ~ "3-4 negative outcomes",
+      num_neg >= 5 ~ "5+ negative outcomes",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Apply the same transformations to the filtered dataset
+experiential_data_no_income_outliers <- experiential_data_no_income_outliers %>%
+  mutate(across(starts_with("Pros_And_Cons"), 
+                ~ recode_pros_cons(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  mutate(
+    total = rowSums(dplyr::select(., contains("_numeric")), na.rm = TRUE),
+    num_neg = rowSums(dplyr::select(., contains("_numeric")) == -1, na.rm = TRUE),
+    #num_neg_excl_pay = rowSums(dplyr::select(., contains("_numeric"), -Pros_And_Cons_Pay_numeric) == -1, na.rm = TRUE)
+  ) %>%
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>%
+  # Create categories excluding pay for the paid less analysis
+ # mutate(neg_category_excl_pay = case_when(
+  #  num_neg_excl_pay == 0 ~ "0",
+   # num_neg_excl_pay == 1 ~ "1",
+    #num_neg_excl_pay == 2 ~ "2",
+#    num_neg_excl_pay == 3 ~ "3",
+ #   num_neg_excl_pay == 4 ~ "4",
+  #  num_neg_excl_pay >= 5 ~ "5+"
+  #)) %>%
+  mutate(
+    negative_outcomes_category = case_when(
+      num_neg == 0 ~ "No negative impacts",
+      num_neg %in% 1:2 ~ "1-2 negative outcomes", 
+      num_neg %in% 3:4 ~ "3-4 negative outcomes",
+      num_neg >= 5 ~ "5+ negative outcomes",
+      TRUE ~ NA_character_
+    )
+  )
+
+```
+
+```{r}
+# Create summary table using the same approach as Quarto file
+negative_outcomes_summary <- experiential_data %>%
+  count(negative_outcomes_category) %>%
+  mutate(
+    Percentage = round(n / sum(n) * 100, 1),
+    Display = paste0(n, " (", Percentage, "%)")
+  ) %>%
+  filter(!is.na(negative_outcomes_category)) %>%
+  # Reorder for logical presentation
+  mutate(negative_outcomes_category = factor(negative_outcomes_category, 
+                                           levels = c("No negative impacts", 
+                                                     "1-2 negative outcomes",
+                                                     "3-4 negative outcomes", 
+                                                     "5+ negative outcomes"))) %>%
+  arrange(negative_outcomes_category)
+
+```
+##1 in 6 (17%) outsourced workers report that they are paid less than if they were in-house. 97% of these outsourced workers also report at least one other negative outcome linked to outsourcing. More strikingly, 7 in 10 (69.7%) of this group report four or more
+``` {r}
+paid_less_group <- experiential_data %>%
+  filter(Pros_And_Cons_Pay == 'I get paid less') %>%
+  count(neg_category_excl_pay) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+write.table(paid_less_group, "clipboard-16384", sep="\t", row.names=FALSE)
+
+experiential_data_no_income_outliers %>%
+  filter(Pros_And_Cons_Pay == 'I get paid less') %>%
+  count(neg_category_excl_pay) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+```
+
+Workers who have migrated to the UK, workers on lower incomes, and male workers are all disproportionately likely to experience multiple harms. Workers who weren’t born in the UK report an average of 38% more negative outcomes than workers born in the UK.
+
+```{r}
+means_by_group <- experiential_data_no_income_outliers %>%
+  dplyr::select(income_group, Ethnicity_Collapsed, Sex, Education_Band, BORNUK_binary, num_neg) %>%
+  pivot_longer(cols = -num_neg, names_to = "demographic", values_to = "group") %>%
+  filter(!is.na(group)) %>%
+  group_by(demographic, group) %>%
+  summarise(
+    mean_negatives = round(mean(num_neg, na.rm = TRUE), 2),
+    median_negatives = median(num_neg, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  )
+
+# Create visualisation of means
+means_plot <- means_by_group %>%
+  ggplot(aes(x = group, y = mean_negatives, fill = demographic)) +
+  geom_col(alpha = 0.8) +
+  geom_text(aes(label = mean_negatives), vjust = -0.5, size = 3) +
+  facet_wrap(~ demographic, scales = "free_x") +
+  labs(
+    title = "Mean Number of Negative Outcomes by Demographic Group",
+    x = "",
+    y = "Mean Number of Negatives"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+means_plot
+
+
+```
+
+regression
+```{r}
+
+## Regression Analysis of Demographic Differences
+
+# Ensure we have complete data for regression
+regression_data <- experiential_data_no_income_outliers %>%
+  filter(!is.na(num_neg), !is.na(income_group), !is.na(Ethnicity_Collapsed),
+         !is.na(Sex), !is.na(Education_Band), !is.na(BORNUK_binary),
+         !is.na(Region), !is.na(OutsourcedNonOL), !is.na(Age))
+
+#fix reference level for ed
+
+regression_data$Education_Band <- relevel(factor(regression_data$Education_Band), ref = "High")
+
+demographics <- c("income_group", "Ethnicity_Collapsed", "Sex", "Education_Band", "BORNUK_binary", "Region", "Age", "OutsourcedNonOL")
+
+# 1.1 Univariate Models
+univariate_models <- list()
+model_summaries <- list()
+
+for (demo in demographics) {
+  # Create formula dynamically
+  formula_str <- paste("num_neg ~", demo)
+  formula_obj <- as.formula(formula_str)
+  
+  # Poisson regression
+  poisson_model <- glm(formula_obj, 
+                      data = regression_data, 
+                      family = poisson)
+  
+  # Linear regression for comparison
+  linear_model <- lm(formula_obj, 
+                    data = regression_data)
+  
+  # Store models
+  univariate_models[[demo]] <- list(
+    poisson = poisson_model,
+    linear = linear_model
+  )
+
+  library(broom)  
+  # Extract summary statistics
+  poisson_summary <- tidy(poisson_model, conf.int = TRUE)
+  linear_summary <- tidy(linear_model, conf.int = TRUE)
+  
+  model_summaries[[demo]] <- list(
+    demographic = demo,
+    poisson_aic = AIC(poisson_model),
+    linear_r_squared = summary(linear_model)$r.squared,
+    poisson_deviance = poisson_model$deviance,
+    linear_rmse = sqrt(mean(residuals(linear_model)^2))
+  )
+}
+
+# 1.2 Multivariate Model
+# Poisson regression with all demographics
+full_poisson <- glm(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                   Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                   data = regression_data, 
+                   family = poisson)
+
+# Linear regression with all demographics  
+full_linear <- lm(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                 Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                 data = regression_data)
+
+# Check for overdispersion in Poisson model
+overdispersion_ratio <- full_poisson$deviance / full_poisson$df.residual
+cat("Overdispersion ratio:", round(overdispersion_ratio, 3), "\n")
+cat("If > 1.5, consider negative binomial or quasi-Poisson\n")
+
+# If overdispersed, fit negative binomial
+library(MASS)
+if(overdispersion_ratio > 1.5) {
+  full_negbin <- glm.nb(num_neg ~ income_group + Ethnicity_Collapsed + Sex + 
+                       Education_Band + BORNUK_binary + Age + Region + OutsourcedNonOL, 
+                       data = regression_data)
+  cat("Negative binomial model fitted due to overdispersion\n")
+}
+
+# 1.3 Model Comparison Table
+model_comparison <- data.frame(
+  Model = c("Full Poisson", "Full Linear", if(exists("full_negbin")) "Full Negative Binomial"),
+  AIC = c(AIC(full_poisson), AIC(full_linear), if(exists("full_negbin")) AIC(full_negbin) else NA),
+  Deviance = c(full_poisson$deviance, NA, if(exists("full_negbin")) full_negbin$deviance else NA),
+  R_Squared = c(NA, summary(full_linear)$r.squared, NA),
+  RMSE = c(sqrt(mean(residuals(full_poisson)^2)), 
+           sqrt(mean(residuals(full_linear)^2)), 
+           if(exists("full_negbin")) sqrt(mean(residuals(full_negbin)^2)) else NA)
+) %>%
+  filter(!is.na(Model))
+
+# Create model comparison table
+library(flextable) #might have to run the below in console
+model_comparison_table <- model_comparison %>%
+  mutate(across(where(is.numeric), ~ round(.x, 3))) %>%
+  flextable() %>%
+  set_header_labels(
+    Model = "Model Type",
+    AIC = "AIC",
+    Deviance = "Deviance", 
+    R_Squared = "R-Squared",
+    RMSE = "RMSE"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+model_comparison_table
+
+# 1.4 Coefficient Analysis (using best model)
+best_model <- if(exists("full_negbin")) full_negbin else full_poisson
+
+# Extract coefficients with confidence intervals
+coefficients_df <- tidy(best_model, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    # For Poisson/NegBin: exp(estimate) gives rate ratios
+    rate_ratio = exp(estimate),
+    rate_ratio_lower = exp(conf.low),
+    rate_ratio_upper = exp(conf.high),
+    significant = p.value < 0.05
+  )
+
+# Create coefficients table
+coefficients_table <- coefficients_df %>%
+  dplyr::select(term, estimate, std.error, rate_ratio, conf.low, conf.high, p.value, significant) %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+  flextable() %>%
+  set_header_labels(
+    term = "Variable",
+    estimate = "Coefficient",
+    std.error = "Std Error",
+    rate_ratio = "Rate Ratio",
+    conf.low = "95% CI Lower",
+    conf.high = "95% CI Upper", 
+    p.value = "P-Value",
+    significant = "Significant"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+coefficients_table
+```
+
+
+we find that high-income workers experience approximately 2.14 negative outcomes on average, compared to 2.75 for mid-income workers and 3.56 for low-income workers.
+
+```{r}
+predicted_data <- expand_grid(
+  income_group = levels(factor(regression_data$income_group)),
+  Ethnicity_Collapsed = "White British",  # Hold constant
+  Sex = "Male",  # Hold constant
+  Education_Band = if("Education_Band" %in% names(regression_data)) levels(factor(regression_data$Education_Band))[2] else "High",
+  BORNUK_binary = if("BORNUK_binary" %in% names(regression_data)) levels(factor(regression_data$BORNUK_binary))[1] else "Yes",
+  Region = if("Region" %in% names(regression_data)) names(sort(table(regression_data$Region), decreasing = TRUE))[1] else "London",
+  OutsourcedNonOL = if("OutsourcedNonOL" %in% names(regression_data)) names(sort(table(regression_data$OutsourcedNonOL), decreasing = TRUE))[1] else "Outsourced",
+  Age = median(regression_data$Age, na.rm = TRUE)  # Hold constant
+)
+
+predicted_data <- expand_grid(
+  income_group = levels(factor(regression_data$income_group)),
+  Ethnicity_Collapsed = "White British",  # Hold constant
+  Sex = "Male",  # Hold constant
+  Education_Band = "High",
+  BORNUK_binary = "Born in UK",
+  Region = "London",
+  OutsourcedNonOL = "group 1 outsourced and long term",
+  Age = median(regression_data$Age, na.rm = TRUE)  # Hold constant
+)
+
+# Ensure all variables are factors where needed
+predicted_data <- predicted_data %>%
+  mutate(
+    income_group = factor(income_group, levels = levels(factor(regression_data$income_group))),
+    Ethnicity_Collapsed = factor(Ethnicity_Collapsed, levels = levels(factor(regression_data$Ethnicity_Collapsed))),
+    Sex = factor(Sex, levels = levels(factor(regression_data$Sex))),
+    Education_Band = if("Education_Band" %in% names(regression_data)) factor(Education_Band, levels = levels(factor(regression_data$Education_Band))) else Education_Band,
+    BORNUK_binary = if("BORNUK_binary" %in% names(regression_data)) factor(BORNUK_binary, levels = levels(factor(regression_data$BORNUK_binary))) else BORNUK_binary,
+    Region = if("Region" %in% names(regression_data)) factor(Region, levels = levels(factor(regression_data$Region))) else Region,
+    OutsourcedNonOL = if("OutsourcedNonOL" %in% names(regression_data)) factor(OutsourcedNonOL, levels = levels(factor(regression_data$OutsourcedNonOL))) else OutsourcedNonOL
+  ) %>%
+  mutate(
+    predicted_negatives = predict(best_model, newdata = ., type = "response")
+  )
+```
+
+Black / African / Caribbean backgrounds report 24% fewer negative outcomes than White British workers, and female workers report 21% fewer negative outcomes than male workers. Age also shows a protective effect, 
+
+mid-level formal qualifications (rate ratio = 0.738) and those with low formal qualifications (rate ratio = 0.649)
+
+```{r}
+
+coefficients_table
+
+#check on the pop in pay and ed
+
+experiential_data %>%
+  group_by(income_group, Education_Band) %>%
+  summarise(n= n()) %>%
+  mutate(pct = n/sum(n))
+
+#check on the pop in eth and migrant
+experiential_data %>%
+  group_by(BORNUK_binary,Ethnicity_Collapsed) %>%
+  summarise(n= n()) %>%
+  mutate(pct = n/sum(n))
+
+data %>%
+  group_by(BORNUK_binary, Ethnicity_collapsed) %>%
+  summarise(f = sum(NatRepemployees)) %>%
+  mutate(pct = f/sum(f))
+
+
+```
+
+Our findings suggest this is a significantly rarer experience for outsourced workers: just 1 in 10 (10%) outsourced workers received 4 weeks’ notice as minimum – falling to 1 in 20 (5%) for lower-paid outsourced workers.  
+
+reported receiving less than 7 days’ notice as a minimum; this compares to 4 in 10 (40%) for outsourced workers on average, and rises to more than half (53%) for low-paid outsourced workers
+
+```{r}
+# Variables to analyze:
+work_variables <- c("Guaranteed_Hours", "Notice_Of_Working_Hours", "Notice_Of_Cancelled_Shifts", 
+                   "Cancelled_Shift_Pay", "Sick_Pay")
+
+for (var in work_variables) {
+  cat("\n", var, ":\n")
+  response_counts <- table(experiential_data[[var]], useNA = "ifany")
+  print(response_counts)
+  cat("Total responses:", sum(response_counts), "\n")
+}
+
+# Create percentage summaries for each variable
+work_conditions_summary <- list()
+
+for (var in work_variables) {
+  # Calculate counts and percentages
+  counts <- table(experiential_data[[var]], useNA = "no")  # Exclude NAs from percentage calculation
+  total_responses <- sum(counts)
+  
+  # Create summary dataframe
+  summary_df <- data.frame(
+    Response = names(counts),
+    Count = as.numeric(counts),
+    Percentage = round(as.numeric(counts) / total_responses * 100, 1),
+    stringsAsFactors = FALSE
+  )
+  
+  # Store in list
+  work_conditions_summary[[var]] <- summary_df
+}
+
+# Display tables for each variable
+library(flextable)
+
+# Variable labels for better presentation
+variable_labels <- c(
+  "Guaranteed_Hours" = "Guaranteed Hours",
+  "Notice_Of_Working_Hours" = "Notice of Working Hours", 
+  "Notice_Of_Cancelled_Shifts" = "Notice of Cancelled Shifts",
+  "Cancelled_Shift_Pay" = "Cancelled Shift Pay",
+  "Sick_Pay" = "Sick Pay"
+)
+
+# Create tables for each variable
+work_tables <- list()
+
+for (var in work_variables) {
+  table_data <- work_conditions_summary[[var]] %>%
+    arrange(desc(Percentage))  # Order by percentage descending
+  
+  work_table <- table_data %>%
+    flextable() %>%
+    set_header_labels(
+      Response = variable_labels[var],
+      Count = "Count",
+      Percentage = "Percentage (%)"
+    ) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  work_tables[[var]] <- work_table
+  
+  # Print table
+  #print(work_table)
+}
+
+
+experiential_data %>% filter(income_group=="Low") %>%
+  count(Notice_Of_Working_Hours) %>%
+  mutate(pct = n/sum(n))
+
+```
+
+``` {r chapter 2}
+#additional MB request
+
+group_var <- c("Ethnicity_Collapsed") # and 
+
+for (var in work_variables) {
+  cat("\n", var, "by", group_var, ":\n")
+  
+  response_counts <- table(
+    experiential_data[[var]],
+    experiential_data[[group_var]],
+    useNA = "ifany"
+  )
+  
+  print(response_counts)
+  cat("Total responses:", sum(response_counts), "\n")
+}
+
+work_conditions_summary <- list()
+
+
+for (var in work_variables) {
+  
+  counts <- table(
+    experiential_data[[var]],
+    experiential_data[[group_var]],
+    useNA = "no"
+  )
+  
+  percentages <- prop.table(counts, margin = 2) * 100
+  
+  summary_df <- as.data.frame(counts)
+  colnames(summary_df) <- c("Response", group_var, "Count")
+  
+  summary_df$Percentage <- round(
+    as.data.frame(percentages)$Freq, 1
+  )
+  
+  work_conditions_summary[[var]] <- summary_df
+}
+
+library(flextable)
+
+
+work_tables <- list()
+
+for (var in work_variables) {
+  
+  table_data <- work_conditions_summary[[var]] %>%
+    dplyr::select(Response, !!sym(group_var), Count, Percentage) %>%
+    arrange(Response)
+  
+  # Dynamic header labels
+  header_labels <- c(
+    Response = variable_labels[var],
+    Count = "Count",
+    Percentage = "Percentage (%)"
+  )
+  
+  header_labels[group_var] <- group_var
+  
+  work_table <- table_data %>%
+    flextable() %>%
+    set_header_labels(values = header_labels) %>%
+    
+    # Merge repeated responses
+    merge_v(j = "Response") %>%
+    
+    # Styling
+    theme_vanilla() %>%
+    bold(part = "header") %>%
+    align(align = "center", part = "all") %>%
+    align(j = 1, align = "left", part = "body") %>%
+    autofit()
+  
+  work_tables[[var]] <- work_table
+}
+
+  #print(work_table)
+
+
+
+```
+
+income
+``` {r chapter 2}
+#additional MB request
+
+group_var <- c("income_group") #income_group and Ethnicity_Collapsed
+
+for (var in work_variables) {
+  cat("\n", var, "by", group_var, ":\n")
+  
+  response_counts <- table(
+    experiential_data_no_income_outliers[[var]],
+    experiential_data_no_income_outliers[[group_var]],
+    useNA = "ifany"
+  )
+  
+  print(response_counts)
+  cat("Total responses:", sum(response_counts), "\n")
+}
+
+work_conditions_summary <- list()
+
+
+for (var in work_variables) {
+  
+  counts <- table(
+    experiential_data[[var]],
+    experiential_data[[group_var]],
+    useNA = "no"
+  )
+  
+  percentages <- prop.table(counts, margin = 2) * 100
+  
+  summary_df <- as.data.frame(counts)
+  colnames(summary_df) <- c("Response", group_var, "Count")
+  
+  summary_df$Percentage <- round(
+    as.data.frame(percentages)$Freq, 1
+  )
+  
+  work_conditions_summary[[var]] <- summary_df
+}
+
+library(flextable)
+
+
+work_tables <- list()
+
+for (var in work_variables) {
+  
+  table_data <- work_conditions_summary[[var]] %>%
+    dplyr::select(Response, !!sym(group_var), Count, Percentage) %>%
+    arrange(Response)
+  
+  # Dynamic header labels
+  header_labels <- c(
+    Response = variable_labels[var],
+    Count = "Count",
+    Percentage = "Percentage (%)"
+  )
+  
+  header_labels[group_var] <- group_var
+  
+  work_table <- table_data %>%
+    flextable() %>%
+    set_header_labels(values = header_labels) %>%
+    
+    # Merge repeated responses
+    merge_v(j = "Response") %>%
+    
+    # Styling
+    theme_vanilla() %>%
+    bold(part = "header") %>%
+    align(align = "center", part = "all") %>%
+    align(j = 1, align = "left", part = "body") %>%
+    autofit()
+  
+  work_tables[[var]] <- work_table
+}
+
+  #print(work_table)
+
+
+
+```
+While on average all outsourced workers appear to have a heightened risk of short notice of shifts, Black outsourced workers are at the sharpest end of this kind of insecurity. Altogether, over half (55%) of Black outsourced workers said they’d received less than a week’s notice of their shifts as minimum, compared to 4 in 10 (40%) for all outsourced workers, and 36% for White outsourced workers
+
+```{r}
+experiential_data %>% 
+  group_by(Ethnicity_Collapsed,Notice_Of_Working_Hours) %>%
+  summarise() %>%
+  mutate(pct = n/sum(n))
+```
+
+```{r}
+
+ad<-experiential_data %>%
+  mutate(ID=row_number(),val=1) %>%
+  dplyr::select(Ethnicity_Collapsed,Notice_Of_Working_Hours,ID,val) %>%
+  pivot_longer(cols = !c(Ethnicity_Collapsed,ID,val),
+               names_to = "Group",
+               values_to = "response",
+               values_drop_na = F ) %>%
+  group_by(Ethnicity_Collapsed,Group,response) %>%
+  summarise(
+            N = sum(val)) %>%
+  mutate(tot = sum(N),
+         pct = N/tot,
+         csum = cumsum(pct)) %>% filter(response!="NA")
+```
+
+receiving no sick pay at all, with 1 in 4 outsourced workers on low pay reporting this
+Low
+```{r}
+
+experiential_data %>% filter(income_group=="Low") %>%
+  count(Sick_Pay) %>%
+  
+  mutate(pct = n/sum(n),
+         csum = cumsum(pct))
+
+```
+Med
+```{r}
+
+
+experiential_data %>% filter(income_group=="Mid") %>%
+  count(Sick_Pay) %>%
+  
+  mutate(pct = n/sum(n),
+         csum = cumsum(pct))
+
+```
+High
+```{r}
+
+
+experiential_data %>% filter(income_group=="High") %>%
+  count(Sick_Pay) %>%
+  
+  mutate(pct = n/sum(n),
+         csum = cumsum(pct))
+
+```
+
+Overall
+```{r}
+
+experiential_data %>% 
+  count(Sick_Pay) %>%
+  
+  mutate(pct = n/sum(n),
+         csum = cumsum(pct))
+
+```
+
+### rights violations
+```{r}
+
+rights_violations_mapping <- data.frame(
+  Label = c(
+    "Not being paid on time",
+    "Not being paid the full amount I am entitled to for the work I have completed", 
+    "Not being given time off that I am entitled to",
+    "Not being paid for paid leave that I am entitled to",
+    "Not being given pay that I am entitled to while being off sick",
+    "Not being provided with a pay slip",
+    "Not having adequate health and safety protections"
+  ),
+  Variable = c(
+    "RightsViolations_Paid_On_Time",
+    "RightsViolations_Paid_Correct_Amount", 
+    "RightsViolations_Leave_Entitlement",
+    "RightsViolations_Holiday_Pay",
+    "RightsViolations_Sick_Pay", 
+    "RightsViolations_Pay_Slip",
+    "RightsViolations_Health_Safety"
+  )
+)
+
+# Define rights variables for analysis
+rights_vars <- rights_violations_mapping$Variable
+
+# Count responses for each rights violation (excluding NAs)
+rights_violations_counts <- data.frame(
+  Label = character(0),
+  Count = numeric(0),
+  Percentage = numeric(0)
+)
+
+for(i in 1:nrow(rights_violations_mapping)) {
+  var_name <- rights_violations_mapping$Variable[i]
+  label_text <- rights_violations_mapping$Label[i]
+  
+  # Count non-NA responses (people who experienced this violation)
+  count <- sum(!is.na(experiential_data[[var_name]]))
+  total_responses <- nrow(experiential_data)
+  percentage <- round(count / total_responses * 100, 0)  # Round to whole numbers like reference
+  
+  rights_violations_counts <- rbind(rights_violations_counts, data.frame(
+    Label = label_text,
+    Count = count,
+    Percentage = percentage
+  ))
+}
+
+# Sort by percentage (descending order)
+rights_violations_counts <- rights_violations_counts[order(rights_violations_counts$Percentage, decreasing = TRUE), ]
+
+recode_rights_experiences <- function(x, is_none_column = FALSE) {
+  if (is_none_column) {
+    # For RightsViolations_None column
+    case_when(
+      is.na(x) ~ 0,          # NA means not answered
+      TRUE ~ 1               # "None" response is positive (+1)
+    )
+  } else {
+    # For all other rights columns
+    case_when(
+      is.na(x) ~ 0,          # NA means not experienced (0)
+      TRUE ~ -1              # Any non-NA value means negative experience (-1)
+    )
+  }
+}
+
+# Process the data - create numeric columns for rights variables
+rights_experiential_data <- experiential_data %>%
+  # Recode regular rights violations
+  mutate(across(starts_with("Rights") & !contains("None"), 
+                ~ recode_rights_experiences(as.character(.)),
+                .names = "{.col}_numeric")) %>%
+  # Special handling for None column
+  mutate(RightsViolations_None_numeric = 
+           recode_rights_experiences(RightsViolations_None, is_none_column = TRUE)) %>%
+  # Select both original and numeric columns plus demographic variables
+  dplyr::select(
+    starts_with("Rights"),
+    contains("_numeric"),
+    Sex, Age, Ethnicity, Ethnicity_Collapsed, Region, Education_Band,
+    OutsourcedNonOL, BORNUK, income_group
+  )
+
+rights_summary <- rights_experiential_data %>%
+  # Select only the rights violation numeric columns (7 variables only)
+  dplyr::select(RightsViolations_Paid_On_Time_numeric,
+                RightsViolations_Paid_Correct_Amount_numeric,
+                RightsViolations_Leave_Entitlement_numeric,
+                RightsViolations_Holiday_Pay_numeric,
+                RightsViolations_Sick_Pay_numeric,
+                RightsViolations_Pay_Slip_numeric,
+                RightsViolations_Health_Safety_numeric) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorise by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>% 
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+
+write.table(rights_summary, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+low rights
+```{r}
+rights_summary_low <- rights_experiential_data %>% filter(income_group=="Low")%>%
+  # Select only the rights violation numeric columns (7 variables only)
+  dplyr::select(RightsViolations_Paid_On_Time_numeric,
+                RightsViolations_Paid_Correct_Amount_numeric,
+                RightsViolations_Leave_Entitlement_numeric,
+                RightsViolations_Holiday_Pay_numeric,
+                RightsViolations_Sick_Pay_numeric,
+                RightsViolations_Pay_Slip_numeric,
+                RightsViolations_Health_Safety_numeric) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorise by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>% 
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+```
+
+mid rights
+```{r}
+rights_summary_mid <- rights_experiential_data %>% filter(income_group=="Mid")%>%
+  # Select only the rights violation numeric columns (7 variables only)
+  dplyr::select(RightsViolations_Paid_On_Time_numeric,
+                RightsViolations_Paid_Correct_Amount_numeric,
+                RightsViolations_Leave_Entitlement_numeric,
+                RightsViolations_Holiday_Pay_numeric,
+                RightsViolations_Sick_Pay_numeric,
+                RightsViolations_Pay_Slip_numeric,
+                RightsViolations_Health_Safety_numeric) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorise by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>% 
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+```
+
+high rights
+```{r}
+rights_summary_hi <- rights_experiential_data %>% filter(income_group=="High")%>%
+  # Select only the rights violation numeric columns (7 variables only)
+  dplyr::select(RightsViolations_Paid_On_Time_numeric,
+                RightsViolations_Paid_Correct_Amount_numeric,
+                RightsViolations_Leave_Entitlement_numeric,
+                RightsViolations_Holiday_Pay_numeric,
+                RightsViolations_Sick_Pay_numeric,
+                RightsViolations_Pay_Slip_numeric,
+                RightsViolations_Health_Safety_numeric) %>% 
+  # Remove rows where all rights variables are NA
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  # Count negative responses per person
+  mutate(
+    num_neg = rowSums(. == -1, na.rm = TRUE)
+  ) %>%
+  # Categorise by number of negative experiences
+  mutate(neg_category = case_when(
+    num_neg == 0 ~ "0",
+    num_neg == 1 ~ "1",
+    num_neg == 2 ~ "2",
+    num_neg == 3 ~ "3",
+    num_neg == 4 ~ "4",
+    num_neg >= 5 ~ "5+"
+  )) %>% 
+  # Count respondents in each category and calculate percentages
+  count(neg_category) %>%
+  mutate(percent = (n / sum(n)) * 100)
+```
+
+###discrimination
+```{r}
+
+# Define the valid discrimination response categories
+valid_discrimination_responses <- c("Never", "Rarely", "Sometimes", "Often")
+
+# Define demographic groups structure (reusable across all discrimination variables)
+demographic_groups <- list(
+  list(var = NULL, value = NULL, name = "All outsourced workers"),
+  list(var = "Ethnicity_Collapsed", value = "Black/African/Caribbean/Black British", name = "Black workers"),
+  list(var = "Ethnicity_Collapsed", value = "Asian/Asian British", name = "Asian workers"), 
+  list(var = "Sex", value = "Female", name = "Female workers"),
+  list(var = "BORNUK_binary", value = "Not born in UK", name = "Workers born outside of the UK")
+)
+
+# Create master function for discrimination analysis
+create_discrimination_analysis <- function(discrimination_var, discrimination_type, data, demographic_groups) {
+  cat("\n=== ", toupper(discrimination_type), " DISCRIMINATION ANALYSIS ===\n")
+  # Check data availability first
+  total_responses <- sum(!is.na(experiential_data[[discrimination_var]]) & 
+                        experiential_data[[discrimination_var]] %in% valid_discrimination_responses)
+  
+  cat("Total valid responses for", discrimination_var, ":", total_responses, "\n")
+  
+  # Only proceed if we have sufficient data
+  if (total_responses < 10) {
+    cat("Insufficient data for", discrimination_type, "discrimination analysis (< 10 responses)\n")
+    return(NULL)
+  }
+  
+  # Helper function to calculate discrimination percentages by demographic group  
+  calculate_discrimination_by_group <- function(data, group_var, group_value = NULL, group_name, discrim_var) {
+    
+    # Filter data based on group
+    if (!is.null(group_var)) {
+      filtered_data <- data %>% filter(!!sym(group_var) == group_value)
+    } else {
+      filtered_data <- data  # For "All outsourced workers"
+    }
+    
+    # Calculate percentages for each discrimination response
+    discrimination_counts <- filtered_data %>%
+      filter(!!sym(discrim_var) %in% valid_discrimination_responses) %>%
+      count(!!sym(discrim_var)) %>%
+      mutate(
+        Group = group_name,
+        Total = sum(n),
+        Percentage = round((n / Total) * 100, 0)
+      ) %>%
+      rename(Response = !!sym(discrim_var))
+    
+    return(discrimination_counts)
+  }
+  
+  # Calculate discrimination percentages for each demographic group
+  discrimination_results <- bind_rows(
+    lapply(demographic_groups, function(group) {
+      calculate_discrimination_by_group(data, group$var, group$value, group$name, discrimination_var)
+    })
+  )
+  
+  # Remove groups with no data
+  discrimination_results <- discrimination_results %>% filter(Total > 0)
+  
+  if (nrow(discrimination_results) == 0) {
+    cat("No valid data found for", discrimination_type, "discrimination analysis\n")
+    return(NULL)
+  }
+  
+  # Ensure proper ordering of response categories
+  discrimination_results$Response <- factor(discrimination_results$Response, 
+                                          levels = c("Never", "Rarely", "Sometimes", "Often"))
+  
+  # Create color palette for response categories (light to dark)
+  response_colors <- c("Never" = "#E8F4F8", "Rarely" = "#9ECAE1", "Sometimes" = "#4292C6", "Often" = "#084594")
+  
+  # Create the faceted horizontal bar chart
+  discrimination_plot <- ggplot(discrimination_results, aes(x = Percentage, y = Response, fill = Response)) +
+    geom_col(alpha = 0.8) +
+    geom_text(aes(label = paste0(Percentage, "%")), 
+              hjust = -0.1, size = 3, color = "black") +
+    facet_wrap(~ Group, ncol = 2, scales = "free_x") +
+    scale_fill_manual(values = response_colors) +
+    labs(
+      title = paste("Experiences of", discrimination_type, "discrimination from in-house workers"),
+      subtitle = "Percentage of workers reporting each level of discrimination experience",
+      x = "Percentage of workers",
+      y = "Discrimination experience"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", margin = margin(b = 5)),
+      plot.subtitle = element_text(size = 11, color = "gray40", margin = margin(b = 15)),
+      strip.text = element_text(size = 10, face = "bold"),
+      axis.text.y = element_text(size = 9),
+      axis.title = element_text(size = 10),
+      legend.position = "none",
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_line(color = "gray90", size = 0.3)
+    ) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.15)))
+  
+  print(discrimination_plot)
+  
+  # Create summary table
+  discrimination_table <- discrimination_results %>%
+    dplyr::select(Group, Response, n, Percentage) %>%
+    rename(
+      "Demographic Group" = Group,
+      "Response Category" = Response,
+      "Count" = n,
+      "Percentage (%)" = Percentage
+    ) %>%
+    flextable() %>%
+    add_header_lines(paste(toupper(discrimination_type), "DISCRIMINATION SUMMARY")) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  #print(discrimination_table)
+  
+  # Return results for potential further analysis
+  return(list(
+    plot = discrimination_plot,
+    table = discrimination_table,
+    data = discrimination_results
+  ))
+}
+
+# Define discrimination variables to analyze
+discrimination_vars <- list(
+  list(var = "Inhouse_Discrimination_Sex", type = "sex-based"),
+  list(var = "Inhouse_Discrimination_Ethnicity", type = "ethnicity-based"),
+  list(var = "Inhouse_Discrimination_Age", type = "age-based"),
+  list(var = "Inhouse_Discrimination_Disability", type = "disability-based"),
+  list(var = "Inhouse_Discrimination_Nationality", type = "nationality-based")
+)
+```
+
+### Sex-based Discrimination
+
+```{r discrimination-sex-analysis}
+
+
+# Run sex-based discrimination analysis
+sex_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Sex",
+  discrimination_type = "sex-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+
+sexdis<-sex_discrimination_result$data
+
+
+write.table(sexdis, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+
+### Ethnicity-based Discrimination
+
+```{r discrimination-ethnicity-analysis}
+
+# Run ethnicity-based discrimination analysis
+ethnicity_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Ethnicity",
+  discrimination_type = "ethnicity-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+
+ethdis<-ethnicity_discrimination_result$data
+
+
+write.table(ethdis, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+```
+
+
+
+### Age-based Discrimination
+
+```{r discrimination-age-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run age-based discrimination analysis
+age_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Age",
+  discrimination_type = "age-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+
+agedis<-age_discrimination_result$data
+
+
+write.table(agedis, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+
+### Disability-based Discrimination
+
+```{r discrimination-disability-analysis}
+#| fig-width: 12
+#| fig-height: 8
+#| out-width: "100%"
+#| dpi: 300
+
+# Run disability-based discrimination analysis
+dis_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Disability",
+  discrimination_type = "disability-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+
+disdis<-dis_discrimination_result$data
+
+
+write.table(disdis, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+
+### Nationality-based Discrimination
+
+```{r discrimination-nationality-analysis}
+
+
+# Run nationality-based discrimination analysis
+nationality_discrimination_result <- create_discrimination_analysis(
+  discrimination_var = "Inhouse_Discrimination_Nationality",
+  discrimination_type = "nationality-based",
+  data = experiential_data,
+  demographic_groups = demographic_groups
+)
+
+natdis<-nationality_discrimination_result$data
+
+
+write.table(natdis, "clipboard-16384", sep="\t", row.names=FALSE)
+```
+
+###Clarity
+```{r clarity-questions-analysis}
+
+
+# Define the clarity questions with their descriptions
+clarity_questions <- data.frame(
+  Variable = paste0("Clarity", 1:11),
+  Question = c(
+    "Clear about who to speak to about pay problems",
+    "Clear about who to speak to about other rights/entitlements", 
+    "Straightforward to understand who approves time off",
+    "Clear about who to speak to about promotion",
+    "Clear communication between organisations",
+    "Clear about role responsibilities",
+    "Confident can communicate improvements to right people",
+    "Confident opinion will be respected about improvements",
+    "Management prevents discrimination",
+    "Management takes bullying complaints seriously",
+    "Management takes racism complaints seriously"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Prepare data for visualisation - convert to long format
+clarity_long <- experiential_data %>%
+  dplyr::select(all_of(paste0("Clarity", 1:11))) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Variable",
+    values_to = "Response"
+  ) %>%
+  filter(!is.na(Response)) %>%
+  left_join(clarity_questions, by = "Variable") %>%
+  mutate(
+    # Ensure consistent response order
+    Response = factor(Response, levels = c(
+      "Strongly disagree", "Somewhat disagree", "Neither agree nor disagree", 
+      "Somewhat agree", "Strongly agree"
+    )),
+    # Create shorter question labels for plotting
+    Question_Short = case_when(
+      Variable == "Clarity1" ~ "Pay problems contact",
+      Variable == "Clarity2" ~ "Rights/entitlements contact", 
+      Variable == "Clarity3" ~ "Time off approval",
+      Variable == "Clarity4" ~ "Promotion contact",
+      Variable == "Clarity5" ~ "Organisational communication",
+      Variable == "Clarity6" ~ "Role responsibilities",
+      Variable == "Clarity7" ~ "Can suggest improvements",
+      Variable == "Clarity8" ~ "Opinion will be respected",
+      Variable == "Clarity9" ~ "Management prevents discrimination",
+      Variable == "Clarity10" ~ "Management handles bullying",
+      Variable == "Clarity11" ~ "Management handles racism"
+    )
+  )
+
+# Calculate percentages for each question and response
+clarity_summary <- clarity_long %>%
+  group_by(Question_Short, Response) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Question_Short) %>%
+  mutate(
+    total = sum(count),
+    percentage = round(count / total * 100, 1)
+  ) %>%
+  ungroup()
+
+# Create horizontal bar chart
+clarity_plot <- ggplot(clarity_summary, aes(x = percentage, y = reorder(Question_Short, desc(Question_Short)), fill = Response)) +
+  geom_col(position = "stack", width = 0.7) +
+  scale_fill_manual(
+    values = c(
+      "Strongly disagree" = "#d73027",
+      "Somewhat disagree" = "#fc8d59", 
+      "Neither agree nor disagree" = "#fee08b",
+      "Somewhat agree" = "#91bfdb",
+      "Strongly agree" = "#4575b4"
+    ),
+    name = "Response"
+  ) +
+  labs(
+    title = "Clarity and Confidence at Work: Response Distribution",
+    subtitle = "How clearly do outsourced workers understand workplace processes and feel confident about communication?",
+    x = "Percentage",
+    y = "Question Areas",
+    caption = "Data: JRF Experiential Survey"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+print(clarity_plot)
+
+# Create summary table
+clarity_table <- clarity_long %>%
+  group_by(Question_Short) %>%
+  summarise(
+    Total_Responses = n(),
+    `Strongly Agree %` = round(mean(Response == "Strongly agree", na.rm = TRUE) * 100, 1),
+    `Somewhat Agree %` = round(mean(Response == "Somewhat agree", na.rm = TRUE) * 100, 1),
+    `Neither %` = round(mean(Response == "Neither agree nor disagree", na.rm = TRUE) * 100, 1),
+    `Somewhat Disagree %` = round(mean(Response == "Somewhat disagree", na.rm = TRUE) * 100, 1),
+    `Strongly Disagree %` = round(mean(Response == "Strongly disagree", na.rm = TRUE) * 100, 1),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(`Strongly Agree %`))
+
+clarity_table_formatted <- clarity_table %>%
+  flextable() %>%
+  set_header_labels(
+    Question_Short = "Question Area",
+    Total_Responses = "Total Responses",
+    `Strongly Agree %` = "Strongly Agree (%)",
+    `Somewhat Agree %` = "Somewhat Agree (%)",
+    `Neither %` = "Neither (%)",
+    `Somewhat Disagree %` = "Somewhat Disagree (%)",
+    `Strongly Disagree %` = "Strongly Disagree (%)"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+cat("\nClarity Questions Summary Table:\n")
+clarity_table_formatted
+
+## CLARITY BY INCOME GROUP ANALYSIS
+
+cat("\n=== CLARITY QUESTIONS BY INCOME GROUP ===\n")
+
+# Prepare data with income group information
+clarity_income_long <- experiential_data_no_income_outliers %>%
+  dplyr::filter(!is.na(income_group)) %>%
+  dplyr::select(all_of(paste0("Clarity", 1:11)), income_group) %>%
+  pivot_longer(
+    cols = starts_with("Clarity"),
+    names_to = "Variable",
+    values_to = "Response"
+  ) %>%
+  filter(!is.na(Response)) %>%
+  left_join(clarity_questions, by = "Variable") %>%
+  mutate(
+    Response = factor(Response, levels = c(
+      "Strongly disagree", "Somewhat disagree", "Neither agree nor disagree", 
+      "Somewhat agree", "Strongly agree"
+    )),
+    Question_Short = case_when(
+      Variable == "Clarity1" ~ "Pay problems contact",
+      Variable == "Clarity2" ~ "Rights/entitlements contact", 
+      Variable == "Clarity3" ~ "Time off approval",
+      Variable == "Clarity4" ~ "Promotion contact",
+      Variable == "Clarity5" ~ "Organisational communication",
+      Variable == "Clarity6" ~ "Role responsibilities",
+      Variable == "Clarity7" ~ "Can suggest improvements",
+      Variable == "Clarity8" ~ "Opinion will be respected",
+      Variable == "Clarity9" ~ "Management prevents discrimination",
+      Variable == "Clarity10" ~ "Management handles bullying",
+      Variable == "Clarity11" ~ "Management handles racism"
+    )
+  )
+
+# Calculate percentages by income group for selected key questions
+key_clarity_questions <- c("Clarity1", "Clarity2", "Clarity3", "Clarity4", "Clarity5",
+                           "Clarity6", "Clarity7", "Clarity8","Clarity9", "Clarity10", "Clarity11")
+key_question_labels <- c(
+  "Clarity1" = "Pay problems contact",
+  "Clarity2" = "Rights/entitlements contact", 
+  "Clarity3" ~ "Time off approval",
+  "Clarity4" = "Promotion contact",
+  "Clarity5" ~ "Organizational communication",
+  "Clarity6" ~ "Role responsibilities",
+  "Clarity7" = "Can suggest improvements",
+  "Clarity8" = "Opinion will be respected",
+  "Clarity9" ~ "Management prevents discrimination",
+  "Clarity10" ~ "Management handles bullying",
+  "Clarity11" ~ "Management handles racism"
+)
+
+
+
+clarity_income_summary <- clarity_income_long %>%
+  dplyr::filter(Variable %in% key_clarity_questions) %>%
+  group_by(income_group, Question_Short, Response) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(income_group, Question_Short) %>%
+  mutate(
+    total = sum(count),
+    percentage = round(count / total * 100, 1)
+  ) %>%
+  ungroup()
+write.table(clarity_income_summary, "clipboard-16384", sep="\t", row.names=FALSE)
+
+# Create faceted plot by income group
+clarity_income_plot <- ggplot(clarity_income_summary, aes(x = percentage, y = income_group, fill = Response)) +
+  geom_col(position = "stack", width = 0.7) +
+  facet_wrap(~Question_Short, ncol = 2, scales = "free_x") +
+  scale_fill_manual(
+    values = c(
+      "Strongly disagree" = "#d73027",
+      "Somewhat disagree" = "#fc8d59", 
+      "Neither agree nor disagree" = "#fee08b",
+      "Somewhat agree" = "#91bfdb",
+      "Strongly agree" = "#4575b4"
+    ),
+    name = "Response"
+  ) +
+  labs(
+    title = "Workplace Clarity by Income Group",
+    subtitle = "Key clarity questions showing differences across income levels",
+    x = "Percentage",
+    y = "Income Group",
+    caption = "Data: JRF Experiential Survey (excluding income outliers)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    strip.text = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom"
+  ) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+print(clarity_income_plot)
+
+# Create summary comparison table
+clarity_by_income_comparison <- clarity_income_long %>%
+  filter(Variable %in% key_clarity_questions) %>%
+  group_by(income_group, Question_Short) %>%
+  summarise(
+    Total_Responses = n(),
+    `Agree %` = round(mean(Response %in% c("Strongly agree", "Somewhat agree"), na.rm = TRUE) * 100, 1),
+    `Disagree %` = round(mean(Response %in% c("Strongly disagree", "Somewhat disagree"), na.rm = TRUE) * 100, 1),
+    `Neither %` = round(mean(Response == "Neither agree nor disagree", na.rm = TRUE) * 100, 1),
+    .groups = "drop"
+  ) %>%
+  arrange(Question_Short, desc(`Agree %`))
+
+clarity_income_table <- clarity_by_income_comparison %>%
+  flextable() %>%
+  set_header_labels(
+    income_group = "Income Group",
+    Question_Short = "Question Area",
+    Total_Responses = "Total",
+    `Agree %` = "Agree (%)",
+    `Disagree %` = "Disagree (%)",
+    `Neither %` = "Neither (%)"
+  ) %>%
+  theme_vanilla() %>%
+  autofit()
+
+cat("\nClarity by Income Group Summary:\n")
+clarity_income_table
+
+## Clarity regression
+
+#make sure to run Clarity_Overall_Mean code in data_cleaning_exp from line 871-899
+
+experiential_data_no_income_outliers <- experiential_data_no_income_outliers %>%
+  dplyr::mutate(across(
+    starts_with("Clarity"), 
+    ~ case_when(
+      . == "Strongly disagree" ~ 1,
+      . == "Somewhat disagree" ~ 2,
+      . == "Neither agree nor disagree" ~ 3,
+      . == "Somewhat agree" ~ 4,
+      . == "Strongly agree" ~ 5,
+      . == "Not Sure" ~ NA
+    ), 
+    .names = "{.col}_numeric"  # Creates new variables with a "_numeric" suffix
+  )) %>%
+  mutate(Clarity_Overall_Mean = rowMeans(dplyr::select(., matches("^Clarity.*_numeric$")), na.rm = TRUE))
+
+Clarity.fit1<- (lm(Clarity_Overall_Mean ~ 
+                     Age +
+                     Sex +
+                     Ethnicity_Collapsed +
+                     BORNUK_binary +
+                     Region +
+                     income_group, weights = Outsourced, experiential_data_no_income_outliers)) 
+
+#summary(Clarity.fit1) # some significant
+
+## CLARITY REGRESSION RESULTS VISUALIsATION
+
+# Load broom for tidy regression results
+library(broom)
+
+# Extract regression results
+clarity_results <- tidy(Clarity.fit1, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    # Create clean variable labels for non-technical audience
+    Variable_Clean = case_when(
+      term == "Age" ~ "Age (per year)",
+      term == "SexFemale" ~ "Female (vs Male)",
+      term == "Ethnicity_CollapsedAsian/Asian British" ~ "Asian/Asian British (vs White British)",
+      term == "Ethnicity_CollapsedBlack/African/Caribbean/Black British" ~ "Black/African/Caribbean (vs White British)",
+      term == "Ethnicity_CollapsedMixed/Multiple ethnic groups" ~ "Mixed/Multiple ethnicities (vs White British)",
+      term == "Ethnicity_CollapsedWhite Other" ~ "White Other (vs White British)",
+      term == "Ethnicity_CollapsedArab" ~ "Arab (vs White British)",
+      term == "Ethnicity_CollapsedOther ethnic group" ~ "Other ethnic group (vs White British)",
+      term == "BORNUK_binaryNot born in UK" ~ "Not born in UK (vs Born in UK)",
+      term == "BORNUK_binaryPrefer not to say" ~ "Prefer not to say: Birth country",
+      str_starts(term, "Region") ~ str_replace(term, "Region", "Region: "),
+      term == "income_groupLow" ~ "Low income (vs Mid income)",
+      term == "income_groupHigh" ~ "High income (vs Mid income)",
+      TRUE ~ term
+    ),
+    # Create significance indicators
+    Significance = case_when(
+      p.value < 0.001 ~ "***",
+      p.value < 0.01 ~ "**", 
+      p.value < 0.05 ~ "*",
+      TRUE ~ ""
+    ),
+    # Round estimates and confidence intervals
+    estimate_round = round(estimate, 3),
+    conf.low_round = round(conf.low, 3),
+    conf.high_round = round(conf.high, 3)
+  ) %>%
+  arrange(desc(abs(estimate)))
+
+# Create forest plot
+forest_plot <- ggplot(clarity_results, aes(x = estimate, y = reorder(Variable_Clean, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", alpha = 0.7) +
+  geom_pointrange(
+    aes(xmin = conf.low, xmax = conf.high),
+    size = 0.8,
+    color = "#2c3e50",
+    fill = "#3498db",
+    shape = 21,
+    stroke = 0.5
+  ) +
+  geom_text(
+    aes(x = conf.high + 0.02, label = paste0(estimate_round, Significance)),
+    hjust = 0,
+    size = 3,
+    color = "#2c3e50"
+  ) +
+  labs(
+    title = "Factors Associated with Workplace Clarity and Confidence",
+    subtitle = "Regression coefficients showing how different factors relate to overall clarity scores",
+    x = "Effect on Clarity Score (95% Confidence Interval)",
+    y = "Factors",
+    caption = "*** p<0.001, ** p<0.01, * p<0.05\nData: JRF Experiential Survey. Reference groups: Male, White British, Born in UK, Mid income, London region"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 9),
+    panel.grid.major.x = element_line(color = "gray90", size = 0.3),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.caption = element_text(size = 8, color = "gray50", hjust = 0)
+  )
+
+print(forest_plot)
+#helpful to see the vs reference level in the chart)
+
+# Create summary table of key results
+key_results <- clarity_results %>%
+  filter(p.value < 0.05) %>%  # Only significant 
+  dplyr::select(Variable_Clean, estimate_round, conf.low_round, conf.high_round, p.value, Significance) %>%
+  arrange(p.value)
+
+if(nrow(key_results) > 0) {
+  key_results_table <- key_results %>%
+    mutate(
+      `P-value` = case_when(
+        p.value < 0.001 ~ "<0.001",
+        TRUE ~ as.character(round(p.value, 3))
+      )
+    ) %>%
+   dplyr::select(-p.value) %>%
+    flextable() %>%
+    set_header_labels(
+      Variable_Clean = "Factor",
+      estimate_round = "Effect",
+      conf.low_round = "95% CI Lower",
+      conf.high_round = "95% CI Upper",
+      Significance = "Sig.",
+      `P-value` = "P-value"
+    ) %>%
+    theme_vanilla() %>%
+    autofit()
+  
+  cat("\nStatistically Significant Results (p < 0.1):\n")
+  key_results_table
+} else {
+  cat("\nNo statistically significant results found at p < 0.05 level.\n")
+}
+```
+
+
+#chapter 3
+##1 in 5 (22%) non-outsourced workers are from a minoritised ethnic background, but this rises to 1 in 3 (33%) for outsourced workers
+
+```{r c3 eth}
+
+ data %>%
+  group_by(outsourcing_status, Ethnicity_collapsed) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+#do descriptive stats across major domains
+```
+
+##Our analysis finds that people from minoritised ethnic backgrounds are overall 1.38 times more likely to be outsourced than people from a White British background
+
+```{r c3 ethbinary}
+
+
+library(survey)
+mod_data <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
+
+# Step 1: Create a survey design object
+design <- svydesign(
+  ids = ~1,                                
+  weights = ~NatRepemployees,          
+  data = mod_data
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy1 <- svyglm(
+  outsourcing_status ~ 1,
+  design = design,
+  family = quasibinomial()
+)
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+#summary(mod_svy2)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=T)
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+
+wald <- anova(mod_svy1,mod_svy2, method = "Wald")
+
+# F and p
+f <- round(wald[["Ftest"]] %>% as.numeric(),2)
+p <- wald[["p"]] %>% as.numeric()
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+# Degrees of freedom
+dfs <- list("df" = wald[["df"]], "ddf" = wald[["ddf"]])
+
+
+sjPlot::tab_model(mod_svy2, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+coefs <- extract_glm_coefs(mod_svy2, only_sig=F)
+ethn_coef1 <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+estm<-get_model_data(model = mod_svy2,
+   type = "est",
+   ci.lvl = 0.95,
+   ci.style = "whisker",
+   transform = NULL
+ ) %>%
+  mutate(OR_low = round(exp(conf.low),2),
+         OR_hi = round(exp(conf.high),2),
+         OR = round(exp(estimate),2)) %>%
+  select(term, OR,OR_low,OR_hi)
+
+write.table(estm, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+Workers from Black backgrounds overall are 1.43 times more likely than White British workers to be outsourced; 
+```{r c3 eth collapsed}
+
+mod_svy3 <- svyglm(
+  outsourcing_status ~ Ethnicity_collapsed + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+
+sjPlot::tab_model(mod_svy3, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+coefs <- extract_glm_coefs(mod_svy3, only_sig=F)
+ethn_coef <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+estm<-get_model_data(model = mod_svy3,
+   type = "est",
+   ci.lvl = 0.95,
+   ci.style = "whisker",
+   transform = NULL
+ ) %>%
+  mutate(OR_low = round(exp(conf.low),2),
+         OR_hi = round(exp(conf.high),2),
+         OR = round(exp(estimate),2)) %>%
+  select(term, OR,OR_low,OR_hi)
+
+write.table(estm, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+##This appears to be driven by a heightened likelihood for workers from African backgrounds, who are 1.44 times more likely than White British workers to be outsourced; workers from Caribbean backgrounds are 1.27 times more likely; 
+
+```{r c3 eth disag}
+
+mod_svy4 <- svyglm(
+  outsourcing_status ~ Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = design,
+  family = quasibinomial()
+)
+
+sjPlot::tab_model(mod_svy4, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+coefs <- extract_glm_coefs(mod_svy4, only_sig=F)
+ethn_coef2 <- coefs %>% filter(stringr::str_detect(variable, "Ethnicity"))
+
+estm<-get_model_data(model = mod_svy4,
+   type = "est",
+   ci.lvl = 0.95,
+   ci.style = "whisker",
+   transform = NULL
+ ) %>%
+  mutate(OR_low = round(exp(conf.low),2),
+         OR_hi = round(exp(conf.high),2),
+         OR = round(exp(estimate),2)) %>%
+  select(term, OR,OR_low,OR_hi)
+
+write.table(estm, "clipboard-16384", sep="\t", row.names=FALSE)
+
+```
+
+##Workers from Asian backgrounds are also 1.24 times as likely to be outsourced than a White British worker;
+
+```{r c3 asian workers}
+sjPlot::tab_model(mod_svy3, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+```
+
+##This appears to be strongly driven by the heightened risk for workers from Pakistani backgrounds, who are 2.17 times more likely to be outsourced than White British workers, while workers from Bangladeshi backgrounds are 1.32, and workers from Indian backgrounds 1.18, times more likely to be outsourced
+
+```{r c3 eth stats asian workers}
+sjPlot::tab_model(mod_svy4, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+ethdf<-bind_rows(ethn_coef1,ethn_coef,ethn_coef2)
+write.table(ethdf, "clipboard-16384", sep="\t", row.names=FALSE)
+ethcat<-data %>%
+  group_by(Ethnicity_collapsed,Ethnicity_collapsed_disaggregated) %>%
+  count()
+
+
+
+```
+
+##Within our group of respondents, people born outside of the UK make up 14% of non-outsourced workers, but 24% of outsourced workers. 
+```{r c3 eth stats}
+
+data %>%
+  mutate(
+    BORNUK_collapsed = forcats::fct_collapse(BORNUK_labelled,
+                                            "Born in UK" = "I was born in the UK",
+                                            "Came to UK recently" = c("Within the last year"),
+                                            "Came to UK not recently" =  c("Within the last 3 years",
+                                                                       "Within the last 5 years",
+                                                                       "Within the last 10 years",
+                                                                       "Within the last 15 years",
+                                                                           "Within the last 20 years",
+                                                                           "Within the last 30 years",
+                                                                           "More than 30 years ago"),
+                                            "Prefer not to say" = c("Prefer not to say")
+    )
+  ) %>%
+  group_by(outsourcing_status, BORNUK_binary) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+```
+
+##Overall, outsourced workers are 1.52 times more likely than non-outsourced workers to have been born outside of the UK.  
+
+```{r c3 outsourced stats}
+mod_svy5 <- svyglm(
+  outsourcing_status ~ BORNUK_binary + Ethnicity_collapsed_disaggregated + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
+
+sjPlot::tab_model(mod_svy5, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+```
+FOr the desired charts
+
+``` {r c3 outsourced eth * mig}
+
+mod_svy6 <- svyglm(
+  outsourcing_status ~ BORNUK_binary * Ethnicity_collapsed + Age + Gender + Has_Degree + Region,
+  design = design,
+  family = quasibinomial()
+)
+
+coefseth <- extract_glm_coefs(mod_svy6)
+
+coefseth <- summary(mod_svy6)$coefficients
+
+orseth <- exp(coefseth)
+colnames(orseth) <- paste(colnames(orseth), "or", sep="_")
+
+sjPlot::tab_model(mod_svy6, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+
+# Get estimated marginal means on the response (probability) scale
+library(emmeans)
+
+ems <- emmeans(mod_svy6,
+               ~ Ethnicity_collapsed * BORNUK_binary,
+               type = "response")  # response scale = predicted probabilities
+
+ems_df <- as.data.frame(ems)
+
+write.table(ems_df, "clipboard-16384", sep="\t", row.names=FALSE)
+
+pd <- position_dodge(width = 0.5)  # Define dodge position once
+
+# ethn_of_interest <- c("English / Welsh / Scottish / Northern Irish / British", 
+#                       "Pakistani",
+#                       "White and Black African")
+ems_df %>%
+  # filter(Ethnicity_collapsed_disaggregated %in% ethn_of_interest) %>%
+  ggplot(aes(y = Ethnicity_collapsed, x = prob, colour = BORNUK_binary)) +
+  geom_point(position = pd, size = 2) +
+  geom_errorbar(
+    aes(xmin = asymp.LCL, xmax = asymp.UCL),
+    width = 0.2,
+    position = pd
+  ) +
+  labs(
+    x = "Predicted probability of outsourcing",
+    y = "Migration",
+    colour = "Ethnicity"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 10))
+
+```
+
+```{r}
+# Here we manually calculate contrasts of interest
+# i.e. comparing against white british and born uk
+coefs <- names(coef(mod_svy6))
+eth_levels <- levels(mod_data$Ethnicity_collapsed)
+bor_levels <- levels(mod_data$BORNUK_binary)
+
+# Set reference levels for clarity:
+ref_eth <- "White British"
+ref_bor <- "Born in UK"
+
+partB_results <- list()
+
+for (eth in eth_levels) {
+  for (bor in bor_levels) {
+    if (bor == ref_bor) next  # skip comparing ref to itself
+    if (!paste0("BORNUK_binary", bor) %in% coefs) next  # skip if coef not estimated
+
+    vec <- setNames(rep(0, length(coefs)), coefs)
+
+    # Main effect for BORNUK (if not ref)
+    vec[paste0("BORNUK_binary", bor)] <- 1
+
+    # Interaction term (only if ethnicity != ref)
+    if (eth != ref_eth) {
+      interaction_name <- paste0("BORNUK_binary", bor, ":", "Ethnicity_collapsed", eth)
+      # Catch flipped ordering, just in case
+      if (!interaction_name %in% coefs) {
+        alt_name <- paste0("Ethnicity_collapsed", eth, ":", "BORNUK_binary", bor)
+        if (alt_name %in% coefs) interaction_name <- alt_name
+      }
+      if (interaction_name %in% coefs) {
+        vec[interaction_name] <- 1
+      }
+    }
+
+    res <- as.data.frame(svycontrast(mod_svy6, list("contrast" = vec)))
+    colnames(res) <- c("contrast", "SE")
+    zval <- res$contrast / res$SE
+    pval <- 2 * pnorm(-abs(zval))
+
+    partB_results[[paste0(eth, ": ", bor, " vs ", ref_bor)]] <- list(
+      estimate = res$contrast,
+      SE = res$SE,
+      z = zval,
+      p = pval
+    )
+  }
+}
+
+
+# Make into df
+partB_df <- bind_rows(
+  lapply(names(partB_results), function(name) {
+    res <- partB_results[[name]]
+    data.frame(
+      contrast = name,
+      estimate = res$estimate,
+      SE = res$SE,
+      z = res$z,
+      p = res$p
+    )
+  }),
+  .id = "id"
+)
+
+# Calculate OR and CIs and adjust p for multiple comparisons using FDR (Benjamini-Hochberg)
+partB_df <- partB_df %>%
+  mutate(p_adj = p.adjust(p, method = "fdr")) %>%
+  mutate(
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * SE),
+    CI_upper = exp(estimate + 1.96 * SE)
+  )
+
+cell_sizes <- mod_data %>%
+  count(BORNUK_binary, Ethnicity_collapsed) %>%
+  rename(cell_n = n)
+
+partB_df <- partB_df %>%
+  separate(contrast, into = c("ethnicity","BORNUK_binary"), sep = ": ", remove = FALSE) %>%
+  separate(BORNUK_binary, into = c("test_born","ref_born"), sep = " vs ", remove = FALSE) %>%
+  left_join(cell_sizes, by = c("ethnicity" = "Ethnicity_collapsed", "test_born" = "BORNUK_binary")) %>%
+  mutate(small_cell_flag = cell_n <= 10)
+
+
+sig_partB <- partB_df %>% filter(p_adj < 0.05)
+
+```
+
+
+##56% of the outsourced workforce, compared to 47% of the non-outsourced workforce, 
+
+
+```{r gender}
+
+data %>%
+  group_by(outsourcing_status, Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+
+
+```
+
+##and outsourced workers are nearly one and a half times more likely to be male than female.
+
+```{r gender likelihood}
+
+
+
+mod_data_test <- data %>%
+  filter(!is.na(Ethnicity_collapsed))
+mod_data_test$Gender <- relevel(factor(mod_data_test$Gender), ref = "Female")
+
+# Step 1: Create a survey design object
+designt <- svydesign(
+  ids = ~1,                                
+  weights = ~NatRepemployees,          
+  data = mod_data_test
+)
+
+mod_svyt1 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = designt,
+  family = quasibinomial()
+)
+
+mod_svyt2 <- svyglm(
+  outsourcing_status ~ Ethnicity_binary + Age + Gender + Has_Degree +  Region + BORNUK_labelled,
+  design = designt,
+  family = quasibinomial()
+)
+
+#summary(mod_svy2)
+
+coefst <- extract_glm_coefs(mod_svyt2, only_sig=T)
+gen_coefst <- coefst %>% filter(stringr::str_detect(variable, "Gender"))
+
+
+sjPlot::tab_model(mod_svyt2, 
+          pred.labels = labels, 
+          dv.labels = "Outsourcing",
+          show.r2 = FALSE)
+
+```
+
+##However, when we split our respondents by pay, we find that women are more likely to be in the outsourced “low income” group: women make up 43% of outsourced workers, but 60% of the low-income group (see fig X, below).  
+
+```{r gender low paid}
+data %>%
+  group_by(outsourcing_status, income_group , Gender) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+```
+
+Turning to average pay, we that find male outsourced workers earn £7,003 more per year, or £150 per week, than female outsourced workers on average. However
+
+```{r avg pay gender}
+
+sjPlot::tab_model(mod_weekly, pred.labels = labels, dv.labels = "Weekly income")
+
+
+annual_gender_coef <- extract_lm_coefs(mod_annual, only_sig = T) %>%
+  filter(variable == "GenderFemale")
+
+weekly_gender_coef <- extract_lm_coefs(mod_weekly, only_sig = T) %>%
+  filter(variable == "GenderFemale") 
+
+
+p <- sjPlot::plot_model(
+  mod_annual_int,
+  type = "pred",
+  legend.title = "",
+  terms = c("outsourcing_status", "Gender"),
+  dodge = 0.5
+)
+
+
+plot_df <- p$data
+
+head(plot_df)
+
+write.table(plot_df, "clipboard-16384", sep="\t", row.names=FALSE)
+
+
+```
+
+##median age
+
+```{r age median and mean}
+data %>%
+  group_by(outsourcing_status) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    Age_mean = mean(Age,na.rm=T),
+    Age_median = median(Age, na.rm=T)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+data %>%
+  group_by(outsourcing_status, income_group) %>%
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    Age_mean = mean(Age,na.rm=T),
+    Age_median = median(Age, na.rm=T)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+
+
+```
+
+##descp stats table for outsourcing demogs
+
+```{r chapter 3}
+
+groups<-c(quo(Gender),quo(income_group),quo(Ethnicity_collapsed),quo(Ethnicity_collapsed_disaggregated),quo(ed_bands),quo(BORNUK_binary),quo(Region))
+
+aa<-list()
+j=1
+for (i in groups) {
+  aa[[j]]<-data %>% 
+    group_by({{i}},outsourcing_status) %>% 
+    summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    Age_mean = mean(Age,na.rm=T),
+    Age_median = median(Age, na.rm=T)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+    )
+  j=j+1
+}
+
+
+lapply(aa, function(x) write.table( data.frame(x), 'test.csv' , append= T, sep=',', row.names = T, col.names = T))
+
+
+
+```
+
+##For each year older a worker is, we find that they are 2% less likely to be outsourced
+```{r age %}
+
+extract_glm_coefs(mod_svy2, only_sig=T) %>% 
+  filter(variable=="Age")
+  
+```
+
+```{r eth interaction}
+
+ethns_to_drop <- c("Don't think of myself as any of these", "Prefer not to say")
+
+mod_data <- income_data %>%
+  filter(!is.na(Ethnicity_collapsed)) %>%
+  filter(!(Ethnicity_collapsed %in% ethns_to_drop)) %>%
+  mutate(Ethnicity_collapsed = droplevels(Ethnicity_collapsed))
+
+design <- svydesign(
+  ids = ~1,
+  weights = ~NatRepemployees,
+  data = mod_data
+)
+
+mod_svy1 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled,
+  design = design,
+  family = VGAM::multinomial(refLevel = "Mid")
+)
+
+
+# Step 2: Fit the model with quasibinomial family
+mod_svy2 <- svyVGAM::svy_vglm(
+  income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + Has_Degree + Region + BORNUK_labelled + outsourcing_status:Ethnicity_collapsed,
+  design = design,
+  family = VGAM::multinomial(refLevel = "Mid")
+)
+
+
+# Extract coefficients and vcov
+coefs <- coef(mod_svy2)
+vcovs <- vcov(mod_svy2)
+coef_names <- grep("outsourcing_status.*:Ethnicity_collapsed", names(coefs), value = TRUE)
+
+# Extract coefficients and covariance sub-matrix
+L <- coefs[coef_names]
+V <- vcovs[coef_names, coef_names]
+
+# Wald statistic
+W <- t(L) %*% solve(V) %*% L
+
+# Degrees of freedom: number of parameters tested
+df <- length(L)
+
+# p-value
+p <- pchisq(W, df, lower.tail = FALSE)
+
+# Output
+W
+p
+# 
+# # Extract coefficients and vcov
+# coefs <- coef(mod_svy2)
+# vcovs <- vcov(mod_svy2)
+# 
+# # Remove intercepts
+# non_intercept_idx <- !grepl("(Intercept)", names(coefs))
+# 
+# # Subset coefficients and vcov accordingly
+# coefs_non_intercept <- coefs[non_intercept_idx]
+# vcovs_non_intercept <- vcovs[non_intercept_idx, non_intercept_idx]
+# 
+# # Perform Wald test
+# wald <- wald.test(
+#   Sigma = vcovs_non_intercept, 
+#   b = coefs_non_intercept, 
+#   L = diag(length(coefs_non_intercept))
+# )
+# wald_stats <- wald[["result"]][["chi2"]]
+# p <- wald_stats[3]
+
+if(p < .001){
+  p = "< .001"
+} else{
+  p = paste0("= ",round(p,3))
+}
+
+
+```
+
+A model including the ethnicity:outsourcing interaction term significantly improved model fit compared to a model without the interaction term, *X^2*(`r df`) = `r W`, *p* `r p`. The table below shows the model coefficients.
+
+```{r}
+tidy_mod <- tidy.svyVGAM(mod_svy2, exponentiate = TRUE, conf.int = TRUE)
+
+tidy_mod %>% 
+  dplyr::select(-y.level) %>% 
+  rename(income_group = term) %>% 
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01 ~ "**",
+    p.value < 0.05 ~ "*",
+    T ~ ""
+  )) %>% as_tibble() %>% print(n=100)
+```
+
+We explored the interaction effect using targeted contrasts comparing
+
+1.  The effect of outsourcing within each level of ethnicity
+2.  The effect of each ethnicity versus "White British" within each level of outsourcing
+
+```{r}
+cell_count_thresh <- 10
+```
+
+We do not consider contrasts for which any cell count is less than `r cell_count_thresh`.
+
+## Post-hoc: Outsourcing within ethnicity
+
+
+
+```{r}
+#| message: false
+#| output: false
+#| 
+# Create prediction data 
+pred_data <- expand.grid(
+  outsourcing_status = levels(mod_data$outsourcing_status),
+  Ethnicity_collapsed = levels(mod_data$Ethnicity_collapsed),
+  Age = mean(mod_data$Age, na.rm = TRUE),
+  Gender = levels(mod_data$Gender)[1],
+  Has_Degree = levels(mod_data$Has_Degree)[1],
+  Region = levels(mod_data$Region)[1],
+  BORNUK_labelled = levels(mod_data$BORNUK_labelled)[1]
+)
+
+# Get predictions
+predictions <- predict(mod_svy2$fit, newdata = pred_data, type = "response")
+
+# Create results dataframe - much simpler!
+pred_results <- data.frame(
+  pred_data[, 1:2],
+  predictions
+)
+
+# Add prob_ prefix to column names for clarity
+income_levels <- levels(mod_svy2)
+prob_cols <- paste0("prob_", colnames(predictions))
+names(pred_results)[3:ncol(pred_results)] <- prob_cols
+
+print(pred_results)
+
+# Bootstrap function for getting confidence intervals
+# Set up parallel backend (choose number of workers if needed)
+#plan(multisession, workers = 12)  # Or plan(multisession, workers = 4)
+
+bootstrap_predictions <- function(n_boot = 2000) {
+  library(survey)
+  library(svyVGAM)
+  
+  set.seed(1234)
+  boot_results <- future_lapply(1:n_boot, function(i) {
+    # Resample with replacement, respecting weights
+    n_obs <- nrow(mod_data)
+    boot_indices <- sample(
+      1:n_obs,
+      size = n_obs,
+      replace = TRUE,
+      prob = mod_data$NatRepemployees / sum(mod_data$NatRepemployees)
+    )
+    boot_data <- mod_data[boot_indices, ]
+    
+    # Create new survey design
+    boot_design <- svydesign(
+      ids = ~1,
+      weights = ~NatRepemployees,
+      data = boot_data
+    )
+    
+    # Refit model and predict
+    tryCatch({
+      boot_model <- svyVGAM::svy_vglm(
+        income_group ~ outsourcing_status + Ethnicity_collapsed + Age + Gender + 
+          Has_Degree + Region + BORNUK_labelled + 
+          outsourcing_status:Ethnicity_collapsed,
+        design = boot_design,
+        family = multinomial(refLevel = "Mid")
+      )
+      
+      boot_pred <- predict(boot_model$fit, newdata = pred_data, type = "response")
+      
+      boot_results_df <- data.frame(
+        pred_data[, 1:2],
+        boot_pred
+      )
+      
+      prob_cols <- paste0("prob_", colnames(boot_pred))
+      names(boot_results_df)[3:ncol(boot_results_df)] <- prob_cols
+      
+      return(boot_results_df)
+    }, error = function(e) {
+      return(NULL)
+    })
+  }, future.seed = TRUE)
+  
+  # Remove failed bootstrap samples
+  boot_results <- boot_results[!sapply(boot_results, is.null)]
+  return(boot_results)
+}
+
+#this takes ages. commented out but here for posterity
+#t1 <- Sys.time()
+#boot_samples <- bootstrap_predictions(n_boot = 500)
+#t2 <- Sys.time()
+#cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
+
+filepath <- here::here("bootstrap1_1000_3.rds")
+if(!file.exists(filepath)){
+# Run bootstrap (this will take some time)
+  cat("Running bootstrap... this may take a few minutes\n")
+  t1 <- Sys.time()
+  boot_samples <- bootstrap_predictions(n_boot = 2000)  
+  t2 <- Sys.time()
+  cat(paste0("Done in ", difftime(t2, t1, units = "secs"), " seconds"))
+  saveRDS(boot_samples, filepath)
+} else{
+  cat("Loading previous bootstrap")
+  boot_samples <- readRDS(filepath)
+}
+
+
+# Calculate confidence intervals
+calculate_boot_ci <- function(boot_samples, prob_cols) {
+  ci_results <- pred_results[, 1:2]  # Keep grouping variables
+  
+  for(col in prob_cols) {
+    # Extract this probability across all bootstrap samples
+    boot_probs <- sapply(boot_samples, function(x) {
+      if(is.null(x) || !col %in% names(x)) return(NA)
+      x[[col]]
+    })
+  
+    # Point estimate from bootstrap (mean)
+    ci_results[[paste0(col, "_boot_mean")]] <- rowMeans(boot_probs, na.rm = TRUE)
+    
+    # Calculate percentile confidence intervals
+    ci_lower <- apply(boot_probs, 1, quantile, probs = 0.025, na.rm = TRUE)
+    ci_upper <- apply(boot_probs, 1, quantile, probs = 0.975, na.rm = TRUE)
+    
+    ci_results[[paste0(col, "_ci_lower")]] <- ci_lower
+    ci_results[[paste0(col, "_ci_upper")]] <- ci_upper
+  }
+  
+  return(ci_results)
+}
+
+# Get confidence intervals
+prob_cols <- names(pred_results)[grepl("^prob_", names(pred_results))]
+ci_results <- calculate_boot_ci(boot_samples, prob_cols)
+
+  
+boot_mean_results <- ci_results[, 1:2]  # Keep grouping vars
+for (col in prob_cols) {
+  boot_mean_results[[col]] <- ci_results[[paste0(col, "_boot_mean")]]
+}
+
+```
+
+```{r}
+#| message: false
+#| output: false
+
+
+
+# Function to calculate differences and their bootstrap CIs
+calculate_differences_with_ci <- function(pred_data, boot_samples, income_level) {
+  prob_col <- paste0("prob_", income_level)
+  # Get point estimates
+  ethnicity_groups <- split(pred_data, pred_data$Ethnicity_collapsed)
+  
+  results <- list()
+  
+  for(eth in names(ethnicity_groups)) {
+    group_data <- ethnicity_groups[[eth]]
+    
+    if(nrow(group_data) >= 2) {
+      outsourcing_levels <- levels(group_data$outsourcing_status)
+      
+      if(length(outsourcing_levels) == 2) {
+        # Point estimate of difference (level 2 - level 1)
+        prob_ratio <- group_data[group_data$outsourcing_status == outsourcing_levels[2], prob_col] / 
+              group_data[group_data$outsourcing_status == outsourcing_levels[1], prob_col]
+
+        
+        # Bootstrap differences
+        boot_ratios <- sapply(boot_samples, function(boot_data) {
+          if(is.null(boot_data) || !prob_col %in% names(boot_data)) return(NA)
+          boot_group <- boot_data[boot_data$Ethnicity_collapsed == eth, ]
+          if(nrow(boot_group) >= 2) {
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[2], prob_col] / 
+            boot_group[boot_group$outsourcing_status == outsourcing_levels[1], prob_col]
+          } else {
+            NA
+          }
+        })
+        
+        # Remove NAs
+        boot_ratios <- boot_ratios[!is.na(boot_ratios)]
+        
+        if(length(boot_ratios) > 2) {  # Need sufficient bootstrap samples
+          # Log-transform for symmetric CI on ratio scale
+          log_ratios <- log(boot_ratios)
+          ci_lower <- exp(quantile(log_ratios, 0.025, na.rm = TRUE))
+          ci_upper <- exp(quantile(log_ratios, 0.975, na.rm = TRUE))
+          
+          p_value <- 2 * min(mean(log_ratios > 0, na.rm = TRUE), 
+                             mean(log_ratios < 0, na.rm = TRUE))
+
+          
+          results[[eth]] <- data.frame(
+            ethnicity = eth,
+            income_level = income_level,
+            prob_ratio = prob_ratio,
+            ci_lower = ci_lower,
+            ci_upper = ci_upper,
+            p_value = p_value,
+            comparison = paste(outsourcing_levels[2], "vs", outsourcing_levels[1])
+          )
+        }
+      }
+    }
+  }
+  
+  do.call(rbind, results)
+}
+
+income_levels <- levels(mod_data$income_group)
+# Calculate differences for each income level
+all_differences <- list()
+for(level in income_levels) {
+  all_differences[[level]] <- calculate_differences_with_ci(boot_mean_results, boot_samples, level)
+}
+
+difference_results <- do.call(rbind, all_differences)
+rownames(difference_results) <- NULL
+
+# Apply multiple comparison correction
+if(nrow(difference_results) > 0) {
+  difference_results$p_value_bonferroni <- p.adjust(difference_results$p_value, method = "bonferroni")
+  difference_results$p_value_fdr <- p.adjust(difference_results$p_value, method = "fdr")
+  difference_results$significant_bonferroni <- difference_results$p_value_bonferroni < 0.05
+  difference_results$significant_fdr <- difference_results$p_value_fdr < 0.05
+}
+
+# print(difference_results)
+
+counts <- mod_data %>% 
+  group_by(income_group, outsourcing_status, Ethnicity_collapsed) %>%
+  summarise(
+    n = n()
+  ) %>%
+  rename(
+    ethnicity = Ethnicity_collapsed,
+    income_level = income_group
+  )
+
+difference_results2 <- difference_results %>% 
+  left_join(counts, by = c("ethnicity", "income_level"))
+
+drop <- difference_results2[which(difference_results2$n < cell_count_thresh | is.na(difference_results2$n)),c("ethnicity","income_level")]
+
+difference_results3 <- difference_results %>%
+  anti_join(drop, by = c("ethnicity", "income_level")) %>%
+  mutate(
+    income_level = factor(income_level, levels = c("Low","Mid","High"))
+  ) 
+
+difference_results_sig <- difference_results3 %>%
+  filter(significant_bonferroni == TRUE) %>%
+  arrange(desc(ethnicity))
+```
+
+
+white british migration
+```{r}
+
+data %>%
+  group_by(Ethnicity_collapsed_disaggregated, income_group) %>%  
+  summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees)
+  ) %>%
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)
+  )
+
+```
+
+extra checks on public / private
+
+```{r}
+
+data <- data %>%
+  mutate(State_Priv = case_when(Biz_Type=="A private firm, business or limited company"|
+                                  Non_Private_Biz_Type_labelled%in%c("A public limited company","A charity, voluntary organisation or trust")~ "Private",
+                                Non_Private_Biz_Type%in%c(2:6,8)~"State", # inclusive of schools, unis,nhs,arned forces
+                                TRUE ~ "Other"),
+         State_Priv2 = case_when(Biz_Type=="A private firm, business or limited company"|
+                                  Non_Private_Biz_Type_labelled%in%c("A public limited company","A charity, voluntary organisation or trust","A university or other grant funded establishment (including opted-out schools)")~ "Private",
+                                Non_Private_Biz_Type_labelled%in%c("A nationalised industry or state corporation","Central government or civil service","Local government or council (including fire service and local authority controlled schools or colleges)","A health authority or NHS Trust","The armed forces")~"State", # inclusive of schools, unis,nhs,arned forces
+                                TRUE ~ "Other")) 
+
+pubpriv<-data |>
+  group_by(State_Priv,outsourcing_status) |>
+summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) |>
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)) |>
+  select(-c(Frequency,N, Sum))
+
+pubpriv2<-data |>
+  group_by(State_Priv2,outsourcing_status) |>
+summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) |>
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)) |>
+  select(-c(Frequency,N, Sum))
+
+pp2<- data |>
+  group_by(Employer_Activity_SIC_labelled,outsourcing_status) |>
+summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = mean(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) |>
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)) |>
+  select(-c(Frequency,N, Sum,avg_income))
+
+data |>
+  group_by(State_Priv) |>
+summarise(
+    n = n(),
+    Frequency = sum(NatRepemployees),
+    avg_income = median(income_hourly_all, na.rm=T),
+    wtd_avg_income = weighted_median(income_hourly_all, w = NatRepemployees, na.rm=T)
+  ) |>
+  mutate(
+    N = sum(n),
+    Sum = sum(Frequency),
+    Percentage = 100 * (Frequency / Sum)) |>
+  select(-c(Frequency,N, Sum))
+
+```
