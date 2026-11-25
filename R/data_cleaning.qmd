@@ -21,6 +21,7 @@ rm(list = ls())
 library(gridExtra)
 library(skimr)
 library(haven)
+#library(plyr)
 library(tidyverse)
 library(wesanderson)
 library(Hmisc)
@@ -1076,6 +1077,8 @@ data <- data %>%
     Region_four_thirds = Region_median_income * (4/3)
   )
 
+data$income_drop[which(data$ID %in% all_outlier_ids)] <- 1
+data$income_drop[is.na(data$income_drop)] <- 0 # make NAs 0
 
 # stats by region
 income_statistics_regional <- data %>%
@@ -1334,6 +1337,27 @@ data <- data %>%
   mutate(
     Gender = factor(Gender, levels = c("Male","Female","Other","Prefer not to say"))
   )
+```
+
+```{r}
+#weighted_median code
+weighted_median <- function(x, w, na.rm = TRUE, tol = 1e-10) {
+keep <- !is.na(x) & !is.na(w)
+if (!na.rm && !all(keep)) return(NA_real_)
+x <- x[keep]; w <- w[keep]
+if (length(x) == 0 || sum(w) <= 0) return(NA_real_)
+ord <- order(x)
+x <- x[ord]; w <- w[ord]
+cum_w <- cumsum(w) / sum(w)
+i <- which(cum_w >= 0.5 - tol)[1]
+if (abs(cum_w[i] - 0.5) < tol && i < length(x)) {
+(x[i] + x[i + 1]) / 2
+} else {
+x[i]
+}
+}
+
+
 ```
 
 ## Save
