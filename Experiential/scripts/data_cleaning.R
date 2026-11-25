@@ -10,7 +10,7 @@ library(janitor)
 rm(list=ls())
 
 #import data
-raw_data <- read_sav("./Experiential/data/UK23626 - JRF - Outsourced workers - Experiential data excluding firm names.sav")
+raw_data <- read_sav("UK23626 - JRF - Outsourced workers - Experiential data excluding firm names.sav")
 
 raw_data <- haven::as_factor(raw_data)
 skim(raw_data)
@@ -18,7 +18,7 @@ skim(raw_data)
 
 #drop unneeded columns
 raw_data <- raw_data %>%
-  select(-c(Q1_B_1, 
+  dplyr::select(-c(Q1_B_1, 
             Q1_B_2, 
             Q1_B_3, 
             Q1_B_4, 
@@ -28,7 +28,7 @@ raw_data <- raw_data %>%
             SCD_Opt_In_1,
             SCD_Opt_In_2, 
             Q11_RIGHTSVIOLATIONS_8)) %>%
-  select(-starts_with("D7"))
+  dplyr::select(-starts_with("D7"))
 
 #rename vars
 raw_data <- raw_data %>%
@@ -204,7 +204,7 @@ raw_data <- raw_data %>%
 
 #  Delete the original variables
 raw_data <- raw_data %>%
-  select(-OutsourcedNonOL_2, -OutsourcedNonOL_3, -OutsourcedNonOL_4)
+  dplyr::select(-OutsourcedNonOL_2, -OutsourcedNonOL_3, -OutsourcedNonOL_4)
 
 #show how many people are working every single hour of the week
 raw_data %>%
@@ -266,6 +266,7 @@ raw_data <- raw_data %>%
     INCOME_CORRECT_5_other = as.numeric(INCOME_CORRECT_5_other)
   )
 
+
 ## Income correct vars correction
 # annual income
 raw_data <- raw_data %>%
@@ -297,6 +298,7 @@ raw_data <- raw_data %>%
     Self_Report_Annual_Salary = coalesce(Corrected_Self_Report_Annual_Salary, Self_Report_Annual_Salary),
     Self_Report_weekly_Salary = coalesce(Corrected_Self_Report_Weekly_Salary, Self_Report_Weekly_Salary)
     )
+
 
 summary(raw_data$Self_Report_Annual_Salary)
 summary(raw_data$Self_Report_Weekly_Salary)
@@ -347,7 +349,7 @@ convert_to_numeric <- function(data) {
       )
     
     # Debug: Check numeric conversion
-    print(head(temp_df %>% select(numeric_min_income, numeric_max_income)))
+    print(head(temp_df %>% dplyr::select(numeric_min_income, numeric_max_income)))
     
     # Handle midpoints, ensuring no non-numeric values cause errors
     temp_df <- temp_df %>%
@@ -371,7 +373,6 @@ convert_to_numeric <- function(data) {
 }
 
 raw_data <- convert_to_numeric(raw_data) 
-
 
 raw_data <- raw_data %>%
   mutate(
@@ -402,10 +403,10 @@ raw_data <- raw_data %>%
 
 #remove corrected income vars and other income vars
 raw_data <- raw_data %>%
-  select(-c(INCOME_CORRECT_2_other, INCOME_CORRECT_3_other, INCOME_CORRECT_4_other, INCOME_CORRECT_5_other, Corrected_Self_Report_Annual_Salary))
+  dplyr::select(-c(INCOME_CORRECT_2_other, INCOME_CORRECT_3_other, INCOME_CORRECT_4_other, INCOME_CORRECT_5_other, Corrected_Self_Report_Annual_Salary))
 
 raw_data <- raw_data %>%
-  select(-c(INCOME_OPEN_1, INCOME_OPEN_2, INCOME_CORRECT_1,
+  dplyr::select(-c(INCOME_OPEN_1, INCOME_OPEN_2, INCOME_CORRECT_1,
             INCOME_CORRECT_2, INCOME_CORRECT_3, INCOME_CORRECT_4, INCOME_CORRECT_5,
             Income_Frequency,
             income_annual_closed))
@@ -637,7 +638,7 @@ cat("Total removed: ", total_cases_removed, "(", round(100*(total_cases_removed/
 url <- 'https://www.ons.gov.uk/file?uri=/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/earningsandhoursworkedukregionbyagegroup/2023provisional/ashetableregionbyage2023provisional.zip'
 
 filename <- basename(url) # this takes the filename from the url
-filepath <- paste0("../Data/", filename)
+filepath <- paste0("C:/Users/Taha.Bokhari/Downloads/", filename)
 output_dir <- substr(filepath,start = 1, stop=nchar(filepath) - 4)
 
 # check if the file exists. if it doesn't, download and unzip
@@ -662,7 +663,7 @@ ashe_data <- readxl::read_excel(files[1], sheet = 'All', skip = 4) %>%
     Region = description,
     Region_median_income = median
   ) %>%
-  select(Region, Region_median_income) %>% # if we just want the median
+  dplyr::select(Region, Region_median_income) %>% # if we just want the median
   # rename problematic regions
   mutate(
     Region = case_when(Region == "East" ~ "East of England",
@@ -883,7 +884,7 @@ raw_data <- raw_data %>%
 
 
 # Perform Cronbach's alpha on the new Clarity numeric questions
-library(psych)
+require(psych)
 
 # Select only the new Clarity numeric variables
 clarity <- raw_data %>%
@@ -895,7 +896,7 @@ psych::alpha(clarity, check.keys = TRUE)
 
 # Create the mean of the new Clarity numeric questions
 raw_data <- raw_data %>%
-  mutate(Clarity_Overall_Mean = rowMeans(select(., matches("^Clarity.*_numeric$")), na.rm = TRUE))
+  mutate(Clarity_Overall_Mean = rowMeans(dplyr::select(., matches("^Clarity.*_numeric$")), na.rm = TRUE))
 
 
 #fix age var
@@ -909,15 +910,15 @@ raw_data <- raw_data %>%
 
 ##drop Is an employee var since 100% reported as yes
 raw_data <- raw_data %>%
-  select(-Is_an_employee)
+  dplyr::select(-Is_an_employee)
 
 ## drop short long employ var since 100% reported long-term
 raw_data <- raw_data %>%
-  select(-Short_Long_Employ)
+  dplyr::select(-Short_Long_Employ)
 
 ##drop E6_5 due to extremely low response rate
 raw_data <- raw_data %>%
-  select(-E6_5)
+  dplyr::select(-E6_5)
 
 #change column types
 raw_data <- raw_data %>%
@@ -926,12 +927,12 @@ raw_data <- raw_data %>%
     Job_Satisfaction = as.numeric(Job_Satisfaction),
     Treatment_At_Work_Overall_numeric = as.numeric(Treatment_At_Work_Overall_numeric),
     Complaints_numeric = as.numeric(Complaints_numeric),
-    Clarity_Overall_Mean = as.numeric(Clarity_Overall_Mean),
+    #Clarity_Overall_Mean = as.numeric(Clarity_Overall_Mean),
     Ethnicity_Collapsed = as_factor(Ethnicity_Collapsed))
 
 ##drop final unneeded vars
 raw_data <- raw_data %>%
-  select(-c(StartDate,
+  dplyr::select(-c(StartDate,
             Short_Long_Employ_TEXT,
             Type_Of_Org_TEXT,
             Temp_Explanation_TEXT,
@@ -947,12 +948,12 @@ raw_data <- raw_data %>%
 #final skim
 skim(raw_data)
 
-
+raw_data$text
 #####SUBSET TO ONLY VARS OF INTERESTED####
 
 #create subset of data
 raw_data<- raw_data %>%
-  select(Sex, Age, Ethnicity, Ethnicity_Collapsed, Ethnicity_binary,
+  dplyr::select(Sex, Age, Ethnicity, Ethnicity_Collapsed, Ethnicity_binary,
          Region, Type_Of_Org, Specific_Type_Of_Org,
          Education_Band, BORNUK, BORNUK_binary, Annual_Income, 
          Weekly_Income,
@@ -1002,7 +1003,7 @@ raw_data<- raw_data %>%
          Clarity9,
          Clarity10,
          Clarity11,
-         Clarity_Overall_Mean,
+         #Clarity_Overall_Mean,
          Why_Job_Like,
          Why_Job_Convinient,
          Why_Job_Flexibility,
@@ -1044,7 +1045,7 @@ raw_data<- raw_data %>%
          What_Improvements_Union,
          What_Improvements_Other,
          What_Improvements_None,
-         What_Improvements_Other_TEXT,
+         #What_Improvements_Other_TEXT,
          Complaints,
          Outsourced
   )
@@ -1055,8 +1056,8 @@ save_check <- readline("Do you want to save the data? (y/n): ")
 if(save_check == "y"){
   
   # create a check so we don't overwrite if we don't want to
-  out_file <- paste0("./Experiential/data/", Sys.Date() ," - clean_data_jrf_experiential.csv")
-  rds_out <- paste0("./Experiential/data/", Sys.Date() ," - clean_data_jrf_experiential.rds")
+  out_file <- paste0(Sys.Date() ," - clean_data_jrf_experiential.csv")
+  rds_out <- paste0(Sys.Date() ," - clean_data_jrf_experiential.rds")
     
   if(!file.exists(out_file)){ 
     cat(paste0("Saving data as: ", out_file, "\n"))
@@ -1082,5 +1083,24 @@ if(save_check == "y"){
   print("File not saved")
 }
 
+text_vars <- c("ID", "What_Do_You_Do_TEXT",
+               "Job_Title_TEXT",
+               "What_Does_Your_Employer_Do_TEXT",
+               "TermsChanging_TEXT",
+               "RightsViolations_TEXT",
+               "Why_Job_TEXT",
+               "Why_Outsourced_TEXT",
+               "What_Improvements_Other_TEXT",
+               "Employer_Activity_TEXT")
 
+Income_Crosstab<- crosstable::crosstable(raw_data %>% 
+                                           select(-any_of(text_vars)), 
+                                         by = income_group,
+                                         total = "both",
+                                         showNA = "no", 
+                                         funs=c("median", "mean", "std dev"=sd),
+                                         percent_digits = 2, 
+                                         percent_pattern = "{n} ({p_col})"
+) %>%
+  kableExtra::kable()
 
